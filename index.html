@@ -10,6 +10,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -398,6 +400,19 @@
     }
 
     /* ═══════════════════════════════════
+       FIREBASE INIT
+    ═══════════════════════════════════ */
+    firebase.initializeApp({
+      apiKey: "AIzaSyCzvPWJ6j9u1yLjjDCUOpPNftzP1JKRKq4",
+      authDomain: "bbwoa-b498b.firebaseapp.com",
+      projectId: "bbwoa-b498b",
+      storageBucket: "bbwoa-b498b.firebasestorage.app",
+      messagingSenderId: "301236038690",
+      appId: "1:301236038690:web:db96665d9543424e752e7b"
+    });
+    var db = firebase.firestore();
+
+    /* ═══════════════════════════════════
        APP STATE
     ═══════════════════════════════════ */
     var BRANCH_NAME = { raanana: 'סניף רעננה', hadera: 'סניף חדרה' };
@@ -406,6 +421,7 @@
     var pendingPhoto  = null;
     var modalCallback = null;
     var _editKey = null;
+    var _badgeUnsub = null;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -415,8 +431,6 @@
       banner: { icon: '📅', label: 'סידור עבודה' }
     };
 
-    function getEmployees(branch) { return JSON.parse(localStorage.getItem('bbwor_employees_' + branch) || '[]'); }
-    function setEmployees(branch, arr) { localStorage.setItem('bbwor_employees_' + branch, JSON.stringify(arr)); }
     function getSession(branch) { return JSON.parse(localStorage.getItem('bbwor_session_' + branch) || 'null'); }
     function setSession(branch, s) { localStorage.setItem('bbwor_session_' + branch, JSON.stringify(s)); }
     function clearSession(branch) { localStorage.removeItem('bbwor_session_' + branch); }
@@ -433,19 +447,36 @@
 
     function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
 
-    function enterManager() { renderManagerGrid(); show('manager'); }
+    function enterManager() {
+      renderManagerGrid();
+      show('manager');
+      if (!_badgeUnsub) {
+        _badgeUnsub = db.collection('employees').where('status', '==', 'pending')
+          .onSnapshot(function(snap) {
+            var count = snap.size;
+            var fab   = document.getElementById('fab-mail');
+            var badge = document.getElementById('fab-badge');
+            badge.textContent = count;
+            badge.classList.toggle('show', count > 0);
+            if (document.getElementById('screen-manager').classList.contains('active')) {
+              fab.classList.toggle('visible', count > 0);
+            }
+          });
+      }
+    }
 
     function enterBranch(branch) {
       activeBranch = branch;
       var session = getSession(branch);
-      if (session) {
-        var emp = getEmployees(branch).find(function(e) { return e.id === session.empId; });
-        if (emp) {
-          if (emp.status === 'approved') { openEmployeeHome(emp); return; }
-          if (emp.status === 'pending')  { showPendingModal(emp.firstName + ' ' + emp.lastName); return; }
-        }
-      }
-      openRegisterForm(branch);
+      if (!session) { openRegisterForm(branch); return; }
+      db.collection('employees').doc(session.empId).get()
+        .then(function(doc) {
+          if (!doc.exists) { clearSession(branch); openRegisterForm(branch); return; }
+          var emp = doc.data();
+          if (emp.status === 'approved') { openEmployeeHome(emp); }
+          else { showPendingModal(emp.firstName + ' ' + emp.lastName); }
+        })
+        .catch(function() { openRegisterForm(branch); });
     }
 
     function openRegisterForm(branch) {
@@ -465,11 +496,21 @@
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function(e) {
-        pendingPhoto = e.target.result;
-        var img = document.getElementById('photo-preview');
-        img.src = pendingPhoto;
-        img.classList.add('show');
-        document.getElementById('preview-wrap').style.display = 'flex';
+        var rawImg = new Image();
+        rawImg.onload = function() {
+          var canvas = document.createElement('canvas');
+          var max = 300, w = rawImg.width, h = rawImg.height;
+          if (w > h) { if (w > max) { h = Math.round(h * max / w); w = max; } }
+          else       { if (h > max) { w = Math.round(w * max / h); h = max; } }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(rawImg, 0, 0, w, h);
+          pendingPhoto = canvas.toDataURL('image/jpeg', 0.65);
+          var preview = document.getElementById('photo-preview');
+          preview.src = pendingPhoto;
+          preview.classList.add('show');
+          document.getElementById('preview-wrap').style.display = 'flex';
+        };
+        rawImg.src = e.target.result;
       };
       reader.readAsDataURL(file);
       input.value = '';
@@ -480,20 +521,28 @@
       var last  = document.getElementById('reg-last').value.trim();
       var phone = document.getElementById('reg-phone').value.trim();
       if (!first || !last || !phone) { showModal('⚠️', 'שדות חסרים', 'יש למלא שם פרטי, שם משפחה וטלפון.', null); return; }
-      var employees = getEmployees(activeBranch);
-      var existing = employees.find(function(e) { return e.phone === phone; });
-      if (existing) {
-        setSession(activeBranch, { empId: existing.id });
-        if (existing.status === 'approved') openEmployeeHome(existing);
-        else showPendingModal(existing.firstName + ' ' + existing.lastName);
-        return;
-      }
-      var id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-      var emp = { id: id, firstName: first, lastName: last, phone: phone, photo: pendingPhoto || null, branch: activeBranch, status: 'pending', createdAt: new Date().toISOString() };
-      employees.push(emp);
-      setEmployees(activeBranch, employees);
-      setSession(activeBranch, { empId: id });
-      showPendingModal(first + ' ' + last);
+      db.collection('employees')
+        .where('phone', '==', phone)
+        .where('branch', '==', activeBranch)
+        .get()
+        .then(function(snap) {
+          if (!snap.empty) {
+            var existing = snap.docs[0].data();
+            setSession(activeBranch, { empId: existing.id });
+            if (existing.status === 'approved') { openEmployeeHome(existing); }
+            else { showPendingModal(existing.firstName + ' ' + existing.lastName); }
+            return;
+          }
+          var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          var emp = { id: id, firstName: first, lastName: last, phone: phone, photo: pendingPhoto || null, branch: activeBranch, status: 'pending', createdAt: new Date().toISOString() };
+          db.collection('employees').doc(id).set(emp)
+            .then(function() {
+              setSession(activeBranch, { empId: id });
+              showPendingModal(first + ' ' + last);
+            })
+            .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור. בדקי חיבור לאינטרנט.', null); });
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'בעיית חיבור. נסי שוב.', null); });
     }
 
     function showPendingModal(fullName) {
@@ -556,7 +605,6 @@
         '<span class="banner-label">' + c.banner.label + '</span>' +
         '<button class="mgr-edit-btn" onclick="openEditModal(\'banner\');event.stopPropagation()">✏️</button>';
       bannerWrap.appendChild(bEl);
-      updateBadge();
     }
 
     /* ═══════════════════════════════════
@@ -593,47 +641,38 @@
     /* ═══════════════════════════════════
        BADGE + PENDING DRAWER
     ═══════════════════════════════════ */
-    function updateBadge() {
-      var count = ['raanana', 'hadera'].reduce(function(sum, b) {
-        return sum + getEmployees(b).filter(function(e) { return e.status === 'pending'; }).length;
-      }, 0);
-      var fab   = document.getElementById('fab-mail');
-      var badge = document.getElementById('fab-badge');
-      fab.classList.toggle('visible', count > 0);
-      badge.textContent = count;
-      badge.classList.toggle('show', count > 0);
-    }
-
     function openPendingDrawer() {
       var body = document.getElementById('drawer-body');
-      body.innerHTML = '';
-      var hasAny = false;
-      ['raanana', 'hadera'].forEach(function(branch) {
-        getEmployees(branch).filter(function(e) { return e.status === 'pending'; }).forEach(function(emp) {
-          hasAny = true;
-          var avatarHtml = emp.photo
-            ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
-            : emp.firstName[0].toUpperCase();
-          var card = document.createElement('div');
-          card.className = 'req-card';
-          card.id = 'req-' + emp.id;
-          card.innerHTML =
-            '<div class="emp-avatar">' + avatarHtml + '</div>' +
-            '<div class="emp-info">' +
-              '<div class="emp-fullname">' + emp.firstName + ' ' + emp.lastName + '</div>' +
-              '<span class="req-branch-tag">' + BRANCH_NAME[branch] + '</span>' +
-              '<div class="emp-phone-txt">' + emp.phone + '</div>' +
-            '</div>' +
-            '<div class="emp-actions">' +
-              '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\',\'' + branch + '\')">✓ אשר</button>' +
-              '<button class="btn-reject"  onclick="rejectEmp(\'' + emp.id + '\',\'' + branch + '\')">✕</button>' +
-            '</div>';
-          body.appendChild(card);
-        });
-      });
-      if (!hasAny) body.innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+      body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('pending-overlay').classList.add('open');
       document.getElementById('pending-drawer').classList.add('open');
+      db.collection('employees').where('status', '==', 'pending').get()
+        .then(function(snap) {
+          body.innerHTML = '';
+          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>'; return; }
+          snap.forEach(function(doc) {
+            var emp = doc.data();
+            var avatarHtml = emp.photo
+              ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
+              : emp.firstName[0].toUpperCase();
+            var card = document.createElement('div');
+            card.className = 'req-card';
+            card.id = 'req-' + emp.id;
+            card.innerHTML =
+              '<div class="emp-avatar">' + avatarHtml + '</div>' +
+              '<div class="emp-info">' +
+                '<div class="emp-fullname">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+                '<span class="req-branch-tag">' + BRANCH_NAME[emp.branch] + '</span>' +
+                '<div class="emp-phone-txt">' + emp.phone + '</div>' +
+              '</div>' +
+              '<div class="emp-actions">' +
+                '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\',\'' + emp.branch + '\')">✓ אשר</button>' +
+                '<button class="btn-reject"  onclick="rejectEmp(\'' + emp.id + '\',\'' + emp.branch + '\')">✕</button>' +
+              '</div>';
+            body.appendChild(card);
+          });
+        })
+        .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
     }
 
     function closePendingDrawer() {
@@ -642,27 +681,27 @@
     }
 
     function approveEmp(id, branch) {
-      var emps = getEmployees(branch);
-      var emp = emps.find(function(e) { return e.id === id; });
-      if (!emp) return;
-      emp.status = 'approved';
-      setEmployees(branch, emps);
-      var card = document.getElementById('req-' + id);
-      if (card) card.remove();
-      if (!document.querySelector('#drawer-body .req-card')) {
-        document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
-      }
-      updateBadge();
+      db.collection('employees').doc(id).update({ status: 'approved' })
+        .then(function() {
+          var card = document.getElementById('req-' + id);
+          if (card) card.remove();
+          if (!document.querySelector('#drawer-body .req-card')) {
+            document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+          }
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר. נסי שוב.', null); });
     }
 
     function rejectEmp(id, branch) {
-      setEmployees(branch, getEmployees(branch).filter(function(e) { return e.id !== id; }));
-      var card = document.getElementById('req-' + id);
-      if (card) card.remove();
-      if (!document.querySelector('#drawer-body .req-card')) {
-        document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
-      }
-      updateBadge();
+      db.collection('employees').doc(id).delete()
+        .then(function() {
+          var card = document.getElementById('req-' + id);
+          if (card) card.remove();
+          if (!document.querySelector('#drawer-body .req-card')) {
+            document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+          }
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
     }
 
     function showModal(icon, heading, text, onOk) {
@@ -681,15 +720,23 @@
     /* AUTO-LOGIN */
     (function() {
       var branches = ['raanana', 'hadera'];
-      for (var i = 0; i < branches.length; i++) {
-        var b = branches[i];
+      var i = 0;
+      function tryBranch() {
+        if (i >= branches.length) return;
+        var b = branches[i++];
         var session = getSession(b);
-        if (session) {
-          var emp = getEmployees(b).find(function(e) { return e.id === session.empId; });
-          if (emp && emp.status === 'approved') { activeBranch = b; openEmployeeHome(emp); return; }
-          if (emp && emp.status === 'pending')  { activeBranch = b; showPendingModal(emp.firstName + ' ' + emp.lastName); return; }
-        }
+        if (!session) { tryBranch(); return; }
+        db.collection('employees').doc(session.empId).get()
+          .then(function(doc) {
+            if (!doc.exists) { clearSession(b); tryBranch(); return; }
+            var emp = doc.data();
+            activeBranch = b;
+            if (emp.status === 'approved') { openEmployeeHome(emp); }
+            else { showPendingModal(emp.firstName + ' ' + emp.lastName); }
+          })
+          .catch(function() { tryBranch(); });
       }
+      tryBranch();
     })();
   </script>
 </body>
