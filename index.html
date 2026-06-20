@@ -11,61 +11,77 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --gold: #c9a84c;
+      --gold-dim: rgba(201,168,76,0.55);
+      --gold-faint: rgba(201,168,76,0.12);
+      --dark: #0e0d0c;
+      --card-bg: rgba(14,13,12,0.95);
+      --text: #fff;
+      --text-dim: rgba(255,255,255,0.45);
+    }
+
     body {
       min-height: 100vh;
       min-height: 100dvh;
       font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
       background-color: #252320;
       background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E"),
         radial-gradient(ellipse at 25% 15%, rgba(90,80,65,0.35) 0%, transparent 55%),
         radial-gradient(ellipse at 75% 85%, rgba(55,48,42,0.3) 0%, transparent 50%),
         linear-gradient(160deg, #2e2a26 0%, #1a1815 50%, #242220 100%);
+      color: var(--text);
     }
 
-    .bsd {
+    .screen { display: none; min-height: 100vh; min-height: 100dvh; }
+    .screen.active { display: flex; }
+
+    /* ══════════════════════════════════════
+       HOME SCREEN
+    ══════════════════════════════════════ */
+    #screen-home {
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .bsd-corner {
       position: fixed;
       top: 14px;
       left: 18px;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.4);
       font-size: 13px;
       letter-spacing: 1px;
+      z-index: 50;
+      pointer-events: none;
     }
 
-    .card {
+    .home-card {
       width: 100%;
       max-width: 360px;
-      background: rgba(14,13,12,0.94);
-      border: 1.5px solid #c9a84c;
+      background: var(--card-bg);
+      border: 1.5px solid var(--gold);
       border-radius: 22px;
-      padding: 30px 22px 26px;
+      padding: 30px 22px 28px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 16px;
       box-shadow:
-        0 16px 48px rgba(0,0,0,0.75),
-        0 0 0 1px rgba(201,168,76,0.12),
+        0 20px 60px rgba(0,0,0,0.8),
+        0 0 0 1px rgba(201,168,76,0.1),
         inset 0 1px 0 rgba(255,255,255,0.04);
     }
 
-    .top-sparkle {
-      color: #c9a84c;
-      font-size: 22px;
-      opacity: 0.85;
-    }
+    .sparkle-top { color: var(--gold); font-size: 22px; opacity: 0.8; }
 
-    /* כפתור מנהל/ת — במקום הכותרת */
     .manager-btn {
       width: 100%;
       background: transparent;
-      border: 1px solid rgba(201,168,76,0.25);
+      border: 1px solid rgba(201,168,76,0.22);
       border-radius: 14px;
-      padding: 14px 12px;
+      padding: 16px 12px 14px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -73,57 +89,26 @@
       gap: 4px;
       transition: background 0.2s, border-color 0.2s;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
     .manager-btn:active {
-      background: rgba(201,168,76,0.1);
+      background: rgba(201,168,76,0.09);
       border-color: rgba(201,168,76,0.5);
     }
+    .manager-icon { font-size: 18px; color: var(--gold); margin-bottom: 2px; }
+    .manager-title { font-size: 30px; font-weight: 900; color: var(--gold); letter-spacing: 3px; line-height: 1; }
+    .manager-sub { font-size: 11px; color: var(--gold-dim); letter-spacing: 2.5px; text-transform: uppercase; margin-top: 2px; }
 
-    .manager-icon { font-size: 20px; color: #c9a84c; margin-bottom: 2px; }
-    .manager-title {
-      font-size: 30px;
-      font-weight: 900;
-      color: #c9a84c;
-      letter-spacing: 3px;
-      line-height: 1.1;
-    }
-    .manager-sub {
-      font-size: 11px;
-      color: rgba(201,168,76,0.5);
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-    }
+    .divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent); }
 
-    .press-hint {
-      font-size: 11px;
-      color: rgba(201,168,76,0.38);
-      margin-top: -4px;
-    }
+    .choose-label { color: var(--text-dim); font-size: 14px; }
 
-    .divider {
-      width: 100%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(201,168,76,0.65), transparent);
-    }
-
-    .choose-label {
-      color: rgba(255,255,255,0.42);
-      font-size: 14px;
-    }
-
-    .branches {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+    .branches { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     .branch-btn {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.09);
       border-radius: 16px;
-      padding: 24px 10px 18px;
+      padding: 26px 10px 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -131,79 +116,795 @@
       cursor: pointer;
       transition: all 0.18s ease;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
     .branch-btn:active {
-      background: rgba(201,168,76,0.08);
+      background: rgba(201,168,76,0.07);
       border-color: rgba(201,168,76,0.35);
       transform: scale(0.97);
     }
-
-    .b-icon { font-size: 26px; color: #c9a84c; line-height: 1; }
+    .b-icon { font-size: 26px; color: var(--gold); }
     .b-title { font-size: 15px; font-weight: 700; color: #fff; text-align: center; }
-    .b-sub { font-size: 12px; color: rgba(255,255,255,0.38); }
+    .b-sub { font-size: 12px; color: var(--text-dim); }
+
+    /* ══════════════════════════════════════
+       REGISTER SCREEN
+    ══════════════════════════════════════ */
+    #screen-register {
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 32px;
+      overflow-y: auto;
+    }
+
+    .reg-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--gold);
+      border-radius: 22px;
+      padding: 26px 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+
+    .reg-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2px;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: inherit;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .back-btn:active { background: rgba(255,255,255,0.14); }
+    .reg-title { font-size: 17px; font-weight: 700; color: var(--gold); }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.3px; }
+    .form-group input {
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    .form-group input:focus { border-color: var(--gold); background: rgba(255,255,255,0.07); }
+    .form-group input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .photo-label { font-size: 12px; color: var(--text-dim); letter-spacing: 0.3px; }
+    .photo-preview-wrap { display: flex; justify-content: center; }
+    #photo-preview {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--gold);
+      display: none;
+    }
+    #photo-preview.show { display: block; }
+
+    .photo-btns { display: flex; gap: 10px; }
+    .photo-btn {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 8px;
+      color: rgba(255,255,255,0.75);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .photo-btn:active { background: rgba(201,168,76,0.09); border-color: var(--gold-dim); }
+    .photo-btn .p-icon { font-size: 22px; }
+
+    .submit-btn {
+      width: 100%;
+      background: var(--gold);
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      color: #111;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .submit-btn:active { transform: scale(0.98); opacity: 0.88; }
+
+    /* ══════════════════════════════════════
+       EMPLOYEE HOME SCREEN
+    ══════════════════════════════════════ */
+    #screen-employee { flex-direction: column; }
+
+    .emp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(10,9,8,0.9);
+      border-bottom: 1px solid rgba(201,168,76,0.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .bsd-text { font-size: 14px; color: rgba(255,255,255,0.45); letter-spacing: 1px; }
+    .exit-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 8px;
+      padding: 7px 14px;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .exit-btn:active { background: rgba(255,255,255,0.14); }
+
+    .emp-body {
+      flex: 1;
+      padding: 22px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .emp-greeting {
+      text-align: center;
+      padding: 4px 0 8px;
+    }
+    .emp-greeting .emp-name-txt {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .emp-greeting .emp-branch-txt {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: rgba(14,13,12,0.9);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 16px;
+      padding: 26px 12px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    }
+    .action-btn:active {
+      background: rgba(201,168,76,0.07);
+      border-color: rgba(201,168,76,0.55);
+      transform: scale(0.97);
+    }
+    .action-btn .a-icon { font-size: 28px; }
+    .action-btn .a-label { font-size: 14px; font-weight: 700; color: #fff; text-align: center; line-height: 1.3; }
+    .action-btn.empty { opacity: 0.3; pointer-events: none; }
+
+    .work-banner {
+      background: rgba(14,13,12,0.9);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 16px;
+      padding: 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .work-banner:active {
+      background: rgba(201,168,76,0.07);
+      border-color: rgba(201,168,76,0.55);
+    }
+    .banner-icon { font-size: 20px; color: var(--gold); }
+    .banner-label { font-size: 18px; font-weight: 700; color: #fff; }
+
+    /* ══════════════════════════════════════
+       MANAGER SCREEN
+    ══════════════════════════════════════ */
+    #screen-manager { flex-direction: column; }
+
+    .mgr-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      background: rgba(10,9,8,0.92);
+      border-bottom: 1px solid rgba(201,168,76,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .mgr-title-txt { font-size: 18px; font-weight: 700; color: var(--gold); }
+
+    .mgr-body {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .branch-section { display: flex; flex-direction: column; gap: 10px; }
+    .branch-section-head {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold);
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(201,168,76,0.25);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sub-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin: 4px 0 2px;
+    }
+
+    .emp-card {
+      background: rgba(14,13,12,0.9);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .emp-card.pending { border-color: rgba(201,168,76,0.25); }
+    .emp-card.approved { border-color: rgba(80,200,100,0.18); }
+
+    .emp-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(201,168,76,0.35);
+      background: rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .emp-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .emp-info { flex: 1; min-width: 0; }
+    .emp-fullname { font-size: 15px; font-weight: 700; color: #fff; }
+    .emp-phone-txt { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+    .emp-actions { display: flex; gap: 7px; }
+    .btn-approve, .btn-reject {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-approve { background: rgba(70,185,80,0.85); color: #fff; }
+    .btn-reject  { background: rgba(200,55,55,0.75); color: #fff; }
+    .btn-approve:active, .btn-reject:active { opacity: 0.7; }
+
+    .badge-active {
+      font-size: 11px;
+      color: rgba(80,200,100,0.85);
+      background: rgba(80,200,100,0.1);
+      border-radius: 6px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+
+    .empty-msg { font-size: 13px; color: var(--text-dim); padding: 10px 0; text-align: center; }
+
+    /* ══════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: #1b1915;
+      border: 1.5px solid var(--gold);
+      border-radius: 22px;
+      padding: 32px 24px 26px;
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    }
+    .modal-big-icon { font-size: 48px; line-height: 1; }
+    .modal-heading { font-size: 20px; font-weight: 700; color: var(--gold); line-height: 1.3; }
+    .modal-body-text { font-size: 14px; color: var(--text-dim); line-height: 1.75; white-space: pre-line; }
+    .modal-ok-btn {
+      width: 100%;
+      background: var(--gold);
+      border: none;
+      border-radius: 11px;
+      padding: 14px;
+      color: #111;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity 0.15s;
+    }
+    .modal-ok-btn:active { opacity: 0.85; }
   </style>
 </head>
 <body>
 
-  <div class="bsd">בס"ד</div>
+  <div class="bsd-corner">בס"ד</div>
 
-  <div class="card">
+  <!-- ══════════════════════════════════════
+       SCREEN: HOME
+  ══════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+    <div class="home-card">
+      <div class="sparkle-top">✦</div>
 
-    <div class="top-sparkle">✦</div>
-
-    <!-- כפתור מנהל/ת — לחיצה ארוכה 3 שניות -->
-    <button class="manager-btn" id="managerBtn">
-      <span class="manager-icon">✦</span>
-      <span class="manager-title">BBWor</span>
-      <span class="manager-sub">MANAGER ACCESS</span>
-    </button>
-    <div class="press-hint">לחצי 3 שניות לכניסת מנהל/ת</div>
-
-    <div class="divider"></div>
-    <div class="choose-label">בחרו סניף להמשיך</div>
-
-    <div class="branches">
-      <button class="branch-btn" onclick="goToBranch('raanana')">
-        <span class="b-icon">✦</span>
-        <span class="b-title">סניף רעננה</span>
-        <span class="b-sub">כניסה / הרשמה</span>
+      <button class="manager-btn" onclick="enterManager()">
+        <span class="manager-icon">✦</span>
+        <span class="manager-title">BBWor</span>
+        <span class="manager-sub">MANAGER ACCESS</span>
       </button>
-      <button class="branch-btn" onclick="goToBranch('hadera')">
-        <span class="b-icon">✦</span>
-        <span class="b-title">סניף חדרה</span>
-        <span class="b-sub">כניסה / הרשמה</span>
-      </button>
+
+      <div class="divider"></div>
+      <div class="choose-label">בחרו סניף להמשיך</div>
+
+      <div class="branches">
+        <button class="branch-btn" onclick="enterBranch('raanana')">
+          <span class="b-icon">✦</span>
+          <span class="b-title">סניף רעננה</span>
+          <span class="b-sub">כניסה / הרשמה</span>
+        </button>
+        <button class="branch-btn" onclick="enterBranch('hadera')">
+          <span class="b-icon">✦</span>
+          <span class="b-title">סניף חדרה</span>
+          <span class="b-sub">כניסה / הרשמה</span>
+        </button>
+      </div>
     </div>
+  </div>
 
+  <!-- ══════════════════════════════════════
+       SCREEN: REGISTER
+  ══════════════════════════════════════ -->
+  <div id="screen-register" class="screen">
+    <div class="reg-card">
+      <div class="reg-header">
+        <button class="back-btn" onclick="goHome()">→ חזרה</button>
+        <div class="reg-title" id="reg-title">הרשמה לסניף</div>
+      </div>
+
+      <div class="form-group">
+        <label>שם פרטי</label>
+        <input type="text" id="reg-first" placeholder="הכנס/י שם פרטי" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label>שם משפחה</label>
+        <input type="text" id="reg-last" placeholder="הכנס/י שם משפחה" autocomplete="family-name">
+      </div>
+      <div class="form-group">
+        <label>טלפון</label>
+        <input type="tel" id="reg-phone" placeholder="050-0000000" autocomplete="tel">
+      </div>
+
+      <div>
+        <div class="photo-label" style="margin-bottom:8px">תמונה</div>
+        <div class="photo-preview-wrap" id="preview-wrap" style="margin-bottom:10px; display:none">
+          <img id="photo-preview" alt="תמונה">
+        </div>
+        <div class="photo-btns">
+          <button class="photo-btn" onclick="document.getElementById('input-selfie').click()">
+            <span class="p-icon">📸</span><span>סלפי</span>
+          </button>
+          <button class="photo-btn" onclick="document.getElementById('input-gallery').click()">
+            <span class="p-icon">🖼️</span><span>גלריה</span>
+          </button>
+        </div>
+        <input id="input-selfie"   type="file" accept="image/*" capture="user" style="display:none" onchange="loadPhoto(this)">
+        <input id="input-gallery"  type="file" accept="image/*"                style="display:none" onchange="loadPhoto(this)">
+      </div>
+
+      <button class="submit-btn" onclick="submitReg()">שלח בקשה ✦</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN: EMPLOYEE HOME
+  ══════════════════════════════════════ -->
+  <div id="screen-employee" class="screen">
+    <div class="emp-header">
+      <span class="bsd-text">בס"ד</span>
+      <button class="exit-btn" onclick="logout()">יציאה ✕</button>
+    </div>
+    <div class="emp-body">
+      <div class="emp-greeting">
+        <div class="emp-name-txt" id="emp-name-display">שלום!</div>
+        <div class="emp-branch-txt" id="emp-branch-display"></div>
+      </div>
+
+      <div class="action-grid">
+        <button class="action-btn" onclick="alert('ג\'ק ליסט — בקרוב')">
+          <span class="a-icon">✅</span>
+          <span class="a-label">ג'ק ליסט</span>
+        </button>
+        <button class="action-btn" onclick="alert('יעד חודשי — בקרוב')">
+          <span class="a-icon">🎯</span>
+          <span class="a-label">יעד חודשי</span>
+        </button>
+        <button class="action-btn" onclick="alert('תחרות — בקרוב')">
+          <span class="a-icon">🏆</span>
+          <span class="a-label">תחרות בין העובדים</span>
+        </button>
+        <div class="action-btn empty">
+          <span class="a-icon">🔒</span>
+          <span class="a-label">בקרוב</span>
+        </div>
+      </div>
+
+      <div class="work-banner" onclick="alert('סידור עבודה — בקרוב')">
+        <span class="banner-icon">📅</span>
+        <span class="banner-label">סידור עבודה</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN: MANAGER
+  ══════════════════════════════════════ -->
+  <div id="screen-manager" class="screen">
+    <div class="mgr-header">
+      <span class="mgr-title-txt">✦ פרופיל מנהלת</span>
+      <button class="exit-btn" onclick="goHome()">יציאה ✕</button>
+    </div>
+    <div class="mgr-body" id="mgr-body"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MODAL
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-box">
+      <div class="modal-big-icon" id="modal-icon"></div>
+      <div class="modal-heading"  id="modal-heading"></div>
+      <div class="modal-body-text" id="modal-text"></div>
+      <button class="modal-ok-btn" id="modal-ok" onclick="closeModal()">הבנתי</button>
+    </div>
   </div>
 
   <script>
-    const managerBtn = document.getElementById('managerBtn');
-    let pressTimer = null;
+    /* ──────────────────────────────────────
+       CONSTANTS & STATE
+    ────────────────────────────────────── */
+    const BRANCH_NAME = { raanana: 'סניף רעננה', hadera: 'סניף חדרה' };
+    let activeBranch = null;
+    let pendingPhoto  = null;
+    let modalCallback = null;
 
-    function startPress() {
-      pressTimer = setTimeout(openManager, 3000);
-    }
-    function cancelPress() {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    /* ──────────────────────────────────────
+       STORAGE HELPERS
+    ────────────────────────────────────── */
+    const getEmployees = () => JSON.parse(localStorage.getItem('bbwor_employees') || '[]');
+    const setEmployees = (arr) => localStorage.setItem('bbwor_employees', JSON.stringify(arr));
+    const getSession   = () => JSON.parse(localStorage.getItem('bbwor_session')   || 'null');
+    const setSession   = (s) => localStorage.setItem('bbwor_session', JSON.stringify(s));
+    const clearSession = () => localStorage.removeItem('bbwor_session');
+
+    /* ──────────────────────────────────────
+       NAVIGATION
+    ────────────────────────────────────── */
+    function show(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+      window.scrollTo(0, 0);
     }
 
-    managerBtn.addEventListener('mousedown', startPress);
-    managerBtn.addEventListener('mouseup', cancelPress);
-    managerBtn.addEventListener('mouseleave', cancelPress);
-    managerBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startPress(); }, { passive: false });
-    managerBtn.addEventListener('touchend', cancelPress);
-    managerBtn.addEventListener('touchcancel', cancelPress);
-
-    function openManager() {
-      alert('כניסת מנהל/ת — בקרוב');
+    function goHome() {
+      activeBranch = null;
+      pendingPhoto  = null;
+      show('home');
     }
 
-    function goToBranch(branch) {
-      alert('סניף ' + (branch === 'raanana' ? 'רעננה' : 'חדרה') + ' — בקרוב');
+    /* ──────────────────────────────────────
+       HOME ACTIONS
+    ────────────────────────────────────── */
+    function enterManager() {
+      renderManager();
+      show('manager');
     }
+
+    function enterBranch(branch) {
+      activeBranch = branch;
+      const session = getSession();
+
+      if (session && session.branch === branch) {
+        const emp = getEmployees().find(e => e.id === session.empId);
+        if (emp) {
+          if (emp.status === 'approved') { openEmployeeHome(emp); return; }
+          if (emp.status === 'pending')  { showPendingModal(emp.firstName + ' ' + emp.lastName); return; }
+        }
+      }
+
+      // Check by phone not yet — only after they enter phone in form
+      openRegisterForm(branch);
+    }
+
+    /* ──────────────────────────────────────
+       REGISTRATION
+    ────────────────────────────────────── */
+    function openRegisterForm(branch) {
+      document.getElementById('reg-title').textContent = 'הרשמה ל' + BRANCH_NAME[branch];
+      document.getElementById('reg-first').value  = '';
+      document.getElementById('reg-last').value   = '';
+      document.getElementById('reg-phone').value  = '';
+      document.getElementById('photo-preview').src = '';
+      document.getElementById('photo-preview').classList.remove('show');
+      document.getElementById('preview-wrap').style.display = 'none';
+      pendingPhoto = null;
+      show('register');
+    }
+
+    function loadPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        pendingPhoto = e.target.result;
+        const img = document.getElementById('photo-preview');
+        img.src = pendingPhoto;
+        img.classList.add('show');
+        document.getElementById('preview-wrap').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    }
+
+    function submitReg() {
+      const first = document.getElementById('reg-first').value.trim();
+      const last  = document.getElementById('reg-last').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+
+      if (!first || !last || !phone) {
+        showModal('⚠️', 'שדות חסרים', 'יש למלא שם פרטי, שם משפחה וטלפון.', null);
+        return;
+      }
+
+      const employees = getEmployees();
+
+      // Check if phone already registered in this branch
+      const existing = employees.find(e => e.phone === phone && e.branch === activeBranch);
+      if (existing) {
+        setSession({ empId: existing.id, branch: activeBranch });
+        if (existing.status === 'approved') {
+          openEmployeeHome(existing);
+        } else {
+          showPendingModal(existing.firstName + ' ' + existing.lastName);
+        }
+        return;
+      }
+
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      const emp = {
+        id,
+        firstName: first,
+        lastName: last,
+        phone,
+        photo: pendingPhoto || null,
+        branch: activeBranch,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      employees.push(emp);
+      setEmployees(employees);
+      setSession({ empId: id, branch: activeBranch });
+
+      showPendingModal(first + ' ' + last);
+    }
+
+    function showPendingModal(fullName) {
+      showModal(
+        '✉️',
+        fullName + ' יקר/ה',
+        'בקשתך נשלחה למנהלת.\nלאחר אישור תוכל/י להיכנס לאפליקציה.',
+        goHome
+      );
+    }
+
+    /* ──────────────────────────────────────
+       EMPLOYEE HOME
+    ────────────────────────────────────── */
+    function openEmployeeHome(emp) {
+      document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
+      document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
+      show('employee');
+    }
+
+    function logout() {
+      clearSession();
+      goHome();
+    }
+
+    /* ──────────────────────────────────────
+       MANAGER DASHBOARD
+    ────────────────────────────────────── */
+    function renderManager() {
+      const employees = getEmployees();
+      const body = document.getElementById('mgr-body');
+      body.innerHTML = '';
+
+      ['raanana', 'hadera'].forEach(branch => {
+        const all     = employees.filter(e => e.branch === branch);
+        const pending  = all.filter(e => e.status === 'pending');
+        const approved = all.filter(e => e.status === 'approved');
+
+        const sec = document.createElement('div');
+        sec.className = 'branch-section';
+        sec.innerHTML = `<div class="branch-section-head">✦ ${BRANCH_NAME[branch]}</div>`;
+
+        if (pending.length) {
+          sec.appendChild(mkLabel('ממתינות לאישור'));
+          pending.forEach(e => sec.appendChild(mkEmpCard(e, true)));
+        }
+        if (approved.length) {
+          sec.appendChild(mkLabel('עובדים פעילים'));
+          approved.forEach(e => sec.appendChild(mkEmpCard(e, false)));
+        }
+        if (!all.length) {
+          const m = document.createElement('div');
+          m.className = 'empty-msg';
+          m.textContent = 'אין עובדים רשומים עדיין';
+          sec.appendChild(m);
+        }
+
+        body.appendChild(sec);
+      });
+    }
+
+    function mkLabel(txt) {
+      const d = document.createElement('div');
+      d.className = 'sub-label';
+      d.textContent = txt;
+      return d;
+    }
+
+    function mkEmpCard(emp, showActions) {
+      const card = document.createElement('div');
+      card.className = 'emp-card ' + emp.status;
+      card.id = 'ecard-' + emp.id;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'emp-avatar';
+      avatar.innerHTML = emp.photo
+        ? `<img src="${emp.photo}" alt="">`
+        : emp.firstName[0].toUpperCase();
+
+      const info = document.createElement('div');
+      info.className = 'emp-info';
+      info.innerHTML = `<div class="emp-fullname">${emp.firstName} ${emp.lastName}</div>
+                        <div class="emp-phone-txt">${emp.phone}</div>`;
+
+      card.appendChild(avatar);
+      card.appendChild(info);
+
+      if (showActions) {
+        const acts = document.createElement('div');
+        acts.className = 'emp-actions';
+        acts.innerHTML =
+          `<button class="btn-approve" onclick="approveEmp('${emp.id}')">✓ אשר</button>
+           <button class="btn-reject"  onclick="rejectEmp('${emp.id}')">✕</button>`;
+        card.appendChild(acts);
+      } else {
+        const badge = document.createElement('span');
+        badge.className = 'badge-active';
+        badge.textContent = '✓ פעיל';
+        card.appendChild(badge);
+      }
+
+      return card;
+    }
+
+    function approveEmp(id) {
+      const emps = getEmployees();
+      const emp  = emps.find(e => e.id === id);
+      if (emp) { emp.status = 'approved'; setEmployees(emps); renderManager(); }
+    }
+
+    function rejectEmp(id) {
+      const emps = getEmployees().filter(e => e.id !== id);
+      setEmployees(emps);
+      renderManager();
+    }
+
+    /* ──────────────────────────────────────
+       MODAL
+    ────────────────────────────────────── */
+    function showModal(icon, heading, text, onOk) {
+      document.getElementById('modal-icon').textContent    = icon;
+      document.getElementById('modal-heading').textContent = heading;
+      document.getElementById('modal-text').textContent    = text;
+      modalCallback = onOk;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      if (modalCallback) { const cb = modalCallback; modalCallback = null; cb(); }
+    }
+
+    /* ──────────────────────────────────────
+       AUTO-LOGIN ON START
+    ────────────────────────────────────── */
+    (function init() {
+      const session = getSession();
+      if (!session) return;
+      const emp = getEmployees().find(e => e.id === session.empId);
+      if (emp && emp.status === 'approved') openEmployeeHome(emp);
+    })();
   </script>
-
 </body>
 </html>
