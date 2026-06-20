@@ -73,7 +73,7 @@
 
     /* EMPLOYEE */
     #screen-employee { flex-direction: column; }
-    .emp-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(10,9,8,0.9); border-bottom: 1px solid rgba(201,168,76,0.18); position: sticky; top: 0; z-index: 10; }
+    .emp-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; padding-top: calc(14px + env(safe-area-inset-top, 0px)); background: rgba(10,9,8,0.9); border-bottom: 1px solid rgba(201,168,76,0.18); position: sticky; top: 0; z-index: 10; }
     .bsd-text { font-size: 14px; color: rgba(255,255,255,0.45); letter-spacing: 1px; }
     .exit-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13); border-radius: 8px; padding: 7px 14px; color: rgba(255,255,255,0.7); font-size: 13px; font-family: inherit; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
     .exit-btn:active { background: rgba(255,255,255,0.14); }
@@ -424,6 +424,7 @@
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       document.getElementById('screen-' + name).classList.add('active');
       if (name !== 'manager') document.getElementById('fab-mail').classList.remove('visible');
+      document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
     }
 
