@@ -522,9 +522,11 @@
       border-top: 1.5px solid var(--gold);
       padding: 14px 16px 22px;
       box-shadow: 0 -8px 32px rgba(0,0,0,0.7);
-      animation: slideUp 0.35s ease;
     }
-    #install-banner.show { display: block; }
+    #install-banner.show {
+      display: block;
+      animation: slideUp 0.35s ease forwards;
+    }
 
     @keyframes slideUp {
       from { transform: translateY(100%); opacity: 0; }
@@ -771,6 +773,41 @@
     </div>
   </div>
 
+  <!-- INSTALL BANNER -->
+  <div id="install-banner">
+    <div class="install-inner">
+      <img class="install-logo" src="icons/icon-192x192.png" alt="BBWoa">
+      <div class="install-texts">
+        <div class="install-title">BBWoa</div>
+        <div class="install-sub">התקן את האפליקציה על המסך הבית שלך</div>
+      </div>
+      <div class="install-actions">
+        <button class="install-btn" id="install-btn-do">התקן ✦</button>
+        <button class="install-dismiss" id="install-btn-dismiss">לא עכשיו</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS INSTRUCTION MODAL -->
+  <div id="ios-modal">
+    <div class="ios-box">
+      <div class="ios-title">📲 הוסף לאייפון שלך</div>
+      <div class="ios-step">
+        <div class="ios-num">1</div>
+        <div class="ios-text">לחץ על כפתור <b>השיתוף</b> בסרגל התחתון של Safari<br><span style="font-size:22px">⬆️</span></div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-num">2</div>
+        <div class="ios-text">גלול למטה ובחר <b>"הוסף למסך הבית"</b></div>
+      </div>
+      <div class="ios-step">
+        <div class="ios-num">3</div>
+        <div class="ios-text">לחץ <b>"הוסף"</b> בפינה הימנית עליונה — וזהו! 🎉</div>
+      </div>
+      <button class="ios-close" onclick="closeIosModal()">הבנתי, תודה</button>
+    </div>
+  </div>
+
   <script>
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
@@ -779,47 +816,40 @@
       if (isStandalone) return;
       if (localStorage.getItem('bbwoa_install_dismissed')) return;
       const banner = document.getElementById('install-banner');
-      if (banner) banner.classList.add('show');
+      if (!banner) return;
+      banner.style.display = 'block';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => { banner.classList.add('show'); });
+      });
     }
 
     function closeIosModal() {
       document.getElementById('ios-modal').classList.remove('open');
     }
 
-    // iOS — מציג אחרי load
-    if (isIOS && !isStandalone) {
-      window.addEventListener('load', () => setTimeout(showInstallBanner, 2500));
-    }
-
-    // כפתורים
-    window.addEventListener('load', () => {
-      const btnDo = document.getElementById('install-btn-do');
-      const btnDismiss = document.getElementById('install-btn-dismiss');
-
-      if (btnDo) {
-        btnDo.addEventListener('click', () => {
-          if (isIOS) {
-            document.getElementById('install-banner').classList.remove('show');
-            document.getElementById('ios-modal').classList.add('open');
-          } else if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(() => {
-              deferredPrompt = null;
-              document.getElementById('install-banner').classList.remove('show');
-            });
-          }
-        });
-      }
-
-      if (btnDismiss) {
-        btnDismiss.addEventListener('click', () => {
-          document.getElementById('install-banner').classList.remove('show');
-          localStorage.setItem('bbwoa_install_dismissed', '1');
+    document.getElementById('install-btn-do').addEventListener('click', () => {
+      if (isIOS) {
+        document.getElementById('install-banner').style.display = 'none';
+        document.getElementById('ios-modal').classList.add('open');
+      } else if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('install-banner').style.display = 'none';
         });
       }
     });
-  </script>
 
+    document.getElementById('install-btn-dismiss').addEventListener('click', () => {
+      document.getElementById('install-banner').style.display = 'none';
+      localStorage.setItem('bbwoa_install_dismissed', '1');
+    });
+
+    // iOS
+    if (isIOS && !isStandalone) {
+      window.addEventListener('load', () => setTimeout(showInstallBanner, 2500));
+    }
+  </script>
   <script>
     /* ──────────────────────────────────────
        CONSTANTS & STATE
@@ -1089,41 +1119,6 @@
       if (emp && emp.status === 'approved') openEmployeeHome(emp);
     })();
   </script>
-  <!-- INSTALL BANNER (Android) -->
-  <div id="install-banner">
-    <div class="install-inner">
-      <img class="install-logo" src="icons/icon-192x192.png" alt="BBWoa">
-      <div class="install-texts">
-        <div class="install-title">BBWoa</div>
-        <div class="install-sub">התקן את האפליקציה על המסך הבית שלך</div>
-      </div>
-      <div class="install-actions">
-        <button class="install-btn" id="install-btn-do">התקן ✦</button>
-        <button class="install-dismiss" id="install-btn-dismiss">לא עכשיו</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- iOS INSTRUCTION MODAL -->
-  <div id="ios-modal">
-    <div class="ios-box">
-      <div class="ios-title">📲 הוסף לאייפון שלך</div>
-      <div class="ios-step">
-        <div class="ios-num">1</div>
-        <div class="ios-text">לחץ על כפתור <b>השיתוף</b> בסרגל התחתון של Safari<br><span style="font-size:22px">⬆️</span></div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-num">2</div>
-        <div class="ios-text">גלול למטה ובחר <b>"הוסף למסך הבית"</b></div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-num">3</div>
-        <div class="ios-text">לחץ <b>"הוסף"</b> בפינה הימנית עליונה — וזהו! 🎉</div>
-      </div>
-      <button class="ios-close" onclick="closeIosModal()">הבנתי, תודה</button>
-    </div>
-  </div>
-
 
 </body>
 </html>
