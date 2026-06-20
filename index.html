@@ -777,7 +777,7 @@
       document.getElementById('ios-modal').classList.remove('open');
     }
 
-    // Android — catch beforeinstallprompt
+    // אנדרואיד — מחכים ל-prompt הרשמי, רק אז מציגים באנר
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
@@ -785,8 +785,8 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      // iOS — show banner after delay if not standalone
-      if (isIOS && !isInStandalone && !dismissed) {
+      // אייפון — תמיד מציג באנר עם הוראות
+      if (isIOS) {
         setTimeout(showBanner, 2500);
       }
 
@@ -1113,6 +1113,7 @@
       <button class="ios-close" onclick="closeIosModal()">הבנתי, תודה</button>
     </div>
   </div>
+
 
 </body>
 </html>
