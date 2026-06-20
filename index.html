@@ -757,8 +757,9 @@
   </div>
 
   <script>
+    /* ── SERVICE WORKER ── */
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+      navigator.serviceWorker.register('./sw.js');
     }
 
     /* ── INSTALL BANNER ── */
@@ -766,10 +767,10 @@
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isInStandalone = window.matchMedia('(display-mode: standalone)').matches
                         || window.navigator.standalone === true;
-    const dismissed = localStorage.getItem('bbwoa_install_dismissed');
 
     function showBanner() {
-      if (isInStandalone || dismissed) return;
+      if (isInStandalone) return;
+      if (localStorage.getItem('bbwoa_install_dismissed')) return;
       document.getElementById('install-banner').classList.add('show');
     }
 
@@ -777,19 +778,20 @@
       document.getElementById('ios-modal').classList.remove('open');
     }
 
-    // אנדרואיד — מחכים ל-prompt הרשמי, רק אז מציגים באנר
+    // חייב להיתפס לפני כל דבר אחר
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
       setTimeout(showBanner, 2500);
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-      // אייפון — תמיד מציג באנר עם הוראות
-      if (isIOS) {
-        setTimeout(showBanner, 2500);
-      }
+    // iOS — אחרי טעינת הדף
+    if (isIOS && !isInStandalone) {
+      window.addEventListener('load', () => setTimeout(showBanner, 2500));
+    }
 
+    // כפתורים — מחכים ל-DOM מוכן
+    document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('install-btn-do').addEventListener('click', () => {
         if (isIOS) {
           document.getElementById('install-banner').classList.remove('show');
