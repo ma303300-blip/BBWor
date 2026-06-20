@@ -1,8 +1,6 @@
-const CACHE = 'bbwoa-v4';
+const CACHE = 'bbwoa-v5';
 
-self.addEventListener('install', e => {
-  self.skipWaiting();
-});
+self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -12,9 +10,6 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Network first — תמיד מהרשת, cache רק כגיבוי
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
