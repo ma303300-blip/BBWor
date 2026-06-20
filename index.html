@@ -10,6 +10,21 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script>
+    // רישום SW — חייב להיות בhead לפני הכל
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        reg.update();
+      });
+    }
+    // תפיסת beforeinstallprompt — חייב להיות לפני body
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => showInstallBanner(), 2500);
+    });
+  </script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -757,58 +772,51 @@
   </div>
 
   <script>
-    /* ── SERVICE WORKER ── */
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js');
-    }
-
-    /* ── INSTALL BANNER ── */
-    let deferredPrompt = null;
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isInStandalone = window.matchMedia('(display-mode: standalone)').matches
-                        || window.navigator.standalone === true;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 
-    function showBanner() {
-      if (isInStandalone) return;
+    function showInstallBanner() {
+      if (isStandalone) return;
       if (localStorage.getItem('bbwoa_install_dismissed')) return;
-      document.getElementById('install-banner').classList.add('show');
+      const banner = document.getElementById('install-banner');
+      if (banner) banner.classList.add('show');
     }
 
     function closeIosModal() {
       document.getElementById('ios-modal').classList.remove('open');
     }
 
-    // חייב להיתפס לפני כל דבר אחר
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      setTimeout(showBanner, 2500);
-    });
-
-    // iOS — אחרי טעינת הדף
-    if (isIOS && !isInStandalone) {
-      window.addEventListener('load', () => setTimeout(showBanner, 2500));
+    // iOS — מציג אחרי load
+    if (isIOS && !isStandalone) {
+      window.addEventListener('load', () => setTimeout(showInstallBanner, 2500));
     }
 
-    // כפתורים — מחכים ל-DOM מוכן
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('install-btn-do').addEventListener('click', () => {
-        if (isIOS) {
-          document.getElementById('install-banner').classList.remove('show');
-          document.getElementById('ios-modal').classList.add('open');
-        } else if (deferredPrompt) {
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(() => {
-            deferredPrompt = null;
-            document.getElementById('install-banner').classList.remove('show');
-          });
-        }
-      });
+    // כפתורים
+    window.addEventListener('load', () => {
+      const btnDo = document.getElementById('install-btn-do');
+      const btnDismiss = document.getElementById('install-btn-dismiss');
 
-      document.getElementById('install-btn-dismiss').addEventListener('click', () => {
-        document.getElementById('install-banner').classList.remove('show');
-        localStorage.setItem('bbwoa_install_dismissed', '1');
-      });
+      if (btnDo) {
+        btnDo.addEventListener('click', () => {
+          if (isIOS) {
+            document.getElementById('install-banner').classList.remove('show');
+            document.getElementById('ios-modal').classList.add('open');
+          } else if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => {
+              deferredPrompt = null;
+              document.getElementById('install-banner').classList.remove('show');
+            });
+          }
+        });
+      }
+
+      if (btnDismiss) {
+        btnDismiss.addEventListener('click', () => {
+          document.getElementById('install-banner').classList.remove('show');
+          localStorage.setItem('bbwoa_install_dismissed', '1');
+        });
+      }
     });
   </script>
 
