@@ -262,6 +262,7 @@
       </div>
       <div class="action-grid" id="emp-action-grid"></div>
       <div id="emp-banner-wrap"></div>
+      <div class="action-grid" id="emp-action-grid-2"></div>
     </div>
   </div>
 
@@ -278,6 +279,7 @@
       </div>
       <div class="action-grid" id="mgr-action-grid"></div>
       <div id="mgr-banner-wrap"></div>
+      <div class="action-grid" id="mgr-action-grid-2"></div>
     </div>
     <!-- FAB -->
     <div class="fab-mail" id="fab-mail" onclick="openPendingDrawer()">📬<span class="fab-badge" id="fab-badge"></span></div>
@@ -563,15 +565,16 @@
     ═══════════════════════════════════ */
     function renderEmployeeGrid() {
       var c = getContent();
-      var grid = document.getElementById('emp-action-grid');
+      var grid  = document.getElementById('emp-action-grid');
+      var grid2 = document.getElementById('emp-action-grid-2');
       var bannerWrap = document.getElementById('emp-banner-wrap');
-      grid.innerHTML = '';
-      BTNS.forEach(function(key) {
+      grid.innerHTML = ''; grid2.innerHTML = '';
+      ['btn1', 'btn2'].forEach(function(key) {
         var item = c[key];
         var el = document.createElement('button');
-        el.className = 'action-btn' + (key === 'btn4' ? ' empty' : '');
+        el.className = 'action-btn';
         el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
-        if (key !== 'btn4') { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label);
         grid.appendChild(el);
       });
       bannerWrap.innerHTML = '';
@@ -580,14 +583,23 @@
       (function(lbl){ bEl.onclick = function() { alert(lbl + ' — בקרוב'); }; })(c.banner.label);
       bEl.innerHTML = '<span class="banner-icon">' + c.banner.icon + '</span><span class="banner-label">' + c.banner.label + '</span>';
       bannerWrap.appendChild(bEl);
+      ['btn3', 'btn4'].forEach(function(key) {
+        var item = c[key];
+        var el = document.createElement('button');
+        el.className = 'action-btn' + (key === 'btn4' ? ' empty' : '');
+        el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+        if (key !== 'btn4') { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        grid2.appendChild(el);
+      });
     }
 
     function renderManagerGrid() {
       var c = getContent();
-      var grid = document.getElementById('mgr-action-grid');
+      var grid  = document.getElementById('mgr-action-grid');
+      var grid2 = document.getElementById('mgr-action-grid-2');
       var bannerWrap = document.getElementById('mgr-banner-wrap');
-      grid.innerHTML = '';
-      BTNS.forEach(function(key) {
+      grid.innerHTML = ''; grid2.innerHTML = '';
+      ['btn1', 'btn2'].forEach(function(key) {
         var item = c[key];
         var el = document.createElement('div');
         el.className = 'action-btn';
@@ -605,6 +617,16 @@
         '<span class="banner-label">' + c.banner.label + '</span>' +
         '<button class="mgr-edit-btn" onclick="openEditModal(\'banner\');event.stopPropagation()">✏️</button>';
       bannerWrap.appendChild(bEl);
+      ['btn3', 'btn4'].forEach(function(key) {
+        var item = c[key];
+        var el = document.createElement('div');
+        el.className = 'action-btn';
+        el.innerHTML =
+          '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+          '<span class="a-icon">' + item.icon + '</span>' +
+          '<span class="a-label">' + item.label + '</span>';
+        grid2.appendChild(el);
+      });
     }
 
     /* ═══════════════════════════════════
