@@ -1,4 +1,4 @@
-const CACHE = 'bbwoa-v2';
+const CACHE = 'bbwoa-v3';
 const ASSETS = [
   '/BBWor/',
   '/BBWor/index.html',
@@ -17,9 +17,9 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 

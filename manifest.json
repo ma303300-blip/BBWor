@@ -2,7 +2,7 @@
   "name": "BBWoa",
   "short_name": "BBWoa",
   "description": "BBWoa - ניהול סניפים",
-  "start_url": "/BBWor/index.html",
+  "start_url": "/BBWor/",
   "scope": "/BBWor/",
   "display": "standalone",
   "orientation": "portrait",
