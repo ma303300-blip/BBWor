@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#1a1a1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,11 +28,10 @@
       min-height: 100dvh;
       font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
       background-color: #252320;
-      background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E"),
-        radial-gradient(ellipse at 25% 15%, rgba(90,80,65,0.35) 0%, transparent 55%),
-        radial-gradient(ellipse at 75% 85%, rgba(55,48,42,0.3) 0%, transparent 50%),
-        linear-gradient(160deg, #2e2a26 0%, #1a1815 50%, #242220 100%);
+      background-image: url('bg.jpg');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
       color: var(--text);
     }
 
@@ -49,7 +50,7 @@
     .bsd-corner {
       position: fixed;
       top: 14px;
-      left: 18px;
+      right: 18px;
       color: rgba(255,255,255,0.4);
       font-size: 13px;
       letter-spacing: 1px;
@@ -636,6 +637,12 @@
       <button class="modal-ok-btn" id="modal-ok" onclick="closeModal()">הבנתי</button>
     </div>
   </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
+  </script>
 
   <script>
     /* ──────────────────────────────────────
