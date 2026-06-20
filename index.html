@@ -360,11 +360,11 @@
     var pendingPhoto  = null;
     var modalCallback = null;
 
-    var getEmployees = function() { return JSON.parse(localStorage.getItem('bbwor_employees') || '[]'); };
-    var setEmployees = function(a) { localStorage.setItem('bbwor_employees', JSON.stringify(a)); };
-    var getSession   = function() { return JSON.parse(localStorage.getItem('bbwor_session') || 'null'); };
-    var setSession   = function(s) { localStorage.setItem('bbwor_session', JSON.stringify(s)); };
-    var clearSession = function() { localStorage.removeItem('bbwor_session'); };
+    function getEmployees(branch) { return JSON.parse(localStorage.getItem('bbwor_employees_' + branch) || '[]'); }
+    function setEmployees(branch, arr) { localStorage.setItem('bbwor_employees_' + branch, JSON.stringify(arr)); }
+    function getSession(branch) { return JSON.parse(localStorage.getItem('bbwor_session_' + branch) || 'null'); }
+    function setSession(branch, s) { localStorage.setItem('bbwor_session_' + branch, JSON.stringify(s)); }
+    function clearSession(branch) { localStorage.removeItem('bbwor_session_' + branch); }
 
     function show(name) {
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
@@ -378,9 +378,9 @@
 
     function enterBranch(branch) {
       activeBranch = branch;
-      var session = getSession();
-      if (session && session.branch === branch) {
-        var emp = getEmployees().find(function(e) { return e.id === session.empId; });
+      var session = getSession(branch);
+      if (session) {
+        var emp = getEmployees(branch).find(function(e) { return e.id === session.empId; });
         if (emp) {
           if (emp.status === 'approved') { openEmployeeHome(emp); return; }
           if (emp.status === 'pending')  { showPendingModal(emp.firstName + ' ' + emp.lastName); return; }
@@ -421,10 +421,10 @@
       var last  = document.getElementById('reg-last').value.trim();
       var phone = document.getElementById('reg-phone').value.trim();
       if (!first || !last || !phone) { showModal('⚠️', 'שדות חסרים', 'יש למלא שם פרטי, שם משפחה וטלפון.', null); return; }
-      var employees = getEmployees();
-      var existing = employees.find(function(e) { return e.phone === phone && e.branch === activeBranch; });
+      var employees = getEmployees(activeBranch);
+      var existing = employees.find(function(e) { return e.phone === phone; });
       if (existing) {
-        setSession({ empId: existing.id, branch: activeBranch });
+        setSession(activeBranch, { empId: existing.id });
         if (existing.status === 'approved') openEmployeeHome(existing);
         else showPendingModal(existing.firstName + ' ' + existing.lastName);
         return;
@@ -432,8 +432,8 @@
       var id = Date.now().toString(36) + Math.random().toString(36).slice(2,7);
       var emp = { id: id, firstName: first, lastName: last, phone: phone, photo: pendingPhoto || null, branch: activeBranch, status: 'pending', createdAt: new Date().toISOString() };
       employees.push(emp);
-      setEmployees(employees);
-      setSession({ empId: id, branch: activeBranch });
+      setEmployees(activeBranch, employees);
+      setSession(activeBranch, { empId: id });
       showPendingModal(first + ' ' + last);
     }
 
@@ -447,21 +447,20 @@
       show('employee');
     }
 
-    function logout() { clearSession(); goHome(); }
+    function logout() { clearSession(activeBranch); goHome(); }
 
     function renderManager() {
-      var employees = getEmployees();
       var body = document.getElementById('mgr-body');
       body.innerHTML = '';
       ['raanana', 'hadera'].forEach(function(branch) {
-        var all      = employees.filter(function(e) { return e.branch === branch; });
+        var all      = getEmployees(branch);
         var pending  = all.filter(function(e) { return e.status === 'pending'; });
         var approved = all.filter(function(e) { return e.status === 'approved'; });
         var sec = document.createElement('div');
         sec.className = 'branch-section';
         sec.innerHTML = '<div class="branch-section-head">✦ ' + BRANCH_NAME[branch] + '</div>';
-        if (pending.length)  { sec.appendChild(mkLabel('ממתינות לאישור')); pending.forEach(function(e) { sec.appendChild(mkEmpCard(e, true)); }); }
-        if (approved.length) { sec.appendChild(mkLabel('עובדים פעילים')); approved.forEach(function(e) { sec.appendChild(mkEmpCard(e, false)); }); }
+        if (pending.length)  { sec.appendChild(mkLabel('ממתינות לאישור')); pending.forEach(function(e) { sec.appendChild(mkEmpCard(e, true, branch)); }); }
+        if (approved.length) { sec.appendChild(mkLabel('עובדים פעילים')); approved.forEach(function(e) { sec.appendChild(mkEmpCard(e, false, branch)); }); }
         if (!all.length) { var m = document.createElement('div'); m.className = 'empty-msg'; m.textContent = 'אין עובדים רשומים עדיין'; sec.appendChild(m); }
         body.appendChild(sec);
       });
@@ -469,7 +468,7 @@
 
     function mkLabel(txt) { var d = document.createElement('div'); d.className = 'sub-label'; d.textContent = txt; return d; }
 
-    function mkEmpCard(emp, showActions) {
+    function mkEmpCard(emp, showActions, branch) {
       var card = document.createElement('div');
       card.className = 'emp-card ' + emp.status;
       card.id = 'ecard-' + emp.id;
@@ -484,7 +483,7 @@
       if (showActions) {
         var acts = document.createElement('div');
         acts.className = 'emp-actions';
-        acts.innerHTML = '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\')">✓ אשר</button><button class="btn-reject" onclick="rejectEmp(\'' + emp.id + '\')">✕</button>';
+        acts.innerHTML = '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\',\'' + branch + '\')">✓ אשר</button><button class="btn-reject" onclick="rejectEmp(\'' + emp.id + '\',\'' + branch + '\')">✕</button>';
         card.appendChild(acts);
       } else {
         var badge = document.createElement('span');
@@ -495,18 +494,20 @@
       return card;
     }
 
-    function approveEmp(id) {
-      var emps = getEmployees();
+    function approveEmp(id, branch) {
+      var emps = getEmployees(branch);
       var emp = emps.find(function(e) { return e.id === id; });
-      if (emp) { emp.status = 'approved'; setEmployees(emps); renderManager(); }
+      if (emp) { emp.status = 'approved'; setEmployees(branch, emps); renderManager(); }
     }
 
-    function rejectEmp(id) { setEmployees(getEmployees().filter(function(e) { return e.id !== id; })); renderManager(); }
+    function rejectEmp(id, branch) {
+      setEmployees(branch, getEmployees(branch).filter(function(e) { return e.id !== id; }));
+      renderManager();
+    }
 
     function showModal(icon, heading, text, onOk) {
       document.getElementById('modal-icon').textContent    = icon;
       document.getElementById('modal-heading').textContent = heading;
-      document.getElementById('modal-body-text') && (document.getElementById('modal-body-text').textContent = text);
       document.querySelector('.modal-body-text').textContent = text;
       modalCallback = onOk;
       document.getElementById('modal').classList.add('open');
@@ -519,10 +520,15 @@
 
     /* AUTO-LOGIN */
     (function() {
-      var session = getSession();
-      if (!session) return;
-      var emp = getEmployees().find(function(e) { return e.id === session.empId; });
-      if (emp && emp.status === 'approved') openEmployeeHome(emp);
+      var branches = ['raanana', 'hadera'];
+      for (var i = 0; i < branches.length; i++) {
+        var b = branches[i];
+        var session = getSession(b);
+        if (session) {
+          var emp = getEmployees(b).find(function(e) { return e.id === session.empId; });
+          if (emp && emp.status === 'approved') { activeBranch = b; openEmployeeHome(emp); return; }
+        }
+      }
     })();
   </script>
 </body>
