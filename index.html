@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>BBWoa</title>
+  <title>BBWor</title>
   <meta name="theme-color" content="#0e0d0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -137,16 +137,13 @@
     .install-btn { background: var(--gold); border: none; border-radius: 9px; padding: 9px 16px; color: #111; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
     .install-dismiss { background: transparent; border: none; color: var(--text-dim); font-size: 12px; font-family: inherit; cursor: pointer; text-decoration: underline; }
 
-    /* iOS MODAL */
-    #ios-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 1000; align-items: flex-end; justify-content: center; }
-    #ios-modal.open { display: flex; }
-    .ios-box { background: #1b1915; border: 1.5px solid var(--gold); border-radius: 22px 22px 0 0; padding: 28px 22px 40px; width: 100%; max-width: 480px; }
-    .ios-title { font-size: 17px; font-weight: 700; color: var(--gold); margin-bottom: 18px; text-align: center; }
-    .ios-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
-    .ios-num { background: var(--gold); color: #111; font-size: 13px; font-weight: 700; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .ios-text { font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.55; padding-top: 2px; }
-    .ios-text b { color: #fff; }
-    .ios-close { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 11px; padding: 13px; color: rgba(255,255,255,0.7); font-size: 15px; font-family: inherit; cursor: pointer; margin-top: 8px; }
+    /* iOS INLINE STEPS */
+    .ios-steps-inline { overflow: hidden; max-height: 0; transition: max-height 0.3s ease, padding-top 0.3s ease, border-top-width 0.3s ease; padding-top: 0; border-top: 0px solid rgba(201,168,76,0.25); max-width: 480px; margin: 0 auto; }
+    .ios-steps-inline.open { max-height: 140px; padding-top: 12px; border-top-width: 1px; }
+    .ios-step-row { font-size: 13px; color: rgba(255,255,255,0.82); display: flex; align-items: flex-start; gap: 9px; margin-bottom: 9px; line-height: 1.45; }
+    .ios-step-row:last-child { margin-bottom: 0; }
+    .ios-step-row b { color: #fff; }
+    .ios-num-sm { background: var(--gold); color: #111; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
   </style>
 </head>
 <body>
@@ -276,35 +273,20 @@
   <!-- INSTALL BANNER -->
   <div id="install-banner">
     <div class="install-inner">
-      <img class="install-logo" src="icons/icon-192x192.png" alt="BBWoa">
+      <img class="install-logo" src="icon-192x192.png" alt="BBWor">
       <div class="install-texts">
-        <div class="install-title">BBWoa</div>
-        <div class="install-sub">התקן את האפליקציה על המסך הבית שלך</div>
+        <div class="install-title">BBWor</div>
+        <div class="install-sub" id="install-sub-txt">התקן את האפליקציה על המסך הבית שלך</div>
       </div>
       <div class="install-actions">
         <button class="install-btn" id="btn-install">התקן ✦</button>
         <button class="install-dismiss" id="btn-dismiss">לא עכשיו</button>
       </div>
     </div>
-  </div>
-
-  <!-- iOS MODAL -->
-  <div id="ios-modal">
-    <div class="ios-box">
-      <div class="ios-title">📲 הוסף לאייפון שלך</div>
-      <div class="ios-step">
-        <div class="ios-num">1</div>
-        <div class="ios-text">לחץ על כפתור <b>השיתוף ⬆️</b> בסרגל התחתון של Safari</div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-num">2</div>
-        <div class="ios-text">בחר <b>"הוסף למסך הבית"</b></div>
-      </div>
-      <div class="ios-step">
-        <div class="ios-num">3</div>
-        <div class="ios-text">לחץ <b>"הוסף"</b> בפינה הימנית עליונה — וזהו! 🎉</div>
-      </div>
-      <button class="ios-close" onclick="document.getElementById('ios-modal').classList.remove('open')">הבנתי, תודה</button>
+    <div class="ios-steps-inline" id="ios-steps-inline">
+      <div class="ios-step-row"><span class="ios-num-sm">1</span><span>לחץ <b>⬆️ שיתוף</b> בסרגל התחתון של Safari</span></div>
+      <div class="ios-step-row"><span class="ios-num-sm">2</span><span>בחר <b>"הוסף למסך הבית"</b></span></div>
+      <div class="ios-step-row"><span class="ios-num-sm">3</span><span>לחץ <b>"הוסף"</b> בפינה הימנית — וזהו! 🎉</span></div>
     </div>
   </div>
 
@@ -331,7 +313,11 @@
 
     function showBanner() {
       if (_isSA) return;
-      if (localStorage.getItem('bbwoa_nodisplay')) return;
+      if (localStorage.getItem('bbwor_nodisplay')) return;
+      if (_isIOS) {
+        document.getElementById('btn-install').textContent = 'כיצד? 📲';
+        document.getElementById('install-sub-txt').textContent = 'הוסף לאייפון שלך ממסך Safari';
+      }
       var b = document.getElementById('install-banner');
       b.classList.add('show');
       requestAnimationFrame(function() {
@@ -342,13 +328,15 @@
     function hideBanner() {
       var b = document.getElementById('install-banner');
       b.classList.remove('animate');
+      document.getElementById('ios-steps-inline').classList.remove('open');
       setTimeout(function() { b.classList.remove('show'); }, 350);
     }
 
     document.getElementById('btn-install').addEventListener('click', function() {
       if (_isIOS) {
-        hideBanner();
-        document.getElementById('ios-modal').classList.add('open');
+        var steps = document.getElementById('ios-steps-inline');
+        var isOpen = steps.classList.toggle('open');
+        document.getElementById('btn-install').textContent = isOpen ? 'סגור ✕' : 'כיצד? 📲';
       } else if (_prompt) {
         _prompt.prompt();
         _prompt.userChoice.then(function() { _prompt = null; hideBanner(); });
@@ -357,7 +345,7 @@
 
     document.getElementById('btn-dismiss').addEventListener('click', function() {
       hideBanner();
-      localStorage.setItem('bbwoa_nodisplay', '1');
+      localStorage.setItem('bbwor_nodisplay', '1');
     });
 
     if (_isIOS && !_isSA) {
