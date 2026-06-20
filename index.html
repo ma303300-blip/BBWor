@@ -144,6 +144,35 @@
     .ios-step-row:last-child { margin-bottom: 0; }
     .ios-step-row b { color: #fff; }
     .ios-num-sm { background: var(--gold); color: #111; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+
+    /* MANAGER EDIT */
+    .action-btn, .work-banner { position: relative; }
+    .mgr-edit-btn { position: absolute; top: 7px; left: 8px; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); border-radius: 6px; color: var(--gold); font-size: 12px; padding: 2px 6px; cursor: pointer; z-index: 2; -webkit-tap-highlight-color: transparent; line-height: 1.5; }
+    .edit-field { background: rgba(255,255,255,0.07); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; padding: 11px 13px; color: #fff; font-size: 15px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box; }
+    .edit-field:focus { border-color: var(--gold); }
+    .edit-row-btns { display: flex; gap: 8px; width: 100%; }
+    .edit-save-btn { flex: 1; background: var(--gold); border: none; border-radius: 10px; padding: 13px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .edit-cancel-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 13px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
+
+    /* FAB MAIL */
+    .fab-mail { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
+    .fab-mail.visible { display: flex; }
+    .fab-mail:active { transform: scale(0.92); }
+    .fab-badge { position: absolute; top: -3px; right: -3px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 19px; height: 19px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; }
+    .fab-badge.show { display: flex; }
+
+    /* PENDING DRAWER */
+    .pending-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; }
+    .pending-overlay.open { display: block; }
+    .pending-drawer { position: fixed; bottom: 0; left: 0; right: 0; background: #1b1915; border-top: 1.5px solid var(--gold); border-radius: 22px 22px 0 0; z-index: 101; transform: translateY(100%); transition: transform 0.32s ease; max-height: 78vh; display: flex; flex-direction: column; }
+    .pending-drawer.open { transform: translateY(0); }
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 14px; border-bottom: 1px solid rgba(201,168,76,0.2); flex-shrink: 0; }
+    .drawer-title { font-size: 16px; font-weight: 700; color: var(--gold); }
+    .drawer-close-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13); border-radius: 8px; padding: 7px 14px; color: rgba(255,255,255,0.7); font-size: 13px; font-family: inherit; cursor: pointer; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 12px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .drawer-empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 30px 0; }
+    .req-card { background: rgba(14,13,12,0.9); border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+    .req-branch-tag { font-size: 10px; color: var(--gold); background: rgba(201,168,76,0.1); border-radius: 5px; padding: 2px 7px; margin-top: 3px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -226,38 +255,51 @@
         <div class="emp-name-txt" id="emp-name-display">שלום!</div>
         <div class="emp-branch-txt" id="emp-branch-display"></div>
       </div>
-      <div class="action-grid">
-        <button class="action-btn" onclick="alert('ג׳ק ליסט — בקרוב')">
-          <span class="a-icon">✅</span>
-          <span class="a-label">ג'ק ליסט</span>
-        </button>
-        <button class="action-btn" onclick="alert('יעד חודשי — בקרוב')">
-          <span class="a-icon">🎯</span>
-          <span class="a-label">יעד חודשי</span>
-        </button>
-        <button class="action-btn" onclick="alert('תחרות — בקרוב')">
-          <span class="a-icon">🏆</span>
-          <span class="a-label">תחרות בין העובדים</span>
-        </button>
-        <div class="action-btn empty">
-          <span class="a-icon">🔒</span>
-          <span class="a-label">בקרוב</span>
-        </div>
-      </div>
-      <div class="work-banner" onclick="alert('סידור עבודה — בקרוב')">
-        <span class="banner-icon">📅</span>
-        <span class="banner-label">סידור עבודה</span>
-      </div>
+      <div class="action-grid" id="emp-action-grid"></div>
+      <div id="emp-banner-wrap"></div>
     </div>
   </div>
 
   <!-- MANAGER -->
   <div id="screen-manager" class="screen">
-    <div class="mgr-header">
-      <span class="mgr-title-txt">✦ פרופיל מנהלת</span>
+    <div class="emp-header">
+      <span class="bsd-text">בס"ד</span>
       <button class="exit-btn" onclick="goHome()">יציאה ✕</button>
     </div>
-    <div class="mgr-body" id="mgr-body"></div>
+    <div class="emp-body">
+      <div class="emp-greeting">
+        <div class="emp-name-txt">✦ פרופיל מנהלת</div>
+        <div class="emp-branch-txt">לחצי על ✏️ לעריכה</div>
+      </div>
+      <div class="action-grid" id="mgr-action-grid"></div>
+      <div id="mgr-banner-wrap"></div>
+    </div>
+    <!-- FAB -->
+    <div class="fab-mail" id="fab-mail" onclick="openPendingDrawer()">📬<span class="fab-badge" id="fab-badge"></span></div>
+    <!-- Pending overlay + drawer -->
+    <div class="pending-overlay" id="pending-overlay" onclick="closePendingDrawer()"></div>
+    <div class="pending-drawer" id="pending-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">📬 בקשות הצטרפות</span>
+        <button class="drawer-close-btn" onclick="closePendingDrawer()">✕</button>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-box" style="gap:14px;align-items:stretch">
+      <div style="text-align:center;font-size:44px;line-height:1.2" id="edit-preview-icon">✦</div>
+      <div style="font-size:12px;color:var(--text-dim)">אימוג׳י</div>
+      <input class="edit-field" id="edit-field-icon" placeholder="✦" maxlength="4" style="text-align:center;font-size:22px;padding:10px">
+      <div style="font-size:12px;color:var(--text-dim)">שם</div>
+      <input class="edit-field" id="edit-field-label" placeholder="שם הכפתור">
+      <div class="edit-row-btns">
+        <button class="edit-save-btn" id="edit-modal-save">שמור ✦</button>
+        <button class="edit-cancel-btn" onclick="closeEditModal()">ביטול</button>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL -->
@@ -356,25 +398,38 @@
        APP STATE
     ═══════════════════════════════════ */
     var BRANCH_NAME = { raanana: 'סניף רעננה', hadera: 'סניף חדרה' };
+    var BTNS = ['btn1', 'btn2', 'btn3', 'btn4'];
     var activeBranch = null;
     var pendingPhoto  = null;
     var modalCallback = null;
+    var _editKey = null;
+
+    var DEFAULT_CONTENT = {
+      btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
+      btn2:   { icon: '🎯', label: 'יעד חודשי' },
+      btn3:   { icon: '🏆', label: 'תחרות בין העובדים' },
+      btn4:   { icon: '🔒', label: 'בקרוב' },
+      banner: { icon: '📅', label: 'סידור עבודה' }
+    };
 
     function getEmployees(branch) { return JSON.parse(localStorage.getItem('bbwor_employees_' + branch) || '[]'); }
     function setEmployees(branch, arr) { localStorage.setItem('bbwor_employees_' + branch, JSON.stringify(arr)); }
     function getSession(branch) { return JSON.parse(localStorage.getItem('bbwor_session_' + branch) || 'null'); }
     function setSession(branch, s) { localStorage.setItem('bbwor_session_' + branch, JSON.stringify(s)); }
     function clearSession(branch) { localStorage.removeItem('bbwor_session_' + branch); }
+    function getContent() { return JSON.parse(localStorage.getItem('bbwor_content') || JSON.stringify(DEFAULT_CONTENT)); }
+    function setContent(c) { localStorage.setItem('bbwor_content', JSON.stringify(c)); }
 
     function show(name) {
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       document.getElementById('screen-' + name).classList.add('active');
+      if (name !== 'manager') document.getElementById('fab-mail').classList.remove('visible');
       window.scrollTo(0, 0);
     }
 
     function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
 
-    function enterManager() { renderManager(); show('manager'); }
+    function enterManager() { renderManagerGrid(); show('manager'); }
 
     function enterBranch(branch) {
       activeBranch = branch;
@@ -444,65 +499,166 @@
     function openEmployeeHome(emp) {
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
+      renderEmployeeGrid();
       show('employee');
     }
 
     function logout() { clearSession(activeBranch); goHome(); }
 
-    function renderManager() {
-      var body = document.getElementById('mgr-body');
-      body.innerHTML = '';
-      ['raanana', 'hadera'].forEach(function(branch) {
-        var all      = getEmployees(branch);
-        var pending  = all.filter(function(e) { return e.status === 'pending'; });
-        var approved = all.filter(function(e) { return e.status === 'approved'; });
-        var sec = document.createElement('div');
-        sec.className = 'branch-section';
-        sec.innerHTML = '<div class="branch-section-head">✦ ' + BRANCH_NAME[branch] + '</div>';
-        if (pending.length)  { sec.appendChild(mkLabel('ממתינות לאישור')); pending.forEach(function(e) { sec.appendChild(mkEmpCard(e, true, branch)); }); }
-        if (approved.length) { sec.appendChild(mkLabel('עובדים פעילים')); approved.forEach(function(e) { sec.appendChild(mkEmpCard(e, false, branch)); }); }
-        if (!all.length) { var m = document.createElement('div'); m.className = 'empty-msg'; m.textContent = 'אין עובדים רשומים עדיין'; sec.appendChild(m); }
-        body.appendChild(sec);
+    /* ═══════════════════════════════════
+       CONTENT RENDERING
+    ═══════════════════════════════════ */
+    function renderEmployeeGrid() {
+      var c = getContent();
+      var grid = document.getElementById('emp-action-grid');
+      var bannerWrap = document.getElementById('emp-banner-wrap');
+      grid.innerHTML = '';
+      BTNS.forEach(function(key) {
+        var item = c[key];
+        var el = document.createElement('button');
+        el.className = 'action-btn' + (key === 'btn4' ? ' empty' : '');
+        el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+        if (key !== 'btn4') { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        grid.appendChild(el);
       });
+      bannerWrap.innerHTML = '';
+      var bEl = document.createElement('div');
+      bEl.className = 'work-banner';
+      (function(lbl){ bEl.onclick = function() { alert(lbl + ' — בקרוב'); }; })(c.banner.label);
+      bEl.innerHTML = '<span class="banner-icon">' + c.banner.icon + '</span><span class="banner-label">' + c.banner.label + '</span>';
+      bannerWrap.appendChild(bEl);
     }
 
-    function mkLabel(txt) { var d = document.createElement('div'); d.className = 'sub-label'; d.textContent = txt; return d; }
+    function renderManagerGrid() {
+      var c = getContent();
+      var grid = document.getElementById('mgr-action-grid');
+      var bannerWrap = document.getElementById('mgr-banner-wrap');
+      grid.innerHTML = '';
+      BTNS.forEach(function(key) {
+        var item = c[key];
+        var el = document.createElement('div');
+        el.className = 'action-btn';
+        el.innerHTML =
+          '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+          '<span class="a-icon">' + item.icon + '</span>' +
+          '<span class="a-label">' + item.label + '</span>';
+        grid.appendChild(el);
+      });
+      bannerWrap.innerHTML = '';
+      var bEl = document.createElement('div');
+      bEl.className = 'work-banner';
+      bEl.innerHTML =
+        '<span class="banner-icon">' + c.banner.icon + '</span>' +
+        '<span class="banner-label">' + c.banner.label + '</span>' +
+        '<button class="mgr-edit-btn" onclick="openEditModal(\'banner\');event.stopPropagation()">✏️</button>';
+      bannerWrap.appendChild(bEl);
+      updateBadge();
+    }
 
-    function mkEmpCard(emp, showActions, branch) {
-      var card = document.createElement('div');
-      card.className = 'emp-card ' + emp.status;
-      card.id = 'ecard-' + emp.id;
-      var avatar = document.createElement('div');
-      avatar.className = 'emp-avatar';
-      avatar.innerHTML = emp.photo ? '<img src="' + emp.photo + '" alt="">' : emp.firstName[0].toUpperCase();
-      var info = document.createElement('div');
-      info.className = 'emp-info';
-      info.innerHTML = '<div class="emp-fullname">' + emp.firstName + ' ' + emp.lastName + '</div><div class="emp-phone-txt">' + emp.phone + '</div>';
-      card.appendChild(avatar);
-      card.appendChild(info);
-      if (showActions) {
-        var acts = document.createElement('div');
-        acts.className = 'emp-actions';
-        acts.innerHTML = '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\',\'' + branch + '\')">✓ אשר</button><button class="btn-reject" onclick="rejectEmp(\'' + emp.id + '\',\'' + branch + '\')">✕</button>';
-        card.appendChild(acts);
-      } else {
-        var badge = document.createElement('span');
-        badge.className = 'badge-active';
-        badge.textContent = '✓ פעיל';
-        card.appendChild(badge);
-      }
-      return card;
+    /* ═══════════════════════════════════
+       EDIT MODAL
+    ═══════════════════════════════════ */
+    function openEditModal(key) {
+      _editKey = key;
+      var item = getContent()[key];
+      var iconEl  = document.getElementById('edit-field-icon');
+      var labelEl = document.getElementById('edit-field-label');
+      iconEl.value  = item.icon;
+      labelEl.value = item.label;
+      document.getElementById('edit-preview-icon').textContent = item.icon;
+      iconEl.oninput = function() {
+        document.getElementById('edit-preview-icon').textContent = this.value || '✦';
+      };
+      document.getElementById('edit-modal-save').onclick = function() {
+        var newIcon  = document.getElementById('edit-field-icon').value.trim()  || '✦';
+        var newLabel = document.getElementById('edit-field-label').value.trim() || '—';
+        var c = getContent();
+        c[_editKey] = { icon: newIcon, label: newLabel };
+        setContent(c);
+        closeEditModal();
+        renderManagerGrid();
+      };
+      document.getElementById('edit-modal').classList.add('open');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.remove('open');
+      _editKey = null;
+    }
+
+    /* ═══════════════════════════════════
+       BADGE + PENDING DRAWER
+    ═══════════════════════════════════ */
+    function updateBadge() {
+      var count = ['raanana', 'hadera'].reduce(function(sum, b) {
+        return sum + getEmployees(b).filter(function(e) { return e.status === 'pending'; }).length;
+      }, 0);
+      var fab   = document.getElementById('fab-mail');
+      var badge = document.getElementById('fab-badge');
+      fab.classList.toggle('visible', count > 0);
+      badge.textContent = count;
+      badge.classList.toggle('show', count > 0);
+    }
+
+    function openPendingDrawer() {
+      var body = document.getElementById('drawer-body');
+      body.innerHTML = '';
+      var hasAny = false;
+      ['raanana', 'hadera'].forEach(function(branch) {
+        getEmployees(branch).filter(function(e) { return e.status === 'pending'; }).forEach(function(emp) {
+          hasAny = true;
+          var avatarHtml = emp.photo
+            ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
+            : emp.firstName[0].toUpperCase();
+          var card = document.createElement('div');
+          card.className = 'req-card';
+          card.id = 'req-' + emp.id;
+          card.innerHTML =
+            '<div class="emp-avatar">' + avatarHtml + '</div>' +
+            '<div class="emp-info">' +
+              '<div class="emp-fullname">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+              '<span class="req-branch-tag">' + BRANCH_NAME[branch] + '</span>' +
+              '<div class="emp-phone-txt">' + emp.phone + '</div>' +
+            '</div>' +
+            '<div class="emp-actions">' +
+              '<button class="btn-approve" onclick="approveEmp(\'' + emp.id + '\',\'' + branch + '\')">✓ אשר</button>' +
+              '<button class="btn-reject"  onclick="rejectEmp(\'' + emp.id + '\',\'' + branch + '\')">✕</button>' +
+            '</div>';
+          body.appendChild(card);
+        });
+      });
+      if (!hasAny) body.innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+      document.getElementById('pending-overlay').classList.add('open');
+      document.getElementById('pending-drawer').classList.add('open');
+    }
+
+    function closePendingDrawer() {
+      document.getElementById('pending-overlay').classList.remove('open');
+      document.getElementById('pending-drawer').classList.remove('open');
     }
 
     function approveEmp(id, branch) {
       var emps = getEmployees(branch);
       var emp = emps.find(function(e) { return e.id === id; });
-      if (emp) { emp.status = 'approved'; setEmployees(branch, emps); renderManager(); }
+      if (!emp) return;
+      emp.status = 'approved';
+      setEmployees(branch, emps);
+      var card = document.getElementById('req-' + id);
+      if (card) card.remove();
+      if (!document.querySelector('#drawer-body .req-card')) {
+        document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+      }
+      updateBadge();
     }
 
     function rejectEmp(id, branch) {
       setEmployees(branch, getEmployees(branch).filter(function(e) { return e.id !== id; }));
-      renderManager();
+      var card = document.getElementById('req-' + id);
+      if (card) card.remove();
+      if (!document.querySelector('#drawer-body .req-card')) {
+        document.getElementById('drawer-body').innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>';
+      }
+      updateBadge();
     }
 
     function showModal(icon, heading, text, onOk) {
