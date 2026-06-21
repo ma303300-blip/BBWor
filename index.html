@@ -485,6 +485,19 @@
     </div>
   </div>
 
+  <!-- CONSTRAINT STATUS MODAL (approved / pending) -->
+  <div class="modal-overlay" id="constraint-status-modal">
+    <div class="modal-box">
+      <div class="modal-big-icon" id="cstatus-icon"></div>
+      <div class="modal-heading" id="cstatus-heading"></div>
+      <div id="cstatus-text" style="font-size:16px;font-weight:700;color:#fff;text-align:center;line-height:1.9;white-space:pre-line"></div>
+      <div class="edit-row-btns" style="width:100%;margin-top:10px">
+        <button class="edit-save-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:14px" onclick="resetAndResubmit()">שלח מחדש ✏️</button>
+        <button class="edit-cancel-btn" onclick="closeConstraintStatus()">סגור</button>
+      </div>
+    </div>
+  </div>
+
   <!-- INSTALL BANNER -->
   <div id="install-banner">
     <div class="install-inner">
@@ -595,6 +608,8 @@
     var _constraintEmpUnsub = null;
     var _confirmCallback = null;
     var currentConstraintData = null;
+    var currentConstraintDocId = null;
+    var currentConstraintPendingDocId = null;
     var _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null } };
 
     var DEFAULT_CONTENT = {
@@ -991,8 +1006,9 @@
       document.getElementById('confirm-text').textContent   = text;
       _confirmCallback = onConfirm;
       document.getElementById('confirm-ok-btn').onclick = function() {
+        var cb = _confirmCallback;
         closeConfirm();
-        if (_confirmCallback) { var cb = _confirmCallback; _confirmCallback = null; cb(); }
+        if (cb) cb();
       };
       document.getElementById('confirm-modal').classList.add('open');
     }
@@ -1091,15 +1107,17 @@
         var c2 = currentConstraintData.constraint2;
         var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
         var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
-        document.getElementById('modal-icon').textContent = '✅';
-        document.getElementById('modal-heading').textContent = 'האילוצים שאושרו לך';
-        var bodyEl = document.querySelector('.modal-body-text');
-        bodyEl.textContent = line1 + '\n' + line2;
-        bodyEl.style.color = '#fff';
-        bodyEl.style.fontSize = '16px';
-        bodyEl.style.fontWeight = '700';
-        modalCallback = null;
-        document.getElementById('modal').classList.add('open');
+        document.getElementById('cstatus-icon').textContent = '✅';
+        document.getElementById('cstatus-heading').textContent = 'האילוצים שאושרו לך';
+        document.getElementById('cstatus-text').textContent = line1 + '\n' + line2;
+        document.getElementById('constraint-status-modal').classList.add('open');
+        return;
+      }
+      if (currentConstraintPendingDocId) {
+        document.getElementById('cstatus-icon').textContent = '⏳';
+        document.getElementById('cstatus-heading').textContent = 'ממתין לאישור';
+        document.getElementById('cstatus-text').textContent = 'האילוצים שלך נשלחו\nוממתינים לאישור המנהלת.';
+        document.getElementById('constraint-status-modal').classList.add('open');
         return;
       }
       document.getElementById('constraint-info-name').textContent = 'היי ' + currentEmployee.firstName + '!';
@@ -1108,6 +1126,26 @@
       void box.offsetWidth;
       box.classList.add('zoom-anim');
       document.getElementById('constraint-info-modal').classList.add('open');
+    }
+
+    function closeConstraintStatus() {
+      document.getElementById('constraint-status-modal').classList.remove('open');
+    }
+
+    function resetAndResubmit() {
+      closeConstraintStatus();
+      var docId = currentConstraintDocId || currentConstraintPendingDocId;
+      if (!docId) { openConstraintForm(); return; }
+      db.collection('constraints').doc(docId).delete()
+        .then(function() {
+          currentConstraintData = null;
+          currentConstraintDocId = null;
+          currentConstraintPendingDocId = null;
+          var badge = document.getElementById('emp-constraint-badge');
+          if (badge) badge.classList.remove('show');
+          openConstraintForm();
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאפס. נסה שוב.', null); });
     }
 
     function closeConstraintInfo() {
@@ -1180,13 +1218,16 @@
         .onSnapshot(function(snap) {
           var badge = document.getElementById('emp-constraint-badge');
           if (!badge) return;
-          var approved = false;
           currentConstraintData = null;
+          currentConstraintDocId = null;
+          currentConstraintPendingDocId = null;
           snap.forEach(function(doc) {
-            if (doc.data().status === 'approved') { approved = true; currentConstraintData = doc.data(); }
+            var d = doc.data();
+            if (d.status === 'approved') { currentConstraintData = d; currentConstraintDocId = doc.id; }
+            else if (d.status === 'pending') { currentConstraintPendingDocId = doc.id; }
           });
           badge.textContent = '✓';
-          badge.classList.toggle('show', approved);
+          badge.classList.toggle('show', !!currentConstraintData);
         });
     }
 
