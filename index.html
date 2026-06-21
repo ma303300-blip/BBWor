@@ -971,7 +971,7 @@
       db.collection('employees').doc(session.empId).get()
         .then(function(doc) {
           if (!doc.exists) { clearSession(branch); openRegisterForm(branch); return; }
-          var emp = doc.data();
+          var emp = Object.assign({ id: doc.id }, doc.data());
           if (emp.status === 'approved') {
             try { openEmployeeHome(emp); }
             catch(e) { clearSession(branch); openRegisterForm(branch); }
@@ -2439,11 +2439,15 @@
               .then(function(doc) {
                 if (!document.getElementById('screen-home').classList.contains('active')) return;
                 if (!doc.exists) { clearSession(b); tryBranch(); return; }
-                var emp = doc.data();
+                /* include Firestore doc.id in the emp object */
+                var emp = Object.assign({ id: doc.id }, doc.data());
                 activeBranch = b;
                 if (emp.status === 'approved') {
                   if (lastScreen === 'manager') {
                     try { enterManager(); } catch(e) { show('home'); }
+                  } else if (lastScreen === 'schedule') {
+                    currentEmployee = emp;
+                    try { openSchedule(false); } catch(e) { openEmployeeHome(emp); }
                   } else {
                     try { openEmployeeHome(emp); } catch(e) { clearSession(b); show('home'); }
                   }
