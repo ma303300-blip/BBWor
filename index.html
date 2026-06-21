@@ -271,6 +271,7 @@
       </div>
     </div>
   </div>
+  </div>
 
   <!-- REGISTER -->
   <div id="screen-register" class="screen">
@@ -310,7 +311,6 @@
       <button class="submit-btn" onclick="submitReg()">שלח בקשה ✦</button>
     </div>
     </div>
-  </div>
 
   <!-- EMPLOYEE -->
   <div id="screen-employee" class="screen">
@@ -945,7 +945,7 @@
             var emp = doc.data();
             var avatarHtml = emp.photo
               ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
-              : emp.firstName[0].toUpperCase();
+              : (emp.firstName ? emp.firstName[0].toUpperCase() : '?');
             var card = document.createElement('div');
             card.className = 'req-card';
             card.id = 'req-' + emp.id;
