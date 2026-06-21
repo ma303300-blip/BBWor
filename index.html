@@ -432,7 +432,7 @@
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
       btn2:   { icon: '🎯', label: 'יעד חודשי' },
       btn3:   { icon: '🏆', label: 'תחרות בין העובדים' },
-      btn4:   { icon: '🔒', label: 'בקרוב' },
+      btn4:   { icon: '📌', label: 'אילוצים' },
       banner: { icon: '📅', label: 'סידור עבודה' }
     };
 
@@ -589,9 +589,9 @@
       ['btn3', 'btn4'].forEach(function(key) {
         var item = c[key];
         var el = document.createElement('button');
-        el.className = 'action-btn' + (key === 'btn4' ? ' empty' : '');
+        el.className = 'action-btn';
         el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
-        if (key !== 'btn4') { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label);
         grid2.appendChild(el);
       });
     }
