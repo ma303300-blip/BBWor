@@ -652,12 +652,39 @@
   <div class="modal-overlay" id="mgr-pin-overlay" onclick="if(event.target===this)closeManagerPin()">
     <div class="modal-box" id="mgr-pin-box" style="max-width:300px;gap:16px">
       <div style="font-size:36px">🔐</div>
-      <div style="font-size:17px;font-weight:700;color:var(--gold)">כניסת מנהלת</div>
+      <div style="font-size:17px;font-weight:700;color:var(--gold)">כניסת מנהל/ת</div>
       <input type="password" id="mgr-pin-input" placeholder="סיסמה..."
         style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;font-family:inherit;text-align:center;outline:none"
         onkeydown="if(event.key==='Enter')submitManagerPin()">
       <button class="gold-btn" style="width:100%;padding:14px;font-size:16px" onclick="submitManagerPin()">כניסה</button>
       <button class="constraint-back-btn" style="width:100%" onclick="closeManagerPin()">ביטול</button>
+    </div>
+  </div>
+
+  <!-- MANAGER REGISTRATION MODAL -->
+  <div class="modal-overlay" id="mgr-reg-modal" onclick="if(event.target===this)closeMgrRegModal()">
+    <div class="modal-box" id="mgr-reg-box" style="max-width:320px;gap:14px;align-items:stretch">
+      <div style="text-align:center;font-size:38px">✦</div>
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">רישום מנהל/ת</div>
+      <div style="font-size:13px;color:var(--text-dim);text-align:center">המכשיר הזה יזכר תמיד כמנהל/ת</div>
+      <input type="text" id="mgr-reg-name" placeholder="שם מלא"
+        style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;font-family:inherit;outline:none"
+        onkeydown="if(event.key==='Enter')document.getElementById('mgr-reg-phone').focus()">
+      <input type="tel" id="mgr-reg-phone" placeholder="מספר טלפון"
+        style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;font-family:inherit;direction:ltr;text-align:center;outline:none"
+        onkeydown="if(event.key==='Enter')submitMgrReg()">
+      <button class="gold-btn" style="width:100%;padding:14px;font-size:16px" onclick="submitMgrReg()">✓ הירשם/י כמנהל/ת</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeMgrRegModal()">ביטול</button>
+    </div>
+  </div>
+
+  <!-- MANAGER ONLY MODAL -->
+  <div class="modal-overlay" id="mgr-only-modal" onclick="if(event.target===this)closeMgrOnly()">
+    <div class="modal-box" id="mgr-only-box" style="max-width:300px;gap:16px">
+      <div style="font-size:44px">🔒</div>
+      <div style="font-size:17px;font-weight:700;color:var(--gold)">גישה מוגבלת</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.75);text-align:center;line-height:1.55">הכניסה שמורה<br>למנהל/ת בלבד</div>
+      <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeMgrOnly()">← חזור</button>
     </div>
   </div>
 
@@ -898,7 +925,8 @@
                  'constraint-overlay','constraint-drawer',
                  'emplist-overlay','emplist-drawer',
                  'cl-overlay','cl-drawer',
-                 'sch-picker-overlay'];
+                 'sch-picker-overlay',
+                 'mgr-pin-overlay','mgr-reg-modal','mgr-only-modal'];
       for (var i = 0; i < ids.length; i++) {
         var el = document.getElementById(ids[i]);
         if (el) el.classList.remove('open');
@@ -938,10 +966,32 @@
     window.addEventListener('online',  function() { setSyncStatus('connecting'); });
 
     var MANAGER_PIN         = 'אהבת חינם';
-    var MANAGER_PIN_ENABLED = false; /* שנה ל-true כדי להפעיל סיסמה */
+    var MANAGER_PIN_ENABLED = true;
+
+    function _getMgrProfile() {
+      try { return JSON.parse(localStorage.getItem('bbwor_manager') || 'null'); }
+      catch(e) { return null; }
+    }
+    function _setMgrProfile(name, phone) {
+      localStorage.setItem('bbwor_manager', JSON.stringify({ name: name, phone: phone }));
+    }
+    function _updateMgrNameDisplay() {
+      var p = _getMgrProfile();
+      var el = document.querySelector('.manager-name');
+      if (el) el.textContent = p ? p.name : '✦';
+    }
 
     function enterManager() {
-      if (!MANAGER_PIN_ENABLED) { _openManagerDashboard(); return; }
+      /* block regular employees */
+      if (currentEmployee) {
+        var ob = document.getElementById('mgr-only-box');
+        ob.classList.remove('zoom-anim'); void ob.offsetWidth; ob.classList.add('zoom-anim');
+        document.getElementById('mgr-only-modal').classList.add('open');
+        return;
+      }
+      /* recognized manager device → skip PIN */
+      if (_getMgrProfile()) { _openManagerDashboard(); return; }
+      /* unknown device → require PIN */
       var inp = document.getElementById('mgr-pin-input');
       if (inp) { inp.value = ''; inp.style.borderColor = 'rgba(201,168,76,0.3)'; inp.placeholder = 'סיסמה...'; }
       var box = document.getElementById('mgr-pin-box');
@@ -955,7 +1005,9 @@
       if (!inp) return;
       if (inp.value === MANAGER_PIN) {
         closeManagerPin();
-        _openManagerDashboard();
+        /* correct PIN — register if new device */
+        if (_getMgrProfile()) { _openManagerDashboard(); }
+        else { openMgrRegModal(); }
       } else {
         inp.value = '';
         inp.placeholder = '❌ סיסמה שגויה';
@@ -968,7 +1020,42 @@
       document.getElementById('mgr-pin-overlay').classList.remove('open');
     }
 
+    function openMgrRegModal() {
+      document.getElementById('mgr-reg-name').value = '';
+      document.getElementById('mgr-reg-phone').value = '';
+      ['mgr-reg-name','mgr-reg-phone'].forEach(function(id) {
+        document.getElementById(id).style.borderColor = 'rgba(201,168,76,0.3)';
+      });
+      var box = document.getElementById('mgr-reg-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('mgr-reg-modal').classList.add('open');
+      setTimeout(function() { document.getElementById('mgr-reg-name').focus(); }, 130);
+    }
+    function closeMgrRegModal() {
+      document.getElementById('mgr-reg-modal').classList.remove('open');
+    }
+    function submitMgrReg() {
+      var nameInp  = document.getElementById('mgr-reg-name');
+      var phoneInp = document.getElementById('mgr-reg-phone');
+      var name  = nameInp.value.trim();
+      var phone = phoneInp.value.trim();
+      if (!name)  { nameInp.style.borderColor  = 'rgba(255,60,60,0.55)'; nameInp.focus();  return; }
+      if (!phone) { phoneInp.style.borderColor = 'rgba(255,60,60,0.55)'; phoneInp.focus(); return; }
+      _setMgrProfile(name, phone);
+      closeMgrRegModal();
+      _updateMgrNameDisplay();
+      _openManagerDashboard();
+    }
+
+    function closeMgrOnly() {
+      document.getElementById('mgr-only-modal').classList.remove('open');
+    }
+
     function _openManagerDashboard() {
+      _updateMgrNameDisplay();
+      var p = _getMgrProfile();
+      var greetEl = document.querySelector('#screen-manager .emp-name-txt');
+      if (greetEl) greetEl.textContent = p ? ('✦ שלום, ' + p.name + '!') : '✦ פרופיל מנהל/ת';
       renderManagerGrid();
       loadMgrGoalBanner();
       document.getElementById('fab-mail').classList.add('visible');
@@ -2712,6 +2799,7 @@
       if (user) {
         seedChecklistItems();
         _weeklyConstraintReset();
+        _updateMgrNameDisplay();
         /* AUTO-LOGIN */
         (function() {
           var branches = ['raanana', 'hadera'];
@@ -2767,6 +2855,9 @@
       var layers = [
         { id: 'confirm-modal',         fn: closeConfirm },
         { id: 'modal',                 fn: closeModal },
+        { id: 'mgr-only-modal',        fn: closeMgrOnly },
+        { id: 'mgr-reg-modal',         fn: closeMgrRegModal },
+        { id: 'mgr-pin-overlay',       fn: closeManagerPin },
         { id: 'constraint-form-modal', fn: closeConstraintForm },
         { id: 'cl-mgr-modal',          fn: closeClMgr },
         { id: 'cl-drawer',             fn: closeChecklist },
