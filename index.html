@@ -1943,18 +1943,24 @@
       if (_schUnsub) { _schUnsub(); _schUnsub = null; }
       var tbl = document.getElementById('sch-table');
       tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">טוען...</div>';
-      /* load employees from localStorage */
       _schAllEmps = []; _schEmpMap = {};
-      var all = getEmployees(_schBranch);
-      all.forEach(function(e) {
-        if (e.status === 'approved') { _schAllEmps.push(e); _schEmpMap[e.id] = e; }
-      });
-      /* live listener on the schedule document */
-      _schUnsub = db.collection('schedules').doc(_schDocId())
-        .onSnapshot(function(doc) {
-          _schCells = doc.exists ? (doc.data().cells || {}) : {};
-          _schRenderTable();
-        }, function() {
+      /* single-field query avoids needing a composite index */
+      db.collection('employees').where('branch', '==', _schBranch).get()
+        .then(function(snap) {
+          snap.forEach(function(d) {
+            var e = Object.assign({ id: d.id }, d.data());
+            if (e.status === 'approved') { _schAllEmps.push(e); _schEmpMap[e.id] = e; }
+          });
+          /* live listener on the schedule document */
+          _schUnsub = db.collection('schedules').doc(_schDocId())
+            .onSnapshot(function(doc) {
+              _schCells = doc.exists ? (doc.data().cells || {}) : {};
+              _schRenderTable();
+            }, function() {
+              tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
+            });
+        })
+        .catch(function() {
           tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
         });
     }
