@@ -271,6 +271,7 @@
       </div>
     </div>
   </div>
+  </div>
 
   <!-- REGISTER -->
   <div id="screen-register" class="screen">
@@ -310,7 +311,6 @@
       <button class="submit-btn" onclick="submitReg()">שלח בקשה ✦</button>
     </div>
     </div>
-  </div>
 
   <!-- EMPLOYEE -->
   <div id="screen-employee" class="screen">
@@ -627,8 +627,10 @@
     function setContent(c) { localStorage.setItem('bbwor_content', JSON.stringify(c)); }
 
     function show(name) {
+      var target = document.getElementById('screen-' + name);
+      if (!target) return;
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
-      document.getElementById('screen-' + name).classList.add('active');
+      target.classList.add('active');
       if (name !== 'manager') {
         var fabMail = document.getElementById('fab-mail');
         var fabPeople = document.getElementById('fab-people');
@@ -706,8 +708,10 @@
         .then(function(doc) {
           if (!doc.exists) { clearSession(branch); return; }
           var emp = doc.data();
-          if (emp.status === 'approved') { openEmployeeHome(emp); }
-          else { clearSession(branch); }
+          if (emp.status === 'approved') {
+            try { openEmployeeHome(emp); }
+            catch(e) { clearSession(branch); }
+          } else { clearSession(branch); }
         })
         .catch(function() { clearSession(branch); });
     }
@@ -941,7 +945,7 @@
             var emp = doc.data();
             var avatarHtml = emp.photo
               ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
-              : emp.firstName[0].toUpperCase();
+              : (emp.firstName ? emp.firstName[0].toUpperCase() : '?');
             var card = document.createElement('div');
             card.className = 'req-card';
             card.id = 'req-' + emp.id;
@@ -1313,8 +1317,11 @@
             var emp = doc.data();
             activeBranch = b;
             if (emp.status === 'approved') {
-              if (lastScreen === 'manager') { enterManager(); }
-              else { openEmployeeHome(emp); }
+              if (lastScreen === 'manager') {
+                try { enterManager(); } catch(e) { show('home'); }
+              } else {
+                try { openEmployeeHome(emp); } catch(e) { clearSession(b); show('home'); }
+              }
             } else {
               showPendingModal(emp.firstName + ' ' + emp.lastName);
             }
