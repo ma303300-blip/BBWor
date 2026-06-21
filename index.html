@@ -159,8 +159,15 @@
     .edit-save-btn { flex: 1; background: var(--gold); border: none; border-radius: 10px; padding: 13px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .edit-cancel-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 13px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
 
+    /* SYNC BAR */
+    #sync-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 5px 16px calc(5px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; justify-content: center; gap: 7px; background: rgba(14,13,12,0.82); border-top: 1px solid rgba(255,255,255,0.06); z-index: 55; }
+    #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #f0a500; flex-shrink: 0; }
+    #sync-dot.synced { background: #2ecc71; }
+    #sync-dot.error  { background: #e03535; }
+    #sync-label { font-size: 11px; color: rgba(255,255,255,0.45); letter-spacing: 0.4px; }
+
     /* FAB MAIL */
-    .fab-mail { position: fixed; bottom: 28px; right: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
+    .fab-mail { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
     .fab-mail.visible { display: flex; }
     .fab-mail:active { transform: scale(0.92); }
     .fab-badge { position: absolute; top: -3px; right: -3px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 19px; height: 19px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; }
@@ -452,20 +459,34 @@
 
     function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
 
+    function setSyncStatus(s) {
+      var dot = document.getElementById('sync-dot');
+      var lbl = document.getElementById('sync-label');
+      if (!dot) return;
+      dot.className = s;
+      lbl.textContent = s === 'synced' ? 'מסונכרן ✓' : s === 'error' ? 'שגיאת סינכרון' : 'מתחבר...';
+    }
+
+    /* global sync monitor */
+    db.collection('employees').limit(1)
+      .onSnapshot({ includeMetadataChanges: true },
+        function(snap) { setSyncStatus(snap.metadata.fromCache ? 'connecting' : 'synced'); },
+        function()     { setSyncStatus('error'); }
+      );
+    window.addEventListener('offline', function() { setSyncStatus('error'); });
+    window.addEventListener('online',  function() { setSyncStatus('connecting'); });
+
     function enterManager() {
       renderManagerGrid();
       show('manager');
+      document.getElementById('fab-mail').classList.add('visible');
       if (!_badgeUnsub) {
         _badgeUnsub = db.collection('employees').where('status', '==', 'pending')
           .onSnapshot(function(snap) {
             var count = snap.size;
-            var fab   = document.getElementById('fab-mail');
             var badge = document.getElementById('fab-badge');
             badge.textContent = count;
             badge.classList.toggle('show', count > 0);
-            if (document.getElementById('screen-manager').classList.contains('active')) {
-              fab.classList.toggle('visible', count > 0);
-            }
           });
       }
     }
@@ -764,5 +785,9 @@
       tryBranch();
     })();
   </script>
+  <div id="sync-bar">
+    <span id="sync-dot"></span>
+    <span id="sync-label">מתחבר...</span>
+  </div>
 </body>
 </html>
