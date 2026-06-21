@@ -1736,7 +1736,7 @@
     /* ANONYMOUS AUTH → then seed + auto-login */
     auth.onAuthStateChanged(function(user) {
       if (user) {
-        seedChecklistItems();
+        if (user.email === OWNER_EMAIL) { seedChecklistItems(); }
         /* AUTO-LOGIN */
         (function() {
           var branches = ['raanana', 'hadera'];
