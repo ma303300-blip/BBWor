@@ -877,6 +877,7 @@
     function setContent(c) { localStorage.setItem('bbwor_content', JSON.stringify(c)); }
 
     function show(name) {
+      _closeAllOverlays();
       var target = document.getElementById('screen-' + name);
       if (!target) return;
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
@@ -890,6 +891,20 @@
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
       sessionStorage.setItem('bbwor_screen', name);
+    }
+
+    function _closeAllOverlays() {
+      var ids = ['pending-overlay','pending-drawer',
+                 'constraint-overlay','constraint-drawer',
+                 'emplist-overlay','emplist-drawer',
+                 'cl-overlay','cl-drawer',
+                 'sch-picker-overlay'];
+      for (var i = 0; i < ids.length; i++) {
+        var el = document.getElementById(ids[i]);
+        if (el) el.classList.remove('open');
+      }
+      var fw = document.getElementById('sch-float-wrap');
+      if (fw) { fw.style.display = 'none'; }
     }
 
     document.getElementById('screen-home').addEventListener('touchmove', function(e) {
@@ -2694,6 +2709,31 @@
         })();
       }
     });
+    /* ── Android back-button handling ── */
+    history.pushState({ bbwor: 1 }, '');
+    window.addEventListener('popstate', function() {
+      history.pushState({ bbwor: 1 }, '');
+      var layers = [
+        { id: 'confirm-modal',         fn: closeConfirm },
+        { id: 'modal',                 fn: closeModal },
+        { id: 'constraint-form-modal', fn: closeConstraintForm },
+        { id: 'cl-mgr-modal',          fn: closeClMgr },
+        { id: 'cl-drawer',             fn: closeChecklist },
+        { id: 'pending-drawer',        fn: closePendingDrawer },
+        { id: 'constraint-drawer',     fn: closeConstraintDrawer },
+        { id: 'emplist-drawer',        fn: closeEmployeeListDrawer }
+      ];
+      for (var i = 0; i < layers.length; i++) {
+        var el = document.getElementById(layers[i].id);
+        if (el && el.classList.contains('open')) { layers[i].fn(); return; }
+      }
+      var pickerOverlay = document.getElementById('sch-picker-overlay');
+      if (pickerOverlay && pickerOverlay.classList.contains('open')) { closeSchPicker(); return; }
+      var cur = sessionStorage.getItem('bbwor_screen') || 'home';
+      if (cur === 'schedule') { closeSchedule(); }
+      else if (cur !== 'home') { show('home'); }
+    });
+
     auth.signInAnonymously().catch(function() {});
   </script>
   <div id="greet-overlay"><div id="greet-text"></div></div>
