@@ -40,8 +40,11 @@
     .home-card-wrap::before { content: ''; position: absolute; inset: -100%; background: conic-gradient(from 0deg, transparent 0%, #c9a84c 18%, #f5d88a 23%, #c9a84c 28%, transparent 46%); animation: border-spin 2.5s linear infinite; }
     .home-card { position: relative; width: 100%; background: rgba(14,13,12,0.85); border-radius: 21px; padding: 30px 22px 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 1; }
     .sparkle-top { color: var(--gold); font-size: 22px; opacity: 0.8; }
-    .manager-btn { width: 100%; background: transparent; border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 16px 12px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+    .manager-btn { width: 100%; background: transparent; border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 16px 12px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
     .manager-btn:active { background: rgba(201,168,76,0.09); border-color: rgba(201,168,76,0.5); }
+    @keyframes mgr-long-press { from { width: 0; } to { width: 100%; } }
+    .manager-btn.pressing { background: rgba(201,168,76,0.07); border-color: rgba(201,168,76,0.5); }
+    .manager-btn.pressing::after { content: ''; position: absolute; bottom: 0; left: 0; height: 3px; background: var(--gold); border-radius: 2px; animation: mgr-long-press 4s linear forwards; }
     .manager-icon { font-size: 18px; color: var(--gold); margin-bottom: 2px; }
     .manager-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 36px; font-weight: 900; color: var(--gold); letter-spacing: 2px; line-height: 1; text-shadow: 0 4px 14px rgba(201,168,76,0.7), 0 8px 28px rgba(201,168,76,0.4), 0 2px 5px rgba(201,168,76,0.55); }
     .manager-title-accent { color: #e03535; text-shadow: 0 4px 14px rgba(224,53,53,0.85), 0 8px 28px rgba(224,53,53,0.5), 0 2px 5px rgba(224,53,53,0.65); }
@@ -358,7 +361,9 @@
     <div class="home-card-wrap">
     <div class="home-card">
       <div class="sparkle-top">✦</div>
-      <button class="manager-btn" onclick="enterManager()">
+      <button class="manager-btn" id="mgr-btn"
+        ontouchstart="_mgrPressStart(event)" ontouchend="_mgrPressEnd(event)" ontouchcancel="_mgrPressCancel()"
+        onmousedown="_mgrPressStart(event)" onmouseup="_mgrPressEnd(event)" onmouseleave="_mgrPressCancel()">
         <span class="manager-icon">✦</span>
         <span class="manager-title">BBW<span class="manager-title-accent">oa</span></span>
         <span class="manager-sub">MANAGER ACCESS</span>
@@ -981,23 +986,50 @@
       if (el) el.textContent = p ? p.name : '✦';
     }
 
-    function enterManager() {
-      /* block regular employees */
-      if (currentEmployee) {
+    var _mgrLongTimer = null;
+    var _mgrLongFired = false;
+
+    function _mgrPressStart(e) {
+      if (e.type === 'touchstart') e.preventDefault();
+      _mgrLongFired = false;
+      var btn = document.getElementById('mgr-btn');
+      if (btn) btn.classList.add('pressing');
+      _mgrLongTimer = setTimeout(function() {
+        _mgrLongFired = true;
+        var b = document.getElementById('mgr-btn');
+        if (b) b.classList.remove('pressing');
+        /* open PIN modal after 4 seconds */
+        var inp = document.getElementById('mgr-pin-input');
+        if (inp) { inp.value = ''; inp.style.borderColor = 'rgba(201,168,76,0.3)'; inp.placeholder = 'סיסמה...'; }
+        var box = document.getElementById('mgr-pin-box');
+        box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+        document.getElementById('mgr-pin-overlay').classList.add('open');
+        setTimeout(function() { if (inp) inp.focus(); }, 120);
+      }, 4000);
+    }
+
+    function _mgrPressEnd(e) {
+      clearTimeout(_mgrLongTimer);
+      var btn = document.getElementById('mgr-btn');
+      if (btn) btn.classList.remove('pressing');
+      if (!_mgrLongFired) {
+        /* single tap → show managers-only message for everyone */
         var ob = document.getElementById('mgr-only-box');
         ob.classList.remove('zoom-anim'); void ob.offsetWidth; ob.classList.add('zoom-anim');
         document.getElementById('mgr-only-modal').classList.add('open');
-        return;
       }
-      /* recognized manager device → skip PIN */
-      if (_getMgrProfile()) { _openManagerDashboard(); return; }
-      /* unknown device → require PIN */
-      var inp = document.getElementById('mgr-pin-input');
-      if (inp) { inp.value = ''; inp.style.borderColor = 'rgba(201,168,76,0.3)'; inp.placeholder = 'סיסמה...'; }
-      var box = document.getElementById('mgr-pin-box');
-      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
-      document.getElementById('mgr-pin-overlay').classList.add('open');
-      setTimeout(function() { if (inp) inp.focus(); }, 120);
+    }
+
+    function _mgrPressCancel() {
+      clearTimeout(_mgrLongTimer);
+      var btn = document.getElementById('mgr-btn');
+      if (btn) btn.classList.remove('pressing');
+    }
+
+    function enterManager() {
+      /* called only from auto-login on page refresh */
+      if (_getMgrProfile()) { _openManagerDashboard(); }
+      else { show('home'); }
     }
 
     function submitManagerPin() {
