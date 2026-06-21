@@ -460,6 +460,7 @@
       if (name !== 'manager') document.getElementById('fab-mail').classList.remove('visible');
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
+      sessionStorage.setItem('bbwor_screen', name);
     }
 
     function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
@@ -772,8 +773,12 @@
     (function() {
       var branches = ['raanana', 'hadera'];
       var i = 0;
+      var lastScreen = sessionStorage.getItem('bbwor_screen');
       function tryBranch() {
-        if (i >= branches.length) return;
+        if (i >= branches.length) {
+          if (lastScreen === 'manager') { enterManager(); }
+          return;
+        }
         var b = branches[i++];
         var session = getSession(b);
         if (!session) { tryBranch(); return; }
@@ -782,8 +787,12 @@
             if (!doc.exists) { clearSession(b); tryBranch(); return; }
             var emp = doc.data();
             activeBranch = b;
-            if (emp.status === 'approved') { openEmployeeHome(emp); }
-            else { showPendingModal(emp.firstName + ' ' + emp.lastName); }
+            if (emp.status === 'approved') {
+              if (lastScreen === 'manager') { enterManager(); }
+              else { openEmployeeHome(emp); }
+            } else {
+              showPendingModal(emp.firstName + ' ' + emp.lastName);
+            }
           })
           .catch(function() { tryBranch(); });
       }
