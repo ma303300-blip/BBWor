@@ -1547,7 +1547,8 @@
       var now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
       if (mins >= SHIFT_HOURS.morning.start && mins < SHIFT_HOURS.morning.end) return 'morning';
       if (mins >= SHIFT_HOURS.evening.start && mins < SHIFT_HOURS.evening.end) return 'evening';
-      return null;
+      /* מחוץ לשעות: לפני הבוקר → בוקר, אחרי הערב → ערב */
+      return mins < SHIFT_HOURS.morning.start ? 'morning' : 'evening';
     }
 
     function getShiftSessionId(shift) {
@@ -1562,11 +1563,6 @@
       var title  = document.getElementById('cl-drawer-title');
       document.getElementById('cl-overlay').classList.add('open');
       drawer.classList.add('open');
-      if (!shift) {
-        title.textContent = 'צ\'ק ליסט';
-        body.innerHTML = '<div class="drawer-empty" style="padding:30px 0">⏰<br>אין משמרת פעילה כרגע<br><span style="font-size:12px;opacity:0.5">בוקר 09:00–16:00 · ערב 16:00–22:30</span></div>';
-        return;
-      }
       title.textContent = shift === 'morning' ? '☀️ משמרת בוקר' : '🌙 משמרת ערב';
       body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       var sessionId = getShiftSessionId(shift);
@@ -1723,7 +1719,9 @@
 
     /* Manager checklist */
     function openClMgr() {
-      _clMgrTab = 'morning';
+      _clMgrTab = getCurrentShift();
+      document.getElementById('cl-mgr-tab-morning').classList.toggle('active', _clMgrTab === 'morning');
+      document.getElementById('cl-mgr-tab-evening').classList.toggle('active', _clMgrTab === 'evening');
       var box = document.getElementById('cl-mgr-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
