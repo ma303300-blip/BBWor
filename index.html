@@ -257,6 +257,13 @@
     .sch-slot-name { font-size: 9px; font-weight: 700; color: #111; text-align: center; white-space: normal; word-break: break-word; line-height: 1.2; max-width: 100%; }
     .sch-slot-rm { background: none; border: none; color: #dc2626; font-size: 11px; cursor: pointer; padding: 0; line-height: 1; opacity: 0.65; -webkit-tap-highlight-color: transparent; position: absolute; top: 2px; left: 2px; }
     .sch-slot-rm:active { opacity: 1; }
+    @keyframes sch-mine-pulse {
+      0%,100% { border-color: #3b82f6; box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+      50% { border-color: #60a5fa; box-shadow: 0 0 0 4px rgba(59,130,246,0.28); }
+    }
+    .sch-slot-mine { border: 2px solid #3b82f6 !important; background: rgba(59,130,246,0.10) !important; animation: sch-mine-pulse 1.6s ease-in-out infinite; }
+    .sch-slot-mine .sch-slot-name { color: #1d4ed8; font-weight: 800; }
+    .sch-slot-mine .sch-slot-photo, .sch-slot-mine .sch-slot-ph { border-color: #3b82f6; }
     .sch-shift-sep { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 6px 3px; }
     .sch-sep-line { flex: 1; height: 1.5px; background: rgba(0,0,0,0.2); }
     .sch-sep-label { font-size: 11px; font-weight: 800; color: #333; white-space: nowrap; }
@@ -2177,7 +2184,8 @@
       var cell   = document.createElement('div');
 
       if (empId && emp) {
-        cell.className = 'sch-slot sch-slot-filled';
+        var isMine = !_schEditable && currentEmployee && empId === currentEmployee.id;
+        cell.className = 'sch-slot sch-slot-filled' + (isMine ? ' sch-slot-mine' : '');
         cell.innerHTML =
           (emp.photo ? '<img class="sch-slot-photo" src="' + emp.photo + '">'
                      : '<div class="sch-slot-ph">' + emp.firstName.charAt(0) + '</div>') +
