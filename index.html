@@ -351,6 +351,8 @@
     .constraint-assign-all-btn { width: 100%; padding: 14px; background: rgba(22,163,74,0.13); border: 1.5px solid rgba(22,163,74,0.42); border-radius: 13px; color: #4ade80; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 6px; -webkit-tap-highlight-color: transparent; transition: all 0.2s; }
     .constraint-assign-all-btn:active { background: rgba(22,163,74,0.28); }
     .constraint-assign-all-btn.done { background: rgba(22,163,74,0.08); color: rgba(74,222,128,0.4); border-color: rgba(22,163,74,0.15); cursor: default; pointer-events: none; }
+    .constraint-del-btn { background: rgba(220,38,38,0.12); border: 1px solid rgba(220,38,38,0.3); border-radius: 8px; padding: 5px 9px; color: #ff6b6b; font-size: 15px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+    .constraint-del-btn:active { background: rgba(220,38,38,0.3); }
   </style>
 </head>
 <body>
@@ -1870,10 +1872,27 @@
                 '<div style="flex:1;min-width:0"><div class="constraint-item-name">' + (d.empName || '') + '</div>' +
                 '<span class="constraint-item-branch">' + (BRANCH_NAME[d.branch] || d.branch) + '</span></div>' +
                 (showAssign ? actionBtn : '') +
+                '<button class="constraint-del-btn">🗑️</button>' +
               '</div>' +
               (txt1 ? '<div class="constraint-item-texts"><div class="constraint-item-text">1. ' + txt1 + '</div>' +
                 (txt2 ? '<div class="constraint-item-text">2. ' + txt2 + '</div>' : '') + daysOffRow + '</div>' : '') +
               (!showAssign ? actionBtn : '');
+            if (docId) {
+              var delBtn = item.querySelector('.constraint-del-btn');
+              (function(id, empName) {
+                delBtn.onclick = function(e) {
+                  e.stopPropagation();
+                  showConfirm('🗑️', 'מחיקת אילוץ', 'למחוק את האילוץ של ' + (empName || 'עובד') + '?\nהפעולה תמחק גם מפרופיל העובד.', function() {
+                    db.collection('constraints').doc(id).delete()
+                      .then(function() {
+                        var card = document.getElementById('citem-' + id);
+                        if (card) card.remove();
+                      })
+                      .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
+                  });
+                };
+              })(docId, d.empName);
+            }
             return item;
           }
           /* ── ממתינים לאישור ── */
@@ -2836,9 +2855,12 @@
             var batch = db.batch();
             var n = 0;
             snap.forEach(function(d) {
-              batch.delete(d.ref);
-              n++;
-              if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); }
+              var data = d.data();
+              if (!data.week || data.week < todayStr) {
+                batch.delete(d.ref);
+                n++;
+                if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); }
+              }
             });
             if (n % 490 !== 0) batches.push(batch.commit());
             return Promise.all(batches).then(function() {
