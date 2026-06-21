@@ -222,6 +222,7 @@
     .day-circles { display: flex; gap: 4px; justify-content: center; }
     .day-circle { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; -webkit-tap-highlight-color: transparent; font-family: inherit; user-select: none; }
     .day-circle.motzash { font-size: 9px; line-height: 1.2; text-align: center; }
+    .select-all-btn { align-self: center; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.35); border-radius: 20px; padding: 5px 14px; color: var(--gold); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .day-circle.selected { background: var(--gold); border-color: var(--gold); color: #111; }
     .shift-btns { display: flex; gap: 8px; }
     .shift-btn { flex: 1; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 4px; color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; text-align: center; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
@@ -440,6 +441,21 @@
         </div>
       </div>
 
+      <!-- Box 3 — ימי חופש -->
+      <div class="constraint-box">
+        <div class="constraint-box-title">ימי חופש <span style="font-weight:400;color:rgba(255,255,255,0.35);font-size:11px">(אופציונלי)</span></div>
+        <div class="day-circles" id="days-off">
+          <div class="day-circle" onclick="toggleDayOff(this)">א</div>
+          <div class="day-circle" onclick="toggleDayOff(this)">ב</div>
+          <div class="day-circle" onclick="toggleDayOff(this)">ג</div>
+          <div class="day-circle" onclick="toggleDayOff(this)">ד</div>
+          <div class="day-circle" onclick="toggleDayOff(this)">ה</div>
+          <div class="day-circle" onclick="toggleDayOff(this)">ו</div>
+          <div class="day-circle motzash" onclick="toggleDayOff(this)">מוצ"ש</div>
+        </div>
+        <button class="select-all-btn" onclick="selectAllDaysOff()">כל השבוע</button>
+      </div>
+
       <div class="constraint-row-btns">
         <button class="constraint-send-btn" onclick="submitConstraints()">שלח ✦</button>
         <button class="constraint-back-btn" onclick="closeConstraintForm()">ביטול</button>
@@ -611,7 +627,7 @@
     var currentConstraintData = null;
     var currentConstraintDocId = null;
     var currentConstraintPendingDocId = null;
-    var _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null } };
+    var _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null }, daysOff: [] };
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1135,9 +1151,11 @@
         var c2 = currentConstraintData.constraint2;
         var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
         var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
+        var daysOff = currentConstraintData.daysOff;
+        var line3 = (daysOff && daysOff.length) ? 'ימי חופש: ' + daysOff.join(', ') : '';
         document.getElementById('cstatus-icon').textContent = '✅';
         document.getElementById('cstatus-heading').textContent = 'האילוצים שאושרו לך';
-        document.getElementById('cstatus-text').textContent = line1 + '\n' + line2;
+        document.getElementById('cstatus-text').textContent = line1 + '\n' + line2 + (line3 ? '\n' + line3 : '');
         document.getElementById('constraint-status-modal').classList.add('open');
         return;
       }
@@ -1182,7 +1200,7 @@
 
     function openConstraintForm() {
       closeConstraintInfo();
-      _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null } };
+      _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null }, daysOff: [] };
       document.querySelectorAll('#constraint-form-modal .day-circle').forEach(function(c) { c.classList.remove('selected'); });
       ['shift-1-morning','shift-1-evening','shift-2-morning','shift-2-evening'].forEach(function(id) {
         document.getElementById(id).classList.remove('selected');
@@ -1211,6 +1229,26 @@
       document.getElementById('shift-' + box + '-evening').classList.toggle('selected', shift === 'ערב');
     }
 
+    function toggleDayOff(el) {
+      var day = el.textContent;
+      var idx = _constraintSel.daysOff.indexOf(day);
+      if (idx === -1) {
+        _constraintSel.daysOff.push(day);
+        el.classList.add('selected');
+      } else {
+        _constraintSel.daysOff.splice(idx, 1);
+        el.classList.remove('selected');
+      }
+    }
+
+    function selectAllDaysOff() {
+      _constraintSel.daysOff = [];
+      document.querySelectorAll('#days-off .day-circle').forEach(function(c) {
+        _constraintSel.daysOff.push(c.textContent);
+        c.classList.add('selected');
+      });
+    }
+
     function submitConstraints() {
       var s1 = _constraintSel[1], s2 = _constraintSel[2];
       if (!s1.day || !s1.shift || !s2.day || !s2.shift) {
@@ -1225,6 +1263,7 @@
         week: getWeekId(),
         constraint1: { day: s1.day, shift: s1.shift },
         constraint2: { day: s2.day, shift: s2.shift },
+        daysOff: _constraintSel.daysOff.slice(),
         submittedAt: new Date().toISOString(),
         status: 'pending',
         approvedAt: null
