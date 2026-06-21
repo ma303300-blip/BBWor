@@ -510,7 +510,8 @@
             badge.classList.toggle('show', count > 0);
           });
       }
-      showGreeting('אוריה', function() { show('manager'); });
+      show('manager');
+      showGreeting('אוריה');
     }
 
     function enterBranch(branch) {
@@ -597,7 +598,7 @@
       showModal('✉️', fullName + ' יקר/ה', 'בקשתך נשלחה למנהלת.\nלאחר אישור תוכל/י להיכנס לאפליקציה.', goHome);
     }
 
-    function showGreeting(name, callback) {
+    function showGreeting(name) {
       var overlay = document.getElementById('greet-overlay');
       var txt = document.getElementById('greet-text');
       txt.textContent = 'היי ' + name + '!';
@@ -605,17 +606,15 @@
       void txt.offsetWidth;
       txt.classList.add('run');
       overlay.classList.add('active');
-      setTimeout(function() {
-        overlay.classList.remove('active');
-        callback();
-      }, 1800);
+      setTimeout(function() { overlay.classList.remove('active'); }, 1800);
     }
 
     function openEmployeeHome(emp) {
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
       renderEmployeeGrid();
-      showGreeting(emp.firstName, function() { show('employee'); });
+      show('employee');
+      showGreeting(emp.firstName);
     }
 
     function logout() { goHome(); }
