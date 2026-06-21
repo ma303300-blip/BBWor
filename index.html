@@ -1057,7 +1057,7 @@
       if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
       _pendingApprovalUnsub = db.collection('employees').doc(empId).onSnapshot(function(doc) {
         if (!doc.exists) return;
-        var emp = doc.data();
+        var emp = Object.assign({ id: doc.id }, doc.data());
         if (emp.status !== 'approved') return;
         if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
         document.getElementById('modal').classList.remove('open');
@@ -1899,6 +1899,7 @@
       _schEditable  = !!editable;
       _schWeekStart = _schGetWeekStart();
       _schBranch    = editable ? 'raanana' : (currentEmployee ? currentEmployee.branch : 'raanana');
+      sessionStorage.setItem('bbwor_sch_editable', editable ? '1' : '');
       show('schedule');
       _schRenderHeader();
       _schLoadEmpsAndListen();
@@ -2426,10 +2427,16 @@
         (function() {
           var branches = ['raanana', 'hadera'];
           var i = 0;
-          var lastScreen = sessionStorage.getItem('bbwor_screen');
+          var lastScreen     = sessionStorage.getItem('bbwor_screen');
+          var lastSchEditable = sessionStorage.getItem('bbwor_sch_editable') === '1';
           function tryBranch() {
             if (i >= branches.length) {
-              if (lastScreen === 'manager') { enterManager(); }
+              /* no employee session found — manager-only restore */
+              if (lastScreen === 'manager') {
+                try { enterManager(); } catch(e) { show('home'); }
+              } else if (lastScreen === 'schedule' && lastSchEditable) {
+                try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
+              }
               return;
             }
             var b = branches[i++];
@@ -2445,6 +2452,9 @@
                 if (emp.status === 'approved') {
                   if (lastScreen === 'manager') {
                     try { enterManager(); } catch(e) { show('home'); }
+                  } else if (lastScreen === 'schedule' && lastSchEditable) {
+                    /* manager with employee session refreshes from editable schedule */
+                    try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
                   } else if (lastScreen === 'schedule') {
                     currentEmployee = emp;
                     try { openSchedule(false); } catch(e) { openEmployeeHome(emp); }
