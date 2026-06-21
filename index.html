@@ -1255,10 +1255,16 @@
     }
 
     function selectAllDaysOff() {
+      var circles = document.querySelectorAll('#days-off .day-circle');
+      var allSelected = _constraintSel.daysOff.length === circles.length;
       _constraintSel.daysOff = [];
-      document.querySelectorAll('#days-off .day-circle').forEach(function(c) {
-        _constraintSel.daysOff.push(c.textContent);
-        c.classList.add('selected');
+      circles.forEach(function(c) {
+        if (!allSelected) {
+          _constraintSel.daysOff.push(c.textContent);
+          c.classList.add('selected');
+        } else {
+          c.classList.remove('selected');
+        }
       });
     }
 
