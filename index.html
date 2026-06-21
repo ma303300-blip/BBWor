@@ -630,8 +630,10 @@
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       document.getElementById('screen-' + name).classList.add('active');
       if (name !== 'manager') {
-        document.getElementById('fab-mail').classList.remove('visible');
-        document.getElementById('fab-people').classList.remove('visible');
+        var fabMail = document.getElementById('fab-mail');
+        var fabPeople = document.getElementById('fab-people');
+        if (fabMail) fabMail.classList.remove('visible');
+        if (fabPeople) fabPeople.classList.remove('visible');
       }
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
@@ -985,14 +987,14 @@
     function showModal(icon, heading, text, onOk) {
       document.getElementById('modal-icon').textContent    = icon;
       document.getElementById('modal-heading').textContent = heading;
-      document.querySelector('.modal-body-text').textContent = text;
+      document.getElementById('modal-text').textContent = text;
       modalCallback = onOk;
       document.getElementById('modal').classList.add('open');
     }
 
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
-      var bodyEl = document.querySelector('.modal-body-text');
+      var bodyEl = document.getElementById('modal-text');
       bodyEl.style.color = ''; bodyEl.style.fontSize = ''; bodyEl.style.fontWeight = '';
       if (modalCallback) { var cb = modalCallback; modalCallback = null; cb(); }
     }
@@ -1211,11 +1213,10 @@
 
     function checkEmpConstraintStatus(empId) {
       if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
-      var week = getWeekId();
       _constraintEmpUnsub = db.collection('constraints')
         .where('empId', '==', empId)
-        .where('week', '==', week)
         .onSnapshot(function(snap) {
+          var week = getWeekId();
           var badge = document.getElementById('emp-constraint-badge');
           if (!badge) return;
           currentConstraintData = null;
@@ -1223,11 +1224,14 @@
           currentConstraintPendingDocId = null;
           snap.forEach(function(doc) {
             var d = doc.data();
+            if (d.week !== week) return;
             if (d.status === 'approved') { currentConstraintData = d; currentConstraintDocId = doc.id; }
             else if (d.status === 'pending') { currentConstraintPendingDocId = doc.id; }
           });
           badge.textContent = '✓';
           badge.classList.toggle('show', !!currentConstraintData);
+        }, function(err) {
+          console.error('constraint listener error', err);
         });
     }
 
@@ -1295,6 +1299,9 @@
         if (!session) { tryBranch(); return; }
         db.collection('employees').doc(session.empId).get()
           .then(function(doc) {
+            /* If user already navigated away from home (tapped a button while Firestore was loading),
+               don't override their navigation. */
+            if (!document.getElementById('screen-home').classList.contains('active')) return;
             if (!doc.exists) { clearSession(b); tryBranch(); return; }
             var emp = doc.data();
             activeBranch = b;
