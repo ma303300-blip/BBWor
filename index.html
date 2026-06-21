@@ -423,7 +423,7 @@
   </div>
 
   <!-- CONSTRAINT INFO MODAL -->
-  <div class="modal-overlay" id="constraint-info-modal">
+  <div class="modal-overlay" id="constraint-info-modal" onclick="if(event.target===this)closeConstraintInfo()">
     <div class="modal-box" id="constraint-info-box">
       <div class="modal-big-icon">📌</div>
       <div class="modal-heading" id="constraint-info-name"></div>
@@ -436,7 +436,7 @@
   </div>
 
   <!-- CONSTRAINT FORM MODAL -->
-  <div class="modal-overlay" id="constraint-form-modal">
+  <div class="modal-overlay" id="constraint-form-modal" onclick="if(event.target===this)closeConstraintForm()">
     <div class="modal-box" id="constraint-form-box" style="gap:14px;align-items:stretch;max-height:88vh;overflow-y:auto">
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">בחר/י אילוצים לשבוע</div>
 
@@ -503,7 +503,7 @@
   </div>
 
   <!-- EDIT MODAL -->
-  <div class="modal-overlay" id="edit-modal">
+  <div class="modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEditModal()">
     <div class="modal-box" id="edit-box" style="gap:14px;align-items:stretch">
       <div style="text-align:center;font-size:44px;line-height:1.2" id="edit-preview-icon">✦</div>
       <div style="font-size:12px;color:var(--text-dim)">אימוג׳י</div>
@@ -518,7 +518,7 @@
   </div>
 
   <!-- MODAL -->
-  <div class="modal-overlay" id="modal">
+  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
     <div class="modal-box" id="modal-box">
       <div class="modal-big-icon" id="modal-icon"></div>
       <div class="modal-heading"  id="modal-heading"></div>
@@ -528,7 +528,7 @@
   </div>
 
   <!-- CONFIRM MODAL -->
-  <div class="modal-overlay" id="confirm-modal">
+  <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
     <div class="modal-box" id="confirm-box">
       <div class="modal-big-icon" id="confirm-icon"></div>
       <div class="modal-heading" id="confirm-heading"></div>
@@ -551,7 +551,7 @@
   </div>
 
   <!-- CHECKLIST MANAGER MODAL -->
-  <div class="modal-overlay" id="cl-mgr-modal">
+  <div class="modal-overlay" id="cl-mgr-modal" onclick="if(event.target===this)closeClMgr()">
     <div class="modal-box" id="cl-mgr-box" style="gap:12px;align-items:stretch;max-height:88vh;overflow-y:auto;max-width:380px;padding:20px 16px">
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">צ'ק ליסט — מנהלת</div>
       <div class="cl-tab-row">
@@ -588,7 +588,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="constraint-status-modal">
+  <div class="modal-overlay" id="constraint-status-modal" onclick="if(event.target===this)closeConstraintStatus()">
     <div class="modal-box" id="cstatus-box">
       <div class="modal-big-icon" id="cstatus-icon"></div>
       <div class="modal-heading" id="cstatus-heading"></div>
