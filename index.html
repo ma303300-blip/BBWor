@@ -1360,8 +1360,9 @@
             item.className = 'constraint-item';
             item.id = 'citem-' + doc.id;
             var c1 = d.constraint1, c2 = d.constraint2;
-            var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
-            var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
+            var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : String(c1 || '');
+            var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : String(c2 || '');
+            var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
             item.innerHTML =
               '<div class="constraint-item-name">' + d.empName + '</div>' +
               '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
@@ -1369,6 +1370,7 @@
               '<div class="constraint-item-texts">' +
                 '<div class="constraint-item-text">1. ' + txt1 + '</div>' +
                 '<div class="constraint-item-text">2. ' + txt2 + '</div>' +
+                daysOffRow +
               '</div>' +
               '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
             body.appendChild(item);
