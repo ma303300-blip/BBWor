@@ -332,6 +332,12 @@
     .constraint-item-texts { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
     .constraint-item-text { font-size: 13px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); border-radius: 7px; padding: 6px 10px; }
     .constraint-approve-btn { align-self: flex-end; background: rgba(70,185,80,0.85); border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; color: #fff; margin-top: 4px; }
+    .constraint-assign-btn { background: rgba(22,163,74,0.15); border: 1.5px solid rgba(22,163,74,0.5); border-radius: 9px; padding: 7px 11px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; color: #4ade80; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: all 0.15s; white-space: nowrap; }
+    .constraint-assign-btn:active { background: rgba(22,163,74,0.32); }
+    .constraint-assign-btn.done { background: rgba(22,163,74,0.07); color: rgba(74,222,128,0.45); border-color: rgba(22,163,74,0.18); cursor: default; pointer-events: none; }
+    .constraint-assign-all-btn { width: 100%; padding: 14px; background: rgba(22,163,74,0.13); border: 1.5px solid rgba(22,163,74,0.42); border-radius: 13px; color: #4ade80; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 6px; -webkit-tap-highlight-color: transparent; transition: all 0.2s; }
+    .constraint-assign-all-btn:active { background: rgba(22,163,74,0.28); }
+    .constraint-assign-all-btn.done { background: rgba(22,163,74,0.08); color: rgba(74,222,128,0.4); border-color: rgba(22,163,74,0.15); cursor: default; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -464,7 +470,7 @@
     <div class="pending-overlay" id="constraint-overlay" onclick="closeConstraintDrawer()"></div>
     <div class="pending-drawer" id="constraint-drawer">
       <div class="drawer-header">
-        <span class="drawer-title">📌 אילוצים ממתינים</span>
+        <span class="drawer-title">📌 אילוצים מאושרים</span>
         <button class="drawer-close-btn" onclick="closeConstraintDrawer()">✕</button>
       </div>
       <div class="drawer-body" id="constraint-drawer-body"></div>
@@ -952,7 +958,7 @@
           });
       }
       if (!_constraintBadgeUnsub) {
-        _constraintBadgeUnsub = db.collection('constraints').where('status', '==', 'pending')
+        _constraintBadgeUnsub = db.collection('constraints').where('status', '==', 'approved')
           .onSnapshot(function(snap) {
             var count = snap.size;
             var badge = document.getElementById('mgr-constraint-badge');
@@ -1188,7 +1194,7 @@
           el.style.cursor = 'pointer';
           el.innerHTML =
             '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
-            '<span class="constraint-badge-red" id="mgr-constraint-badge"></span>' +
+            '<span class="constraint-badge-green" id="mgr-constraint-badge"></span>' +
             '<span class="a-icon">' + item.icon + '</span>' +
             '<span class="a-label">' + item.label + '</span>';
           el.onclick = openConstraintDrawer;
@@ -1621,49 +1627,151 @@
         });
     }
 
+    function _constraintDayToIdx(day) {
+      var map = {'א':0,'ב':1,'ג':2,'ד':3,'ה':4,'ו':5};
+      if (!day) return -1;
+      if (day.indexOf('מוצ') !== -1 || day === 'ש') return 6;
+      return (map[day] !== undefined) ? map[day] : -1;
+    }
+
+    function _addConstraintToCells(con, cells) {
+      function assignOne(c) {
+        if (!c || !c.day) return;
+        var di = _constraintDayToIdx(c.day);
+        if (di < 0) return;
+        var shift = (c.shift === 'בוקר') ? 'morning' : 'evening';
+        var key = di + '_' + shift;
+        var arr = (cells[key] || []).slice();
+        if (arr.indexOf(con.empId) === -1 && arr.length < 4) arr.push(con.empId);
+        cells[key] = arr;
+      }
+      assignOne(con.constraint1);
+      assignOne(con.constraint2);
+    }
+
+    function _doAssignConstraint(con, btn, allConstraints) {
+      if (btn) { btn.disabled = true; btn.textContent = '...'; }
+      var weekStart = _schGetWeekStart();
+      var weekId = weekStart.getFullYear() + '-' +
+                   String(weekStart.getMonth()+1).padStart(2,'0') + '-' +
+                   String(weekStart.getDate()).padStart(2,'0');
+      var docId = con.branch + '_' + weekId;
+      db.collection('schedules').doc(docId).get()
+        .then(function(doc) {
+          var cells = doc.exists ? (doc.data().cells || {}) : {};
+          if (allConstraints) {
+            allConstraints.forEach(function(c) { _addConstraintToCells(c, cells); });
+          } else {
+            _addConstraintToCells(con, cells);
+          }
+          return db.collection('schedules').doc(docId).set(
+            { weekId: weekId, branch: con.branch, cells: cells, updatedAt: new Date().toISOString() },
+            { merge: true }
+          );
+        })
+        .then(function() {
+          if (btn) { btn.textContent = '✓ שובץ'; btn.classList.add('done'); }
+        })
+        .catch(function() {
+          if (btn) { btn.disabled = false; btn.textContent = 'שבץ בסידור'; }
+          showModal('⚠️', 'שגיאה', 'לא ניתן לשבץ. נסי שוב.', null);
+        });
+    }
+
     function openConstraintDrawer() {
       var body = document.getElementById('constraint-drawer-body');
       body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('constraint-overlay').classList.add('open');
       document.getElementById('constraint-drawer').classList.add('open');
-      db.collection('constraints').where('status', '==', 'pending').get()
+      db.collection('constraints').where('status', '==', 'approved').get()
         .then(function(snap) {
           body.innerHTML = '';
-          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין אילוצים ממתינים 🎉</div>'; return; }
+          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין אילוצים מאושרים עדיין</div>'; return; }
+          var allCons = [];
           var empIds = [];
           snap.forEach(function(doc) {
-            var eid = doc.data().empId;
-            if (eid && empIds.indexOf(eid) === -1) empIds.push(eid);
+            var d = Object.assign({ _docId: doc.id }, doc.data());
+            allCons.push(d);
+            if (d.empId && empIds.indexOf(d.empId) === -1) empIds.push(d.empId);
           });
           var fetches = empIds.map(function(id) { return db.collection('employees').doc(id).get(); });
           return Promise.all(fetches).then(function(empDocs) {
             var photoMap = {};
             empDocs.forEach(function(ed) { if (ed.exists) photoMap[ed.id] = ed.data().photo || null; });
-            snap.forEach(function(doc) {
-              var d = doc.data();
-              var item = document.createElement('div');
-              item.className = 'constraint-item';
-              item.id = 'citem-' + doc.id;
+            var btnRefs = [];
+            allCons.forEach(function(d) {
               var c1 = d.constraint1, c2 = d.constraint2;
-              var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : String(c1 || '');
-              var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : String(c2 || '');
-              var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
-              var photo = d.empId ? (photoMap[d.empId] || null) : null;
+              var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : '';
+              var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : '';
+              var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text" style="color:rgba(255,150,150,0.8)">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
+              var photo = photoMap[d.empId] || null;
               var avatarHtml = photo
                 ? '<img class="constraint-item-avatar" src="' + photo + '">'
                 : '<div class="constraint-item-avatar-ph">' + (d.empName || '?').charAt(0) + '</div>';
+              var item = document.createElement('div');
+              item.className = 'constraint-item';
               item.innerHTML =
-                '<div class="constraint-item-header">' + avatarHtml + '<div class="constraint-item-name">' + d.empName + '</div></div>' +
-                '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
-                ' <span class="constraint-item-week">שבוע: ' + d.week + '</span>' +
-                '<div class="constraint-item-texts">' +
-                  '<div class="constraint-item-text">1. ' + txt1 + '</div>' +
-                  '<div class="constraint-item-text">2. ' + txt2 + '</div>' +
-                  daysOffRow +
+                '<div class="constraint-item-header">' +
+                  avatarHtml +
+                  '<div style="flex:1;min-width:0"><div class="constraint-item-name">' + (d.empName || '') + '</div>' +
+                  '<span class="constraint-item-branch">' + (BRANCH_NAME[d.branch] || d.branch) + '</span></div>' +
+                  '<button class="constraint-assign-btn">שבץ בסידור</button>' +
                 '</div>' +
-                '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
+                (txt1 ? '<div class="constraint-item-texts"><div class="constraint-item-text">1. ' + txt1 + '</div>' +
+                  (txt2 ? '<div class="constraint-item-text">2. ' + txt2 + '</div>' : '') +
+                  daysOffRow + '</div>' : '');
+              var btn = item.querySelector('.constraint-assign-btn');
+              btnRefs.push(btn);
+              (function(con, b) {
+                b.onclick = function() { _doAssignConstraint(con, b, null); };
+              })(d, btn);
               body.appendChild(item);
             });
+            /* "שבץ הכל" button */
+            var sep = document.createElement('div');
+            sep.style.cssText = 'height:1px;background:rgba(255,255,255,0.08);margin:8px 0';
+            body.appendChild(sep);
+            var assignAllBtn = document.createElement('button');
+            assignAllBtn.className = 'constraint-assign-all-btn';
+            assignAllBtn.textContent = '📋 שבץ את כל האילוצים בסידור העבודה';
+            assignAllBtn.onclick = function() {
+              assignAllBtn.disabled = true;
+              assignAllBtn.textContent = '...';
+              /* group by branch */
+              var byBranch = {};
+              allCons.forEach(function(c) {
+                if (!byBranch[c.branch]) byBranch[c.branch] = [];
+                byBranch[c.branch].push(c);
+              });
+              var weekStart = _schGetWeekStart();
+              var weekId = weekStart.getFullYear() + '-' +
+                           String(weekStart.getMonth()+1).padStart(2,'0') + '-' +
+                           String(weekStart.getDate()).padStart(2,'0');
+              var promises = Object.keys(byBranch).map(function(branch) {
+                var docId = branch + '_' + weekId;
+                return db.collection('schedules').doc(docId).get()
+                  .then(function(doc) {
+                    var cells = doc.exists ? (doc.data().cells || {}) : {};
+                    byBranch[branch].forEach(function(con) { _addConstraintToCells(con, cells); });
+                    return db.collection('schedules').doc(docId).set(
+                      { weekId: weekId, branch: branch, cells: cells, updatedAt: new Date().toISOString() },
+                      { merge: true }
+                    );
+                  });
+              });
+              Promise.all(promises)
+                .then(function() {
+                  assignAllBtn.textContent = '✓ כל האילוצים שובצו!';
+                  assignAllBtn.classList.add('done');
+                  btnRefs.forEach(function(b) { b.textContent = '✓ שובץ'; b.classList.add('done'); });
+                })
+                .catch(function() {
+                  assignAllBtn.disabled = false;
+                  assignAllBtn.textContent = '📋 שבץ את כל האילוצים בסידור העבודה';
+                  showModal('⚠️', 'שגיאה', 'שגיאה בשיבוץ. נסי שוב.', null);
+                });
+            };
+            body.appendChild(assignAllBtn);
           });
         })
         .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
