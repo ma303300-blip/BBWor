@@ -773,9 +773,11 @@
     window.addEventListener('offline', function() { setSyncStatus('error'); });
     window.addEventListener('online',  function() { setSyncStatus('connecting'); });
 
-    var MANAGER_PIN = 'אהבת חינם';
+    var MANAGER_PIN         = 'אהבת חינם';
+    var MANAGER_PIN_ENABLED = false; /* שנה ל-true כדי להפעיל סיסמה */
 
     function enterManager() {
+      if (!MANAGER_PIN_ENABLED) { _openManagerDashboard(); return; }
       var inp = document.getElementById('mgr-pin-input');
       if (inp) { inp.value = ''; inp.style.borderColor = 'rgba(201,168,76,0.3)'; inp.placeholder = 'סיסמה...'; }
       document.getElementById('mgr-pin-overlay').classList.add('open');
