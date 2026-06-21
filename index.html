@@ -188,6 +188,11 @@
     .fab-badge { position: absolute; top: -3px; right: -3px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 19px; height: 19px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; }
     .fab-badge.show { display: flex; }
 
+    /* FAB PEOPLE */
+    .fab-people { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); left: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid #2ecc71; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; transition: transform 0.15s; }
+    .fab-people.visible { display: flex; }
+    .fab-people:active { transform: scale(0.92); }
+
     /* PENDING DRAWER */
     .pending-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; }
     .pending-overlay.open { display: block; }
@@ -335,8 +340,17 @@
       <div id="mgr-banner-wrap"></div>
       <div class="action-grid" id="mgr-action-grid-2"></div>
     </div>
-    <!-- FAB -->
+    <!-- FAB MAIL -->
     <div class="fab-mail" id="fab-mail" onclick="openPendingDrawer()">📬<span class="fab-badge" id="fab-badge"></span></div>
+    <!-- FAB PEOPLE -->
+    <div class="fab-people" id="fab-people" onclick="openEmployeeListDrawer()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 20" width="28" height="22">
+        <circle cx="8" cy="5.5" r="4.2" fill="#2ecc71"/>
+        <path d="M0 19c0-4.6 3.6-8.3 8-8.3s8 3.7 8 8.3" fill="#2ecc71"/>
+        <circle cx="20" cy="5.5" r="3.3" fill="#2ecc71"/>
+        <path d="M15.5 19c.4-3.8 3.2-6.7 6.5-7.1" stroke="#2ecc71" stroke-width="2.3" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
     <!-- Pending overlay + drawer -->
     <div class="pending-overlay" id="pending-overlay" onclick="closePendingDrawer()"></div>
     <div class="pending-drawer" id="pending-drawer">
@@ -354,6 +368,15 @@
         <button class="drawer-close-btn" onclick="closeConstraintDrawer()">✕</button>
       </div>
       <div class="drawer-body" id="constraint-drawer-body"></div>
+    </div>
+    <!-- Employee list overlay + drawer -->
+    <div class="pending-overlay" id="emplist-overlay" onclick="closeEmployeeListDrawer()"></div>
+    <div class="pending-drawer" id="emplist-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title" style="color:#2ecc71">ניהול עובדים</span>
+        <button class="drawer-close-btn" onclick="closeEmployeeListDrawer()">✕</button>
+      </div>
+      <div class="drawer-body" id="emplist-drawer-body"></div>
     </div>
   </div>
 
@@ -407,6 +430,19 @@
       <div class="modal-heading"  id="modal-heading"></div>
       <div class="modal-body-text" id="modal-text"></div>
       <button class="modal-ok-btn" onclick="closeModal()">הבנתי</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal-box">
+      <div class="modal-big-icon" id="confirm-icon"></div>
+      <div class="modal-heading" id="confirm-heading"></div>
+      <div class="modal-body-text" id="confirm-text"></div>
+      <div class="edit-row-btns" style="width:100%;margin-top:8px">
+        <button class="edit-save-btn" id="confirm-ok-btn" style="background:#e03535;border-color:#e03535">מחק לצמיתות 🗑️</button>
+        <button class="edit-cancel-btn" onclick="closeConfirm()">ביטול</button>
+      </div>
     </div>
   </div>
 
@@ -518,6 +554,7 @@
     var currentEmployee = null;
     var _constraintBadgeUnsub = null;
     var _constraintEmpUnsub = null;
+    var _confirmCallback = null;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -536,7 +573,10 @@
     function show(name) {
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       document.getElementById('screen-' + name).classList.add('active');
-      if (name !== 'manager') document.getElementById('fab-mail').classList.remove('visible');
+      if (name !== 'manager') {
+        document.getElementById('fab-mail').classList.remove('visible');
+        document.getElementById('fab-people').classList.remove('visible');
+      }
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
       localStorage.setItem('bbwor_screen', name);
@@ -574,6 +614,7 @@
     function enterManager() {
       renderManagerGrid();
       document.getElementById('fab-mail').classList.add('visible');
+      document.getElementById('fab-people').classList.add('visible');
       if (!_badgeUnsub) {
         _badgeUnsub = db.collection('employees').where('status', '==', 'pending')
           .onSnapshot(function(snap) {
@@ -896,6 +937,96 @@
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
       if (modalCallback) { var cb = modalCallback; modalCallback = null; cb(); }
+    }
+
+    /* ═══════════════════════════════════
+       CONFIRM MODAL
+    ═══════════════════════════════════ */
+    function showConfirm(icon, heading, text, onConfirm) {
+      document.getElementById('confirm-icon').textContent   = icon;
+      document.getElementById('confirm-heading').textContent = heading;
+      document.getElementById('confirm-text').textContent   = text;
+      _confirmCallback = onConfirm;
+      document.getElementById('confirm-ok-btn').onclick = function() {
+        closeConfirm();
+        if (_confirmCallback) { var cb = _confirmCallback; _confirmCallback = null; cb(); }
+      };
+      document.getElementById('confirm-modal').classList.add('open');
+    }
+
+    function closeConfirm() {
+      document.getElementById('confirm-modal').classList.remove('open');
+      _confirmCallback = null;
+    }
+
+    /* ═══════════════════════════════════
+       EMPLOYEE LIST (MANAGER)
+    ═══════════════════════════════════ */
+    function openEmployeeListDrawer() {
+      var body = document.getElementById('emplist-drawer-body');
+      body.innerHTML = '<div class="drawer-empty">טוען...</div>';
+      document.getElementById('emplist-overlay').classList.add('open');
+      document.getElementById('emplist-drawer').classList.add('open');
+      db.collection('employees').get()
+        .then(function(snap) {
+          body.innerHTML = '';
+          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין עובדים רשומים</div>'; return; }
+          snap.forEach(function(doc) {
+            var emp = doc.data();
+            var avatarHtml = emp.photo
+              ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
+              : (emp.firstName ? emp.firstName[0].toUpperCase() : '?');
+            var statusTxt = emp.status === 'approved' ? '✓ פעיל' : '⏳ ממתין';
+            var card = document.createElement('div');
+            card.className = 'req-card';
+            card.id = 'emplist-' + emp.id;
+            card.innerHTML =
+              '<div class="emp-avatar">' + avatarHtml + '</div>' +
+              '<div class="emp-info">' +
+                '<div class="emp-fullname">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+                '<span class="req-branch-tag">' + BRANCH_NAME[emp.branch] + '</span>' +
+                '<div class="emp-phone-txt">' + statusTxt + '</div>' +
+              '</div>' +
+              '<div class="emp-actions">' +
+                '<button class="btn-reject" onclick="confirmDeleteEmployee(\'' + emp.id + '\',\'' + emp.firstName + ' ' + emp.lastName + '\')">🗑️</button>' +
+              '</div>';
+            body.appendChild(card);
+          });
+        })
+        .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
+    }
+
+    function closeEmployeeListDrawer() {
+      document.getElementById('emplist-overlay').classList.remove('open');
+      document.getElementById('emplist-drawer').classList.remove('open');
+    }
+
+    function confirmDeleteEmployee(empId, empName) {
+      showConfirm('🗑️', 'מחיקת עובד', 'האם למחוק את ' + empName + ' לצמיתות?\nכל הנתונים שלו יימחקו לחלוטין.', function() {
+        deleteEmployeePermanently(empId);
+      });
+    }
+
+    function deleteEmployeePermanently(empId) {
+      db.collection('constraints').where('empId', '==', empId).get()
+        .then(function(snap) {
+          var batch = db.batch();
+          snap.forEach(function(doc) { batch.delete(doc.ref); });
+          batch.delete(db.collection('employees').doc(empId));
+          return batch.commit();
+        })
+        .then(function() {
+          ['raanana', 'hadera'].forEach(function(branch) {
+            var session = getSession(branch);
+            if (session && session.empId === empId) clearSession(branch);
+          });
+          var card = document.getElementById('emplist-' + empId);
+          if (card) card.remove();
+          if (!document.querySelector('#emplist-drawer-body .req-card')) {
+            document.getElementById('emplist-drawer-body').innerHTML = '<div class="drawer-empty">אין עובדים רשומים</div>';
+          }
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
     }
 
     /* ═══════════════════════════════════
