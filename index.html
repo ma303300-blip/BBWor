@@ -866,6 +866,7 @@
 
     function _openManagerDashboard() {
       renderManagerGrid();
+      loadMgrGoalBanner();
       document.getElementById('fab-mail').classList.add('visible');
       document.getElementById('fab-people').classList.add('visible');
       if (!_badgeUnsub) {
@@ -1079,12 +1080,20 @@
         var el = document.createElement('div');
         el.className = 'action-btn';
         el.style.cursor = 'pointer';
-        el.innerHTML =
-          '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
-          '<span class="a-icon">' + item.icon + '</span>' +
-          '<span class="a-label">' + item.label + '</span>';
-        if (key === 'btn1') { el.onclick = openClMgr; }
-        else if (key === 'btn2') { el.onclick = openGoalModal; }
+        if (key === 'btn2') {
+          el.id = 'mgr-goal-btn';
+          el.innerHTML =
+            '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+            '<span class="a-icon">' + item.icon + '</span>' +
+            '<span class="a-label">' + item.label + '</span>';
+          el.onclick = openGoalModal;
+        } else {
+          el.innerHTML =
+            '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+            '<span class="a-icon">' + item.icon + '</span>' +
+            '<span class="a-label">' + item.label + '</span>';
+          if (key === 'btn1') { el.onclick = openClMgr; }
+        }
         grid.appendChild(el);
       });
       bannerWrap.innerHTML = '';
@@ -1929,9 +1938,7 @@
 
     function closeEmpGoalModal() { document.getElementById('emp-goal-modal').classList.remove('open'); }
 
-    function loadGoalBanner() {
-      var btn = document.getElementById('emp-goal-btn');
-      if (!btn) return;
+    function _fillGoalBtn(btn) {
       var monthId = getMonthId(), todayId = getTodayId();
       var goal = 0, total = 0, todayAmt = 0;
       db.collection('monthly_goals').doc(monthId).get()
@@ -1946,20 +1953,35 @@
         .then(function(td) {
           todayAmt = td.exists ? (td.data().amount || 0) : 0;
           var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+          var editBtn = btn.querySelector('.mgr-edit-btn');
+          var editHtml = editBtn ? editBtn.outerHTML : '';
           btn.innerHTML =
+            editHtml +
             '<div style="width:100%;display:flex;flex-direction:column;gap:5px;padding:2px 0">' +
               '<div style="display:flex;justify-content:space-between;align-items:center">' +
                 '<span style="font-size:18px">🎯</span>' +
                 '<span style="font-size:13px;font-weight:700;color:var(--gold)">' + pct + '%</span>' +
               '</div>' +
-              '<div style="font-size:15px;font-weight:700;color:#fff;text-align:right" id="ghb-total-val">' + fmtMoney(total) + '</div>' +
+              '<div style="font-size:15px;font-weight:700;color:#fff;text-align:right" id="' + btn.id + '-total">' + fmtMoney(total) + '</div>' +
               '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
               '<div style="font-size:10px;color:var(--text-dim);text-align:right">יעד חודשי</div>' +
             '</div>';
-          var totEl = document.getElementById('ghb-total-val');
+          var totEl = document.getElementById(btn.id + '-total');
           if (totEl && total > 0) animateCount(totEl, 0, total, 1400);
         })
         .catch(function() {});
+    }
+
+    function loadMgrGoalBanner() {
+      var btn = document.getElementById('mgr-goal-btn');
+      if (!btn) return;
+      _fillGoalBtn(btn);
+    }
+
+    function loadGoalBanner() {
+      var btn = document.getElementById('emp-goal-btn');
+      if (!btn) return;
+      _fillGoalBtn(btn);
     }
 
     /* Manager checklist */
