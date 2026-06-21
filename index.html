@@ -555,6 +555,7 @@
     var _constraintBadgeUnsub = null;
     var _constraintEmpUnsub = null;
     var _confirmCallback = null;
+    var currentConstraintData = null;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1043,6 +1044,14 @@
 
     function openConstraintModal() {
       if (!currentEmployee) return;
+      if (currentConstraintData) {
+        showModal('✅', 'האילוצים שאושרו לך',
+          'שבוע: ' + currentConstraintData.week + '\n\n' +
+          '1. ' + currentConstraintData.constraint1 + '\n' +
+          '2. ' + currentConstraintData.constraint2,
+          null);
+        return;
+      }
       document.getElementById('constraint-info-name').textContent = 'היי ' + currentEmployee.firstName + '!';
       var box = document.getElementById('constraint-info-box');
       box.classList.remove('zoom-anim');
@@ -1105,7 +1114,10 @@
           var badge = document.getElementById('emp-constraint-badge');
           if (!badge) return;
           var approved = false;
-          snap.forEach(function(doc) { if (doc.data().status === 'approved') approved = true; });
+          currentConstraintData = null;
+          snap.forEach(function(doc) {
+            if (doc.data().status === 'approved') { approved = true; currentConstraintData = doc.data(); }
+          });
           badge.textContent = '✓';
           badge.classList.toggle('show', approved);
         });
