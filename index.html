@@ -1631,13 +1631,15 @@
       var itemsEl = document.getElementById('cl-mgr-items');
       var compEl  = document.getElementById('cl-mgr-completions');
       itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px">טוען...</div>';
-      compEl.innerHTML  = '';
+      compEl.innerHTML  = '<div style="color:var(--text-dim);font-size:12px;text-align:center">טוען...</div>';
       db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
-        .then(function(snap) {
+        .then(function(itemsSnap) {
           itemsEl.innerHTML = '';
-          if (snap.empty) { itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px">אין פריטים</div>'; return; }
-          var docs = []; snap.forEach(function(doc) { docs.push(doc); });
+          var itemMap = {};
+          var docs = [];
+          itemsSnap.forEach(function(doc) { docs.push(doc); itemMap[doc.id] = doc.data().text; });
           docs.sort(function(a,b){ return (a.data().order||0)-(b.data().order||0); });
+          if (!docs.length) { itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px">אין פריטים</div>'; }
           docs.forEach(function(doc) {
             var row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;gap:8px';
@@ -1645,19 +1647,23 @@
               '<button class="cl-del-btn" onclick="deleteChecklistItem(\'' + doc.id + '\')">🗑️</button>';
             itemsEl.appendChild(row);
           });
-        });
-      db.collection('checklist_completions').where('sessionId','==',session).get()
-        .then(function(snap) {
-          compEl.innerHTML = '';
-          if (snap.empty) { compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">אין אישורים עדיין למשמרת זו</div>'; return; }
-          snap.forEach(function(doc) {
-            var d = doc.data();
-            var row = document.createElement('div');
-            row.className = 'cl-item done';
-            row.innerHTML = '<div style="flex:1"><div class="cl-item-text">' + (d.itemId||'') + '</div><div class="cl-mgr-emp">✅ ' + d.empName + '</div></div>' +
-              (d.photoBase64 ? '<img class="cl-thumb" src="' + d.photoBase64 + '" onclick="viewClPhoto(this.src)">' : '<div class="cl-camera-btn done">✅</div>');
-            compEl.appendChild(row);
-          });
+          return db.collection('checklist_completions').where('sessionId','==',session).get()
+            .then(function(compSnap) {
+              compEl.innerHTML = '';
+              if (compSnap.empty) { compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">אין אישורים עדיין למשמרת זו</div>'; return; }
+              compSnap.forEach(function(doc) {
+                var d = doc.data();
+                var row = document.createElement('div');
+                row.className = 'cl-item done';
+                var itemText = itemMap[d.itemId] || d.itemId || '';
+                row.innerHTML = '<div style="flex:1"><div class="cl-item-text">' + itemText + '</div><div class="cl-mgr-emp">✅ ' + d.empName + '</div></div>' +
+                  (d.photoBase64 ? '<img class="cl-thumb" src="' + d.photoBase64 + '" onclick="viewClPhoto(this.src)">' : '<div class="cl-camera-btn done">✅</div>');
+                compEl.appendChild(row);
+              });
+            });
+        })
+        .catch(function() {
+          compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">שגיאה בטעינה</div>';
         });
     }
 
