@@ -227,6 +227,9 @@
     .shift-btns { display: flex; gap: 8px; }
     .shift-btn { flex: 1; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 4px; color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; text-align: center; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
     .shift-btn.selected { background: rgba(201,168,76,0.18); border-color: var(--gold); color: var(--gold); }
+    .start-time-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 9px 12px; color: rgba(255,255,255,0.5); font-size: 13px; font-family: inherit; cursor: pointer; text-align: right; width: 100%; transition: all 0.15s; }
+    .start-time-btn.active { border-color: rgba(201,168,76,0.5); color: var(--gold); }
+    .start-time-input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; padding: 9px 12px; color: #fff; font-size: 15px; font-family: inherit; margin-top: 6px; box-sizing: border-box; display: none; }
     .constraint-row-btns { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
     .constraint-send-btn { flex: 1; background: var(--gold); border: none; border-radius: 11px; padding: 14px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .constraint-back-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 11px; padding: 14px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
@@ -421,6 +424,8 @@
           <button class="shift-btn" id="shift-1-morning" onclick="selectShift(1,'בוקר')">☀️ משמרת בוקר</button>
           <button class="shift-btn" id="shift-1-evening" onclick="selectShift(1,'ערב')">🌙 משמרת ערב</button>
         </div>
+        <button class="start-time-btn" id="start-time-btn-1" onclick="toggleStartTime(1)">⏰ שעת התחלה <span style="font-size:11px;opacity:0.55">(אופציונלי)</span></button>
+        <input type="time" class="start-time-input" id="start-time-1" onchange="setStartTime(1,this.value)">
       </div>
 
       <!-- Box 2 -->
@@ -439,6 +444,8 @@
           <button class="shift-btn" id="shift-2-morning" onclick="selectShift(2,'בוקר')">☀️ משמרת בוקר</button>
           <button class="shift-btn" id="shift-2-evening" onclick="selectShift(2,'ערב')">🌙 משמרת ערב</button>
         </div>
+        <button class="start-time-btn" id="start-time-btn-2" onclick="toggleStartTime(2)">⏰ שעת התחלה <span style="font-size:11px;opacity:0.55">(אופציונלי)</span></button>
+        <input type="time" class="start-time-input" id="start-time-2" onchange="setStartTime(2,this.value)">
       </div>
 
       <!-- Box 3 — ימי חופש -->
@@ -627,7 +634,7 @@
     var currentConstraintData = null;
     var currentConstraintDocId = null;
     var currentConstraintPendingDocId = null;
-    var _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null }, daysOff: [] };
+    var _constraintSel = { 1: { day: null, shift: null, startTime: null }, 2: { day: null, shift: null, startTime: null }, daysOff: [] };
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1149,8 +1156,8 @@
       if (currentConstraintData) {
         var c1 = currentConstraintData.constraint1;
         var c2 = currentConstraintData.constraint2;
-        var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
-        var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
+        var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : String(c1 || '');
+        var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : String(c2 || '');
         var daysOff = currentConstraintData.daysOff;
         var line3 = (daysOff && daysOff.length) ? 'ימי חופש: ' + daysOff.join(', ') : '';
         document.getElementById('cstatus-icon').textContent = '✅';
@@ -1200,10 +1207,16 @@
 
     function openConstraintForm() {
       closeConstraintInfo();
-      _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null }, daysOff: [] };
+      _constraintSel = { 1: { day: null, shift: null, startTime: null }, 2: { day: null, shift: null, startTime: null }, daysOff: [] };
       document.querySelectorAll('#constraint-form-modal .day-circle').forEach(function(c) { c.classList.remove('selected'); });
       ['shift-1-morning','shift-1-evening','shift-2-morning','shift-2-evening'].forEach(function(id) {
         document.getElementById(id).classList.remove('selected');
+      });
+      [1, 2].forEach(function(n) {
+        var btn = document.getElementById('start-time-btn-' + n);
+        var inp = document.getElementById('start-time-' + n);
+        if (btn) { btn.classList.remove('active'); btn.textContent = ''; btn.innerHTML = '⏰ שעת התחלה <span style="font-size:11px;opacity:0.55">(אופציונלי)</span>'; }
+        if (inp) { inp.style.display = 'none'; inp.value = ''; }
       });
       var box = document.getElementById('constraint-form-box');
       box.classList.remove('zoom-anim');
@@ -1249,6 +1262,32 @@
       });
     }
 
+    function toggleStartTime(box) {
+      var btn = document.getElementById('start-time-btn-' + box);
+      var inp = document.getElementById('start-time-' + box);
+      var showing = inp.style.display === 'block';
+      if (showing) {
+        inp.style.display = 'none';
+        btn.classList.remove('active');
+        btn.innerHTML = '⏰ שעת התחלה <span style="font-size:11px;opacity:0.55">(אופציונלי)</span>';
+        _constraintSel[box].startTime = null;
+        inp.value = '';
+      } else {
+        inp.style.display = 'block';
+        btn.classList.add('active');
+        btn.innerHTML = '⏰ שעת התחלה <span style="font-size:11px;opacity:0.55">(אופציונלי)</span>';
+        inp.focus();
+      }
+    }
+
+    function setStartTime(box, val) {
+      _constraintSel[box].startTime = val || null;
+      var btn = document.getElementById('start-time-btn-' + box);
+      if (val) {
+        btn.innerHTML = '⏰ ' + val + ' <span style="font-size:11px;opacity:0.55">(שנה)</span>';
+      }
+    }
+
     function submitConstraints() {
       var s1 = _constraintSel[1], s2 = _constraintSel[2];
       if (!s1.day || !s1.shift || !s2.day || !s2.shift) {
@@ -1261,8 +1300,8 @@
         empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
         branch: currentEmployee.branch,
         week: getWeekId(),
-        constraint1: { day: s1.day, shift: s1.shift },
-        constraint2: { day: s2.day, shift: s2.shift },
+        constraint1: { day: s1.day, shift: s1.shift, startTime: s1.startTime || null },
+        constraint2: { day: s2.day, shift: s2.shift, startTime: s2.startTime || null },
         daysOff: _constraintSel.daysOff.slice(),
         submittedAt: new Date().toISOString(),
         status: 'pending',
