@@ -255,20 +255,23 @@
     .sch-emp-name { font-size: 9px; color: #111; font-weight: 700; text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sch-add-hint { color: rgba(0,0,0,0.22); font-size: 22px; margin: auto; line-height: 1; }
     .sch-separator { grid-column: 1 / -1; height: 2px; background: rgba(0,0,0,0.15); margin: 6px 4px; }
-    .sch-picker { position: fixed; bottom: 0; left: 0; right: 0; background: #1b1916; border-radius: 20px 20px 0 0; border-top: 1.5px solid rgba(201,168,76,0.3); z-index: 500; transform: translateY(100%); transition: transform 0.3s ease; max-height: 72vh; display: flex; flex-direction: column; }
-    .sch-picker.open { transform: translateY(0); }
-    .sch-picker-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
-    .sch-picker-title { font-size: 14px; font-weight: 700; color: var(--gold); }
-    .sch-picker-save { background: #16a34a; border: none; border-radius: 10px; padding: 9px 20px; color: #fff; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
-    .sch-picker-list { flex: 1; overflow-y: auto; padding: 10px 16px 24px; display: flex; flex-direction: column; gap: 8px; }
-    .sch-picker-emp { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.15s; }
-    .sch-picker-emp.selected { border-color: #16a34a; background: rgba(22,163,74,0.1); }
-    .sch-picker-emp-photo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.15); }
-    .sch-picker-emp-ph { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; background: rgba(22,163,74,0.15); border: 2px solid #16a34a; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #4ade80; }
-    .sch-picker-emp-name { flex: 1; font-size: 14px; font-weight: 600; color: #fff; }
-    .sch-picker-emp.selected .sch-picker-emp-name { color: #4ade80; }
-    .sch-picker-check { font-size: 16px; color: #4ade80; visibility: hidden; flex-shrink: 0; }
-    .sch-picker-emp.selected .sch-picker-check { visibility: visible; }
+    .sch-side-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 72vw; max-width: 265px; background: #1a1710; border-right: 1.5px solid rgba(201,168,76,0.3); z-index: 500; transform: translateX(-100%); transition: transform 0.28s ease; display: flex; flex-direction: column; }
+    .sch-side-panel.open { transform: translateX(0); }
+    .sch-side-header { padding: 18px 14px 12px; padding-top: calc(18px + env(safe-area-inset-top,0px)); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .sch-side-title { font-size: 13px; font-weight: 700; color: var(--gold); }
+    .sch-side-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+    .sch-side-list { flex: 1; overflow-y: auto; padding: 8px 10px 30px; display: flex; flex-direction: column; gap: 6px; }
+    .sch-side-emp { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.15s; }
+    .sch-side-emp.active { border-color: #16a34a; background: rgba(22,163,74,0.12); }
+    .sch-side-emp-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.12); }
+    .sch-side-emp-ph { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: rgba(201,168,76,0.15); border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--gold); }
+    .sch-side-emp.active .sch-side-emp-ph { border-color: #16a34a; background: rgba(22,163,74,0.15); color: #4ade80; }
+    .sch-side-emp-info { flex: 1; min-width: 0; }
+    .sch-side-emp-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sch-side-emp.active .sch-side-emp-name { color: #4ade80; }
+    .sch-side-emp-phone { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; direction: ltr; text-align: left; }
+    .sch-side-emp-check { font-size: 17px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+    .sch-side-emp.active .sch-side-emp-check { opacity: 1; }
 
     /* CONSTRAINT DAY/SHIFT SELECTOR */
     .constraint-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.28); border-radius: 14px; padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -675,14 +678,14 @@
     </div>
   </div>
 
-  <!-- SCHEDULE PICKER (manager) -->
+  <!-- SCHEDULE SIDE PANEL (manager) -->
   <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490"></div>
-  <div class="sch-picker" id="sch-picker">
-    <div class="sch-picker-header">
-      <span class="sch-picker-title" id="sch-picker-title">בחר עובדים</span>
-      <button class="sch-picker-save" onclick="saveSchCell()">שמור ✓</button>
+  <div class="sch-side-panel" id="sch-picker">
+    <div class="sch-side-header">
+      <div class="sch-side-title" id="sch-picker-title">עובדי הסניף</div>
+      <div class="sch-side-sub" id="sch-picker-sub"></div>
     </div>
-    <div class="sch-picker-list" id="sch-picker-list"></div>
+    <div class="sch-side-list" id="sch-picker-list"></div>
   </div>
 
   <!-- MONTHLY GOAL MODAL (Manager) -->
@@ -2022,30 +2025,39 @@
       _schPickerDay   = di;
       _schPickerShift = shift;
       _schPickerSel   = (_schCells[di + '_' + shift] || []).slice();
-      document.getElementById('sch-picker-title').textContent =
-        'יום ' + SCH_DAY_NAMES[di] + ' — ' + (shift==='morning'?'☀️ בוקר':'🌙 ערב');
+      document.getElementById('sch-picker-title').textContent = 'עובדי הסניף';
+      document.getElementById('sch-picker-sub').textContent =
+        'יום ' + SCH_DAY_NAMES[di] + ' — ' + (shift === 'morning' ? '☀️ בוקר' : '🌙 ערב');
+      _schRenderSideList();
+      document.getElementById('sch-picker-overlay').classList.add('open');
+      document.getElementById('sch-picker').classList.add('open');
+    }
+
+    function _schRenderSideList() {
       var list = document.getElementById('sch-picker-list');
       list.innerHTML = '';
       _schAllEmps.forEach(function(emp) {
-        var sel = _schPickerSel.indexOf(emp.id) !== -1;
-        var el  = document.createElement('div');
-        el.className = 'sch-picker-emp' + (sel ? ' selected' : '');
+        var active = _schPickerSel.indexOf(emp.id) !== -1;
+        var el = document.createElement('div');
+        el.className = 'sch-side-emp' + (active ? ' active' : '');
         el.innerHTML =
-          (emp.photo ? '<img class="sch-picker-emp-photo" src="'+emp.photo+'">'
-                     : '<div class="sch-picker-emp-ph">'+emp.firstName.charAt(0)+'</div>') +
-          '<div class="sch-picker-emp-name">'+emp.firstName+' '+emp.lastName+'</div>' +
-          '<span class="sch-picker-check">✓</span>';
-        (function(id, node){
+          (emp.photo ? '<img class="sch-side-emp-photo" src="' + emp.photo + '">'
+                     : '<div class="sch-side-emp-ph">' + emp.firstName.charAt(0) + '</div>') +
+          '<div class="sch-side-emp-info">' +
+            '<div class="sch-side-emp-name">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+            '<div class="sch-side-emp-phone">' + (emp.phone || '') + '</div>' +
+          '</div>' +
+          '<span class="sch-side-emp-check">✅</span>';
+        (function(id, node) {
           node.onclick = function() {
             var i = _schPickerSel.indexOf(id);
-            if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i,1);
-            node.classList.toggle('selected', _schPickerSel.indexOf(id) !== -1);
+            if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i, 1);
+            node.classList.toggle('active', _schPickerSel.indexOf(id) !== -1);
+            _schSaveImmediate();
           };
         })(emp.id, el);
         list.appendChild(el);
       });
-      document.getElementById('sch-picker-overlay').classList.add('open');
-      document.getElementById('sch-picker').classList.add('open');
     }
 
     function closeSchPicker() {
@@ -2053,14 +2065,13 @@
       document.getElementById('sch-picker').classList.remove('open');
     }
 
-    function saveSchCell() {
+    function _schSaveImmediate() {
       var key = _schPickerDay + '_' + _schPickerShift;
       _schCells[key] = _schPickerSel.slice();
-      closeSchPicker();
       db.collection('schedules').doc(_schDocId()).set(
         { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, updatedAt: new Date().toISOString() },
         { merge: true }
-      ).catch(function() { showModal('⚠️','שגיאה','לא ניתן לשמור.',null); });
+      ).catch(function() {});
     }
 
     /* ═══════════════════════════════════
