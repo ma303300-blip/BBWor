@@ -1032,21 +1032,21 @@
         var item = c[key];
         var el = document.createElement('button');
         el.className = 'action-btn';
-        el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
-        if (key === 'btn1') { el.onclick = openChecklist; }
-        else if (key === 'btn2') { el.onclick = openEmpGoalModal; }
-        else { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        if (key === 'btn2') {
+          el.id = 'emp-goal-btn';
+          el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          el.onclick = openEmpGoalModal;
+        } else {
+          el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          if (key === 'btn1') { el.onclick = openChecklist; }
+          else { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+        }
         grid.appendChild(el);
       });
       bannerWrap.innerHTML = '';
-      bannerWrap.style.display = 'flex';
-      bannerWrap.style.flexDirection = 'column';
-      bannerWrap.style.gap = '12px';
-      var gbEl = document.createElement('div');
-      gbEl.className = 'goal-home-banner';
-      gbEl.id = 'emp-goal-banner';
-      gbEl.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:13px">טוען...</div>';
-      bannerWrap.appendChild(gbEl);
+      bannerWrap.style.display = '';
+      bannerWrap.style.flexDirection = '';
+      bannerWrap.style.gap = '';
       var bEl = document.createElement('div');
       bEl.className = 'work-banner';
       (function(lbl){ bEl.onclick = function() { alert(lbl + ' — בקרוב'); }; })(c.banner.label);
@@ -1930,8 +1930,8 @@
     function closeEmpGoalModal() { document.getElementById('emp-goal-modal').classList.remove('open'); }
 
     function loadGoalBanner() {
-      var el = document.getElementById('emp-goal-banner');
-      if (!el) return;
+      var btn = document.getElementById('emp-goal-btn');
+      if (!btn) return;
       var monthId = getMonthId(), todayId = getTodayId();
       var goal = 0, total = 0, todayAmt = 0;
       db.collection('monthly_goals').doc(monthId).get()
@@ -1946,26 +1946,20 @@
         .then(function(td) {
           todayAmt = td.exists ? (td.data().amount || 0) : 0;
           var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
-          el.innerHTML =
-            '<div class="ghb-row">' +
-              '<span class="ghb-label">🎯 יעד חודשי</span>' +
-              '<span class="ghb-pct" id="ghb-pct-val">' + pct + '%</span>' +
-            '</div>' +
-            '<div class="ghb-row" style="align-items:flex-end">' +
-              '<span class="ghb-label">נצבר עד היום</span>' +
-              '<span class="ghb-total" id="ghb-total-val">' + fmtMoney(total) + '</span>' +
-            '</div>' +
-            '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
-            '<div class="ghb-row">' +
-              '<div class="ghb-sub">היום: <span>' + (todayAmt > 0 ? fmtMoney(todayAmt) : '—') + '</span></div>' +
-              '<div class="ghb-sub">יעד: <span>' + (goal > 0 ? fmtMoney(goal) : '—') + '</span></div>' +
+          btn.innerHTML =
+            '<div style="width:100%;display:flex;flex-direction:column;gap:5px;padding:2px 0">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:18px">🎯</span>' +
+                '<span style="font-size:13px;font-weight:700;color:var(--gold)">' + pct + '%</span>' +
+              '</div>' +
+              '<div style="font-size:15px;font-weight:700;color:#fff;text-align:right" id="ghb-total-val">' + fmtMoney(total) + '</div>' +
+              '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+              '<div style="font-size:10px;color:var(--text-dim);text-align:right">יעד חודשי</div>' +
             '</div>';
           var totEl = document.getElementById('ghb-total-val');
           if (totEl && total > 0) animateCount(totEl, 0, total, 1400);
         })
-        .catch(function() {
-          el.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:13px">🎯 אין נתונים</div>';
-        });
+        .catch(function() {});
     }
 
     /* Manager checklist */
