@@ -234,6 +234,8 @@
     .sch-branch-tabs { display: flex; gap: 5px; flex-shrink: 0; }
     .sch-branch-tab { background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 9px; color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .sch-branch-tab.active { background: rgba(22,163,74,0.25); border-color: #16a34a; color: #4ade80; }
+    .sch-reset-btn { background: rgba(180,20,20,0.18); border: 1.5px solid rgba(220,38,38,0.45); border-radius: 8px; padding: 7px 10px; color: #ff6b6b; font-size: 16px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+    .sch-reset-btn:active { background: rgba(220,38,38,0.32); }
     .sch-screen-title { text-align: center; font-size: 13px; font-weight: 700; color: var(--gold); padding: 8px 0 4px; flex-shrink: 0; letter-spacing: 0.5px; }
     .sch-table-wrap { flex: 1; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 4px 20px; background: rgba(245,235,210,0.9); }
     .sch-table { display: grid; grid-template-columns: 28px repeat(7, minmax(72px,1fr)); min-width: 532px; }
@@ -677,6 +679,7 @@
         <button class="sch-branch-tab" id="sch-tab-raanana" onclick="switchSchBranch('raanana')">רעננה</button>
         <button class="sch-branch-tab" id="sch-tab-hadera" onclick="switchSchBranch('hadera')">חדרה</button>
       </div>
+      <button class="sch-reset-btn" id="sch-reset-btn" style="display:none" onclick="resetSchedule()">🗑️</button>
     </div>
     <div class="sch-screen-title">📅 סידור עבודה</div>
     <div class="sch-table-wrap">
@@ -1327,10 +1330,11 @@
     /* ═══════════════════════════════════
        CONFIRM MODAL
     ═══════════════════════════════════ */
-    function showConfirm(icon, heading, text, onConfirm) {
+    function showConfirm(icon, heading, text, onConfirm, btnLabel) {
       document.getElementById('confirm-icon').textContent   = icon;
       document.getElementById('confirm-heading').textContent = heading;
       document.getElementById('confirm-text').textContent   = text;
+      document.getElementById('confirm-ok-btn').textContent = btnLabel || 'מחק לצמיתות 🗑️';
       _confirmCallback = onConfirm;
       document.getElementById('confirm-ok-btn').onclick = function() {
         var cb = _confirmCallback;
@@ -2074,10 +2078,25 @@
       document.getElementById('sch-week-label').textContent = label;
       var tabs = document.getElementById('sch-branch-tabs');
       tabs.style.display = _schEditable ? 'flex' : 'none';
+      document.getElementById('sch-reset-btn').style.display = _schEditable ? 'block' : 'none';
       if (_schEditable) {
         document.getElementById('sch-tab-raanana').classList.toggle('active', _schBranch === 'raanana');
         document.getElementById('sch-tab-hadera').classList.toggle('active', _schBranch === 'hadera');
       }
+    }
+
+    function resetSchedule() {
+      var branchLabel = _schBranch === 'raanana' ? 'רעננה' : 'חדרה';
+      showConfirm('🗑️', 'איפוס סידור עבודה',
+        'האם לאפס את כל הסידור של סניף ' + branchLabel + ' לשבוע הנוכחי?\nהפעולה תמחק את כל השיבוצים בכל המכשירים.',
+        function() {
+          db.collection('schedules').doc(_schDocId()).set(
+            { weekId: _schWeekId(), branch: _schBranch, cells: {}, updatedAt: new Date().toISOString() },
+            { merge: true }
+          ).catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאפס. נסי שוב.', null); });
+        },
+        'אפס סידור 🗑️'
+      );
     }
 
     function _schLoadEmpsAndListen() {
