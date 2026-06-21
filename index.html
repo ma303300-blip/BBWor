@@ -216,10 +216,16 @@
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
     .modal-box.zoom-anim { animation: modal-zoom-out 1.2s ease-out forwards; }
 
-    /* CONSTRAINT FORM */
-    .constraint-textarea { background: rgba(255,255,255,0.07); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; padding: 11px 13px; color: #fff; font-size: 14px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box; resize: none; min-height: 64px; }
-    .constraint-textarea:focus { border-color: var(--gold); }
-    .constraint-textarea::placeholder { color: rgba(255,255,255,0.25); }
+    /* CONSTRAINT DAY/SHIFT SELECTOR */
+    .constraint-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.28); border-radius: 14px; padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+    .constraint-box-title { font-size: 12px; color: var(--gold); font-weight: 700; text-align: center; letter-spacing: 0.5px; }
+    .day-circles { display: flex; gap: 4px; justify-content: center; }
+    .day-circle { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; flex-shrink: 0; -webkit-tap-highlight-color: transparent; font-family: inherit; user-select: none; }
+    .day-circle.motzash { font-size: 9px; line-height: 1.2; text-align: center; }
+    .day-circle.selected { background: var(--gold); border-color: var(--gold); color: #111; }
+    .shift-btns { display: flex; gap: 8px; }
+    .shift-btn { flex: 1; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 4px; color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; text-align: center; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+    .shift-btn.selected { background: rgba(201,168,76,0.18); border-color: var(--gold); color: var(--gold); }
     .constraint-row-btns { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
     .constraint-send-btn { flex: 1; background: var(--gold); border: none; border-radius: 11px; padding: 14px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .constraint-back-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 11px; padding: 14px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
@@ -395,15 +401,48 @@
 
   <!-- CONSTRAINT FORM MODAL -->
   <div class="modal-overlay" id="constraint-form-modal">
-    <div class="modal-box" id="constraint-form-box" style="gap:12px;align-items:stretch">
-      <div style="text-align:center;font-size:22px;font-weight:700;color:var(--gold)">הוסף אילוצים</div>
-      <div style="font-size:12px;color:var(--text-dim)">אילוץ ראשון</div>
-      <textarea class="constraint-textarea" id="constraint-text-1" placeholder="כתוב/י את האילוץ הראשון שלך..." rows="2"></textarea>
-      <div style="font-size:12px;color:var(--text-dim)">אילוץ שני</div>
-      <textarea class="constraint-textarea" id="constraint-text-2" placeholder="כתוב/י את האילוץ השני שלך..." rows="2"></textarea>
+    <div class="modal-box" id="constraint-form-box" style="gap:14px;align-items:stretch;max-height:88vh;overflow-y:auto">
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">בחר/י אילוצים לשבוע</div>
+
+      <!-- Box 1 -->
+      <div class="constraint-box">
+        <div class="constraint-box-title">אילוץ ראשון</div>
+        <div class="day-circles" id="days-1">
+          <div class="day-circle" onclick="selectDay(1,this)">א</div>
+          <div class="day-circle" onclick="selectDay(1,this)">ב</div>
+          <div class="day-circle" onclick="selectDay(1,this)">ג</div>
+          <div class="day-circle" onclick="selectDay(1,this)">ד</div>
+          <div class="day-circle" onclick="selectDay(1,this)">ה</div>
+          <div class="day-circle" onclick="selectDay(1,this)">ו</div>
+          <div class="day-circle motzash" onclick="selectDay(1,this)">מוצ"ש</div>
+        </div>
+        <div class="shift-btns">
+          <button class="shift-btn" id="shift-1-morning" onclick="selectShift(1,'בוקר')">☀️ משמרת בוקר</button>
+          <button class="shift-btn" id="shift-1-evening" onclick="selectShift(1,'ערב')">🌙 משמרת ערב</button>
+        </div>
+      </div>
+
+      <!-- Box 2 -->
+      <div class="constraint-box">
+        <div class="constraint-box-title">אילוץ שני</div>
+        <div class="day-circles" id="days-2">
+          <div class="day-circle" onclick="selectDay(2,this)">א</div>
+          <div class="day-circle" onclick="selectDay(2,this)">ב</div>
+          <div class="day-circle" onclick="selectDay(2,this)">ג</div>
+          <div class="day-circle" onclick="selectDay(2,this)">ד</div>
+          <div class="day-circle" onclick="selectDay(2,this)">ה</div>
+          <div class="day-circle" onclick="selectDay(2,this)">ו</div>
+          <div class="day-circle motzash" onclick="selectDay(2,this)">מוצ"ש</div>
+        </div>
+        <div class="shift-btns">
+          <button class="shift-btn" id="shift-2-morning" onclick="selectShift(2,'בוקר')">☀️ משמרת בוקר</button>
+          <button class="shift-btn" id="shift-2-evening" onclick="selectShift(2,'ערב')">🌙 משמרת ערב</button>
+        </div>
+      </div>
+
       <div class="constraint-row-btns">
         <button class="constraint-send-btn" onclick="submitConstraints()">שלח ✦</button>
-        <button class="constraint-back-btn" onclick="backToConstraintInfo()">ביטול לעריכה</button>
+        <button class="constraint-back-btn" onclick="closeConstraintForm()">ביטול</button>
       </div>
     </div>
   </div>
@@ -556,6 +595,7 @@
     var _constraintEmpUnsub = null;
     var _confirmCallback = null;
     var currentConstraintData = null;
+    var _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null } };
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -937,6 +977,8 @@
 
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
+      var bodyEl = document.querySelector('.modal-body-text');
+      bodyEl.style.color = ''; bodyEl.style.fontSize = ''; bodyEl.style.fontWeight = '';
       if (modalCallback) { var cb = modalCallback; modalCallback = null; cb(); }
     }
 
@@ -1045,11 +1087,19 @@
     function openConstraintModal() {
       if (!currentEmployee) return;
       if (currentConstraintData) {
-        showModal('✅', 'האילוצים שאושרו לך',
-          'שבוע: ' + currentConstraintData.week + '\n\n' +
-          '1. ' + currentConstraintData.constraint1 + '\n' +
-          '2. ' + currentConstraintData.constraint2,
-          null);
+        var c1 = currentConstraintData.constraint1;
+        var c2 = currentConstraintData.constraint2;
+        var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
+        var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
+        document.getElementById('modal-icon').textContent = '✅';
+        document.getElementById('modal-heading').textContent = 'האילוצים שאושרו לך';
+        var bodyEl = document.querySelector('.modal-body-text');
+        bodyEl.textContent = line1 + '\n' + line2;
+        bodyEl.style.color = '#fff';
+        bodyEl.style.fontSize = '16px';
+        bodyEl.style.fontWeight = '700';
+        modalCallback = null;
+        document.getElementById('modal').classList.add('open');
         return;
       }
       document.getElementById('constraint-info-name').textContent = 'היי ' + currentEmployee.firstName + '!';
@@ -1066,8 +1116,11 @@
 
     function openConstraintForm() {
       closeConstraintInfo();
-      document.getElementById('constraint-text-1').value = '';
-      document.getElementById('constraint-text-2').value = '';
+      _constraintSel = { 1: { day: null, shift: null }, 2: { day: null, shift: null } };
+      document.querySelectorAll('#constraint-form-modal .day-circle').forEach(function(c) { c.classList.remove('selected'); });
+      ['shift-1-morning','shift-1-evening','shift-2-morning','shift-2-evening'].forEach(function(id) {
+        document.getElementById(id).classList.remove('selected');
+      });
       var box = document.getElementById('constraint-form-box');
       box.classList.remove('zoom-anim');
       void box.offsetWidth;
@@ -1075,30 +1128,44 @@
       document.getElementById('constraint-form-modal').classList.add('open');
     }
 
-    function backToConstraintInfo() {
+    function closeConstraintForm() {
       document.getElementById('constraint-form-modal').classList.remove('open');
-      openConstraintModal();
+    }
+
+    function selectDay(box, el) {
+      _constraintSel[box].day = el.textContent;
+      document.querySelectorAll('#days-' + box + ' .day-circle').forEach(function(c) {
+        c.classList.toggle('selected', c === el);
+      });
+    }
+
+    function selectShift(box, shift) {
+      _constraintSel[box].shift = shift;
+      document.getElementById('shift-' + box + '-morning').classList.toggle('selected', shift === 'בוקר');
+      document.getElementById('shift-' + box + '-evening').classList.toggle('selected', shift === 'ערב');
     }
 
     function submitConstraints() {
-      var c1 = document.getElementById('constraint-text-1').value.trim();
-      var c2 = document.getElementById('constraint-text-2').value.trim();
-      if (!c1 || !c2) { showModal('⚠️', 'שדות חסרים', 'יש למלא את שני האילוצים.', null); return; }
+      var s1 = _constraintSel[1], s2 = _constraintSel[2];
+      if (!s1.day || !s1.shift || !s2.day || !s2.shift) {
+        showModal('⚠️', 'בחירה חסרה', 'יש לבחור יום ומשמרת לכל אחד משני האילוצים.', null);
+        return;
+      }
       if (!currentEmployee) return;
       var data = {
         empId: currentEmployee.id,
         empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
         branch: currentEmployee.branch,
         week: getWeekId(),
-        constraint1: c1,
-        constraint2: c2,
+        constraint1: { day: s1.day, shift: s1.shift },
+        constraint2: { day: s2.day, shift: s2.shift },
         submittedAt: new Date().toISOString(),
         status: 'pending',
         approvedAt: null
       };
       db.collection('constraints').add(data)
         .then(function() {
-          document.getElementById('constraint-form-modal').classList.remove('open');
+          closeConstraintForm();
           showModal('✅', 'נשלח!', 'האילוצים שלך נשלחו למנהלת.\nתקבל/י הודעה לאחר האישור.', null);
         })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. בדקי חיבור לאינטרנט.', null); });
@@ -1137,13 +1204,16 @@
             var item = document.createElement('div');
             item.className = 'constraint-item';
             item.id = 'citem-' + doc.id;
+            var c1 = d.constraint1, c2 = d.constraint2;
+            var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift : String(c1 || '');
+            var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift : String(c2 || '');
             item.innerHTML =
               '<div class="constraint-item-name">' + d.empName + '</div>' +
               '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
               ' <span class="constraint-item-week">שבוע: ' + d.week + '</span>' +
               '<div class="constraint-item-texts">' +
-                '<div class="constraint-item-text">1. ' + d.constraint1 + '</div>' +
-                '<div class="constraint-item-text">2. ' + d.constraint2 + '</div>' +
+                '<div class="constraint-item-text">1. ' + txt1 + '</div>' +
+                '<div class="constraint-item-text">2. ' + txt2 + '</div>' +
               '</div>' +
               '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
             body.appendChild(item);
