@@ -1520,16 +1520,20 @@
           snap.forEach(function(doc) { items.push(Object.assign({ id: doc.id }, doc.data())); });
           items.sort(function(a,b){ return (a.order||0) - (b.order||0); });
           render();
+        }, function(err) {
+          body.innerHTML = '<div class="drawer-empty">שגיאה בטעינת הרשימה.<br><span style="font-size:11px;opacity:0.5">' + err.code + '</span></div>';
         });
       if (_clUnsub) { _clUnsub(); _clUnsub = null; }
       _clUnsub = db.collection('checklist_completions')
         .where('sessionId', '==', sessionId)
-        .where('branch', '==', activeBranch)
         .onSnapshot(function(snap) {
           completions = {};
-          snap.forEach(function(doc) { completions[doc.data().itemId] = doc.data(); });
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            if (d.branch === activeBranch) completions[d.itemId] = d;
+          });
           render();
-        });
+        }, function() { render(); });
     }
 
     function closeChecklist() {
