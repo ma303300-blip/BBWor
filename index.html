@@ -697,15 +697,19 @@
     function enterBranch(branch) {
       activeBranch = branch;
       var session = getSession(branch);
-      if (!session) { openRegisterForm(branch); return; }
+      /* Always open the form immediately so the user gets instant feedback.
+         If Firestore confirms an approved session, auto-redirect to employee home.
+         Pending/missing sessions: user stays on the form and re-submits normally. */
+      openRegisterForm(branch);
+      if (!session) return;
       db.collection('employees').doc(session.empId).get()
         .then(function(doc) {
-          if (!doc.exists) { clearSession(branch); openRegisterForm(branch); return; }
+          if (!doc.exists) { clearSession(branch); return; }
           var emp = doc.data();
           if (emp.status === 'approved') { openEmployeeHome(emp); }
-          else { showPendingModal(emp.firstName + ' ' + emp.lastName); }
+          else { clearSession(branch); }
         })
-        .catch(function() { openRegisterForm(branch); });
+        .catch(function() { clearSession(branch); });
     }
 
     function openRegisterForm(branch) {
