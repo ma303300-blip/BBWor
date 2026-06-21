@@ -752,7 +752,32 @@
     window.addEventListener('offline', function() { setSyncStatus('error'); });
     window.addEventListener('online',  function() { setSyncStatus('connecting'); });
 
+    var OWNER_EMAIL = 'ma303300@gmail.com';
+
     function enterManager() {
+      var user = auth.currentUser;
+      if (user && user.email === OWNER_EMAIL) {
+        _openManagerDashboard();
+        return;
+      }
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ login_hint: OWNER_EMAIL });
+      auth.signInWithPopup(provider)
+        .then(function(result) {
+          if (result.user.email !== OWNER_EMAIL) {
+            showModal('🚫', 'גישה נדחתה', 'רק מנהלת המערכת יכולה להיכנס.', function() {
+              auth.signOut().then(function() { auth.signInAnonymously(); });
+            });
+            return;
+          }
+          _openManagerDashboard();
+        })
+        .catch(function() {
+          showModal('⚠️', 'שגיאה', 'הכניסה נכשלה, נסה שוב.', null);
+        });
+    }
+
+    function _openManagerDashboard() {
       renderManagerGrid();
       document.getElementById('fab-mail').classList.add('visible');
       document.getElementById('fab-people').classList.add('visible');
@@ -904,7 +929,14 @@
       checkEmpConstraintStatus(emp.id);
     }
 
-    function logout() { goHome(); }
+    function logout() {
+      /* If signed in as owner via Google, sign out and restore anonymous session */
+      var user = auth.currentUser;
+      if (user && user.email === OWNER_EMAIL) {
+        auth.signOut().then(function() { auth.signInAnonymously().catch(function(){}); });
+      }
+      goHome();
+    }
 
     /* ═══════════════════════════════════
        CONTENT RENDERING

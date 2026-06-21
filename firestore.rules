@@ -1,8 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    function isOwner() {
+      return request.auth != null && request.auth.token.email == 'ma303300@gmail.com';
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Employees: owner has full access; signed-in users can register and read their own doc
+    match /employees/{empId} {
+      allow read, write, delete: if isOwner();
+      allow read, create: if isSignedIn();
+    }
+
+    // Constraints: owner has full access; signed-in users can submit their own
+    match /constraints/{constId} {
+      allow read, write, delete: if isOwner();
+      allow read, create: if isSignedIn();
+    }
+
+    // Checklist items: owner manages; signed-in users can only read
+    match /checklist_items/{itemId} {
+      allow read: if isSignedIn();
+      allow write, delete: if isOwner();
+    }
+
+    // Checklist completions: owner reads all; signed-in users create their own
+    match /checklist_completions/{compId} {
+      allow read, write, delete: if isOwner();
+      allow create, read: if isSignedIn();
     }
   }
 }
