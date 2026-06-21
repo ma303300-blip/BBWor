@@ -2678,10 +2678,40 @@
         });
       });
     }
+    /* ── Weekly constraint reset (every Sunday) ── */
+    function _weeklyConstraintReset() {
+      var now = new Date();
+      if (now.getDay() !== 0) return; /* not Sunday */
+      var todayStr = now.getFullYear() + '-' +
+                     String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                     String(now.getDate()).padStart(2, '0');
+      var markerRef = db.collection('constraint_resets').doc('weekly');
+      markerRef.get()
+        .then(function(doc) {
+          if (doc.exists && doc.data().lastReset === todayStr) return; /* already done today */
+          return db.collection('constraints').get().then(function(snap) {
+            var batches = [];
+            var batch = db.batch();
+            var n = 0;
+            snap.forEach(function(d) {
+              batch.delete(d.ref);
+              n++;
+              if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); }
+            });
+            if (n % 490 !== 0) batches.push(batch.commit());
+            return Promise.all(batches).then(function() {
+              return markerRef.set({ lastReset: todayStr, deletedCount: n });
+            });
+          });
+        })
+        .catch(function() {});
+    }
+
     /* ANONYMOUS AUTH → then seed + auto-login */
     auth.onAuthStateChanged(function(user) {
       if (user) {
         seedChecklistItems();
+        _weeklyConstraintReset();
         /* AUTO-LOGIN */
         (function() {
           var branches = ['raanana', 'hadera'];
