@@ -631,7 +631,7 @@
 
   <!-- CHECKLIST MANAGER MODAL -->
   <div class="modal-overlay" id="cl-mgr-modal" onclick="if(event.target===this)closeClMgr()">
-    <div class="modal-box" id="cl-mgr-box" style="gap:12px;align-items:stretch;max-height:88vh;overflow-y:auto;max-width:380px;padding:20px 16px">
+    <div class="modal-box" id="cl-mgr-box" style="gap:12px;align-items:stretch;max-height:88vh;overflow-y:scroll;max-width:380px;padding:20px 16px">
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">צ'ק ליסט — מנהלת</div>
       <div class="cl-tab-row">
         <button class="cl-tab active" id="cl-mgr-tab-morning" onclick="switchClMgrTab('morning')">☀️ משמרת בוקר</button>
@@ -927,12 +927,13 @@
     }
 
     function _closeAllOverlays() {
+      var modals = document.querySelectorAll('.modal-overlay');
+      for (var i = 0; i < modals.length; i++) { modals[i].classList.remove('open'); }
       var ids = ['pending-overlay','pending-drawer',
                  'constraint-overlay','constraint-drawer',
                  'emplist-overlay','emplist-drawer',
                  'cl-overlay','cl-drawer',
-                 'sch-picker-overlay',
-                 'mgr-pin-overlay','mgr-reg-modal','mgr-only-modal'];
+                 'sch-picker-overlay'];
       for (var i = 0; i < ids.length; i++) {
         var el = document.getElementById(ids[i]);
         if (el) el.classList.remove('open');
