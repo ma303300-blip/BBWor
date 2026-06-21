@@ -265,6 +265,9 @@
 
     /* CONSTRAINT DRAWER ITEMS */
     .constraint-item { background: rgba(14,13,12,0.9); border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .constraint-item-header { display: flex; align-items: center; gap: 10px; }
+    .constraint-item-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex-shrink: 0; }
+    .constraint-item-avatar-ph { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--gold); flex-shrink: 0; background: rgba(201,168,76,0.15); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--gold); }
     .constraint-item-name { font-size: 15px; font-weight: 700; color: #fff; }
     .constraint-item-branch { font-size: 10px; color: var(--gold); background: rgba(201,168,76,0.1); border-radius: 5px; padding: 2px 7px; display: inline-block; }
     .constraint-item-week { font-size: 11px; color: var(--text-dim); }
@@ -1475,26 +1478,40 @@
         .then(function(snap) {
           body.innerHTML = '';
           if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין אילוצים ממתינים 🎉</div>'; return; }
+          var empIds = [];
           snap.forEach(function(doc) {
-            var d = doc.data();
-            var item = document.createElement('div');
-            item.className = 'constraint-item';
-            item.id = 'citem-' + doc.id;
-            var c1 = d.constraint1, c2 = d.constraint2;
-            var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : String(c1 || '');
-            var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : String(c2 || '');
-            var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
-            item.innerHTML =
-              '<div class="constraint-item-name">' + d.empName + '</div>' +
-              '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
-              ' <span class="constraint-item-week">שבוע: ' + d.week + '</span>' +
-              '<div class="constraint-item-texts">' +
-                '<div class="constraint-item-text">1. ' + txt1 + '</div>' +
-                '<div class="constraint-item-text">2. ' + txt2 + '</div>' +
-                daysOffRow +
-              '</div>' +
-              '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
-            body.appendChild(item);
+            var eid = doc.data().empId;
+            if (eid && empIds.indexOf(eid) === -1) empIds.push(eid);
+          });
+          var fetches = empIds.map(function(id) { return db.collection('employees').doc(id).get(); });
+          return Promise.all(fetches).then(function(empDocs) {
+            var photoMap = {};
+            empDocs.forEach(function(ed) { if (ed.exists) photoMap[ed.id] = ed.data().photo || null; });
+            snap.forEach(function(doc) {
+              var d = doc.data();
+              var item = document.createElement('div');
+              item.className = 'constraint-item';
+              item.id = 'citem-' + doc.id;
+              var c1 = d.constraint1, c2 = d.constraint2;
+              var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : String(c1 || '');
+              var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : String(c2 || '');
+              var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
+              var photo = d.empId ? (photoMap[d.empId] || null) : null;
+              var avatarHtml = photo
+                ? '<img class="constraint-item-avatar" src="' + photo + '">'
+                : '<div class="constraint-item-avatar-ph">' + (d.empName || '?').charAt(0) + '</div>';
+              item.innerHTML =
+                '<div class="constraint-item-header">' + avatarHtml + '<div class="constraint-item-name">' + d.empName + '</div></div>' +
+                '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
+                ' <span class="constraint-item-week">שבוע: ' + d.week + '</span>' +
+                '<div class="constraint-item-texts">' +
+                  '<div class="constraint-item-text">1. ' + txt1 + '</div>' +
+                  '<div class="constraint-item-text">2. ' + txt2 + '</div>' +
+                  daysOffRow +
+                '</div>' +
+                '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
+              body.appendChild(item);
+            });
           });
         })
         .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
