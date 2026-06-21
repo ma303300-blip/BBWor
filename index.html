@@ -500,7 +500,6 @@
 
     function enterManager() {
       renderManagerGrid();
-      show('manager');
       document.getElementById('fab-mail').classList.add('visible');
       if (!_badgeUnsub) {
         _badgeUnsub = db.collection('employees').where('status', '==', 'pending')
@@ -511,6 +510,7 @@
             badge.classList.toggle('show', count > 0);
           });
       }
+      showGreeting('אוריה', function() { show('manager'); });
     }
 
     function enterBranch(branch) {
@@ -597,21 +597,25 @@
       showModal('✉️', fullName + ' יקר/ה', 'בקשתך נשלחה למנהלת.\nלאחר אישור תוכל/י להיכנס לאפליקציה.', goHome);
     }
 
-    function openEmployeeHome(emp) {
-      document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
-      document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
-      renderEmployeeGrid();
+    function showGreeting(name, callback) {
       var overlay = document.getElementById('greet-overlay');
       var txt = document.getElementById('greet-text');
-      txt.textContent = 'היי ' + emp.firstName + '!';
+      txt.textContent = 'היי ' + name + '!';
       txt.classList.remove('run');
       void txt.offsetWidth;
       txt.classList.add('run');
       overlay.classList.add('active');
       setTimeout(function() {
         overlay.classList.remove('active');
-        show('employee');
+        callback();
       }, 1800);
+    }
+
+    function openEmployeeHome(emp) {
+      document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
+      document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
+      renderEmployeeGrid();
+      showGreeting(emp.firstName, function() { show('employee'); });
     }
 
     function logout() { goHome(); }
