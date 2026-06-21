@@ -32,7 +32,7 @@
     .screen.active { display: flex; }
 
     /* HOME */
-    #screen-home { align-items: center; justify-content: center; padding: 24px 16px; }
+    #screen-home { align-items: center; justify-content: center; padding: 24px 16px; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
     .bsd-corner { position: fixed; top: 14px; right: 18px; color: rgba(255,255,255,0.4); font-size: 13px; letter-spacing: 1px; z-index: 50; pointer-events: none; }
     @keyframes border-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .home-card-wrap { position: relative; width: 100%; max-width: 360px; border-radius: 23px; padding: 2px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
@@ -460,7 +460,12 @@
       if (name !== 'manager') document.getElementById('fab-mail').classList.remove('visible');
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
+      localStorage.setItem('bbwor_screen', name);
     }
+
+    document.getElementById('screen-home').addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
 
     function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
 
@@ -772,8 +777,12 @@
     (function() {
       var branches = ['raanana', 'hadera'];
       var i = 0;
+      var lastScreen = localStorage.getItem('bbwor_screen');
       function tryBranch() {
-        if (i >= branches.length) return;
+        if (i >= branches.length) {
+          if (lastScreen === 'manager') { enterManager(); }
+          return;
+        }
         var b = branches[i++];
         var session = getSession(b);
         if (!session) { tryBranch(); return; }
@@ -782,8 +791,12 @@
             if (!doc.exists) { clearSession(b); tryBranch(); return; }
             var emp = doc.data();
             activeBranch = b;
-            if (emp.status === 'approved') { openEmployeeHome(emp); }
-            else { showPendingModal(emp.firstName + ' ' + emp.lastName); }
+            if (emp.status === 'approved') {
+              if (lastScreen === 'manager') { enterManager(); }
+              else { openEmployeeHome(emp); }
+            } else {
+              showPendingModal(emp.firstName + ' ' + emp.lastName);
+            }
           })
           .catch(function() { tryBranch(); });
       }
