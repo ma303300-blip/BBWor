@@ -606,6 +606,7 @@
     var currentEmployee = null;
     var _constraintBadgeUnsub = null;
     var _constraintEmpUnsub = null;
+    var _pendingApprovalUnsub = null;
     var _confirmCallback = null;
     var currentConstraintData = null;
     var currentConstraintDocId = null;
@@ -650,6 +651,7 @@
       activeBranch = null;
       pendingPhoto = null;
       currentEmployee = null;
+      if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
       if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
       show('home');
     }
@@ -712,7 +714,7 @@
             try { openEmployeeHome(emp); }
             catch(e) { clearSession(branch); }
           } else {
-            showPendingModal(emp.firstName + ' ' + emp.lastName);
+            showPendingModal(emp.firstName + ' ' + emp.lastName, emp.id);
           }
         })
         .catch(function() { /* network error — keep session, user stays on form */ });
@@ -772,7 +774,7 @@
           if (existing) {
             setSession(activeBranch, { empId: existing.id });
             if (existing.status === 'approved') { openEmployeeHome(existing); }
-            else { showPendingModal(existing.firstName + ' ' + existing.lastName); }
+            else { showPendingModal(existing.firstName + ' ' + existing.lastName, existing.id); }
             return;
           }
           var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -780,15 +782,26 @@
           db.collection('employees').doc(id).set(emp)
             .then(function() {
               setSession(activeBranch, { empId: id });
-              showPendingModal(first + ' ' + last);
+              showPendingModal(first + ' ' + last, id);
             })
             .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור. בדקי חיבור לאינטרנט.', null); });
         })
         .catch(function() { showModal('⚠️', 'שגיאה', 'בעיית חיבור. נסי שוב.', null); });
     }
 
-    function showPendingModal(fullName) {
+    function showPendingModal(fullName, empId) {
       showModal('✉️', fullName + ' יקר/ה', 'בקשתך נשלחה למנהלת.\nלאחר אישור תוכל/י להיכנס לאפליקציה.', goHome);
+      if (!empId) return;
+      if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
+      _pendingApprovalUnsub = db.collection('employees').doc(empId).onSnapshot(function(doc) {
+        if (!doc.exists) return;
+        var emp = doc.data();
+        if (emp.status !== 'approved') return;
+        if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
+        document.getElementById('modal').classList.remove('open');
+        modalCallback = null;
+        openEmployeeHome(emp);
+      });
     }
 
     function showGreeting(name) {
@@ -1325,7 +1338,7 @@
                 try { openEmployeeHome(emp); } catch(e) { clearSession(b); show('home'); }
               }
             } else {
-              showPendingModal(emp.firstName + ' ' + emp.lastName);
+              showPendingModal(emp.firstName + ' ' + emp.lastName, emp.id);
             }
           })
           .catch(function() { tryBranch(); });
