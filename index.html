@@ -1839,13 +1839,21 @@
         var pendingSnap  = results[0];
         var approvedSnap = results[1];
         var empIds = [];
-        function collectIds(snap) {
-          snap.forEach(function(doc) {
+        var currentWeek = getWeekId();
+        function filterWeek(snap) {
+          var arr = [];
+          snap.forEach(function(doc) { if (doc.data().week === currentWeek) arr.push(doc); });
+          return arr;
+        }
+        var pendingDocs  = filterWeek(pendingSnap);
+        var approvedDocs = filterWeek(approvedSnap);
+        function collectIds(docs) {
+          docs.forEach(function(doc) {
             var eid = doc.data().empId;
             if (eid && empIds.indexOf(eid) === -1) empIds.push(eid);
           });
         }
-        collectIds(pendingSnap); collectIds(approvedSnap);
+        collectIds(pendingDocs); collectIds(approvedDocs);
         var fetches = empIds.map(function(id) { return db.collection('employees').doc(id).get(); });
         return Promise.all(fetches).then(function(empDocs) {
           var photoMap = {};
@@ -1896,28 +1904,28 @@
             return item;
           }
           /* ── ממתינים לאישור ── */
-          if (!pendingSnap.empty) {
+          if (pendingDocs.length) {
             var ph = document.createElement('div');
             ph.className = 'cl-section-title';
-            ph.innerHTML = '⏳ ממתינים לאישור <span style="background:#e03535;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:4px">' + pendingSnap.size + '</span>';
+            ph.innerHTML = '⏳ ממתינים לאישור <span style="background:#e03535;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:4px">' + pendingDocs.length + '</span>';
             body.appendChild(ph);
-            pendingSnap.forEach(function(doc) {
+            pendingDocs.forEach(function(doc) {
               body.appendChild(buildItem(doc.data(), doc.id, false));
             });
           }
           /* ── מאושרים ── */
-          if (!approvedSnap.empty) {
-            if (!pendingSnap.empty) {
+          if (approvedDocs.length) {
+            if (pendingDocs.length) {
               var s = document.createElement('div');
               s.style.cssText = 'height:1px;background:rgba(255,255,255,0.1);margin:10px 0';
               body.appendChild(s);
             }
             var ah = document.createElement('div');
             ah.className = 'cl-section-title';
-            ah.innerHTML = '✅ מאושרים — שיבוץ לסידור <span style="background:#16a34a;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:4px">' + approvedSnap.size + '</span>';
+            ah.innerHTML = '✅ מאושרים — שיבוץ לסידור <span style="background:#16a34a;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;margin-right:4px">' + approvedDocs.length + '</span>';
             body.appendChild(ah);
             var allCons = [], btnRefs = [];
-            approvedSnap.forEach(function(doc) {
+            approvedDocs.forEach(function(doc) {
               var d = Object.assign({ _docId: doc.id }, doc.data());
               allCons.push(d);
               var item = buildItem(d, doc.id, true);
@@ -1958,7 +1966,7 @@
             };
             body.appendChild(allBtn);
           }
-          if (pendingSnap.empty && approvedSnap.empty) {
+          if (!pendingDocs.length && !approvedDocs.length) {
             body.innerHTML = '<div class="drawer-empty">אין אילוצים 🎉</div>';
           }
         });
@@ -2854,9 +2862,10 @@
             var batches = [];
             var batch = db.batch();
             var n = 0;
+            var currentWeek = getWeekId();
             snap.forEach(function(d) {
               var data = d.data();
-              if (!data.week || data.week < todayStr) {
+              if (!data.week || data.week !== currentWeek) {
                 batch.delete(d.ref);
                 n++;
                 if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); }
