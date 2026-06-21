@@ -1515,10 +1515,10 @@
       if (_clItemsUnsub) { _clItemsUnsub(); _clItemsUnsub = null; }
       _clItemsUnsub = db.collection('checklist_items')
         .where('shifts', 'array-contains', shift)
-        .orderBy('order')
         .onSnapshot(function(snap) {
           items = [];
           snap.forEach(function(doc) { items.push(Object.assign({ id: doc.id }, doc.data())); });
+          items.sort(function(a,b){ return (a.order||0) - (b.order||0); });
           render();
         });
       if (_clUnsub) { _clUnsub(); _clUnsub = null; }
@@ -1628,11 +1628,13 @@
       var compEl  = document.getElementById('cl-mgr-completions');
       itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px">טוען...</div>';
       compEl.innerHTML  = '';
-      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).orderBy('order').get()
+      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
         .then(function(snap) {
           itemsEl.innerHTML = '';
           if (snap.empty) { itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px">אין פריטים</div>'; return; }
-          snap.forEach(function(doc) {
+          var docs = []; snap.forEach(function(doc) { docs.push(doc); });
+          docs.sort(function(a,b){ return (a.data().order||0)-(b.data().order||0); });
+          docs.forEach(function(doc) {
             var row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;gap:8px';
             row.innerHTML = '<div style="flex:1;font-size:13px;color:#fff">' + doc.data().text + '</div>' +
@@ -1659,7 +1661,7 @@
       var inp = document.getElementById('cl-new-item-input');
       var text = inp.value.trim();
       if (!text) return;
-      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).orderBy('order').get()
+      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
         .then(function(snap) {
           var maxOrder = snap.size;
           return db.collection('checklist_items').add({ text: text, shifts: [_clMgrTab], order: maxOrder, createdAt: new Date().toISOString() });
