@@ -572,6 +572,19 @@
   <input type="file" accept="image/*" capture="environment" id="cl-camera-input" style="display:none" onchange="handleChecklistPhoto(this)">
 
   <!-- CONSTRAINT STATUS MODAL (approved / pending) -->
+  <!-- MANAGER PIN MODAL -->
+  <div class="modal-overlay" id="mgr-pin-overlay" onclick="if(event.target===this)closeManagerPin()">
+    <div class="modal-box" style="max-width:300px;gap:16px">
+      <div style="font-size:36px">🔐</div>
+      <div style="font-size:17px;font-weight:700;color:var(--gold)">כניסת מנהלת</div>
+      <input type="password" id="mgr-pin-input" placeholder="סיסמה..."
+        style="width:100%;background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.3);border-radius:12px;padding:14px 16px;color:#fff;font-size:16px;font-family:inherit;text-align:center;outline:none"
+        onkeydown="if(event.key==='Enter')submitManagerPin()">
+      <button class="gold-btn" style="width:100%;padding:14px;font-size:16px" onclick="submitManagerPin()">כניסה</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeManagerPin()">ביטול</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="constraint-status-modal">
     <div class="modal-box">
       <div class="modal-big-icon" id="cstatus-icon"></div>
@@ -760,29 +773,31 @@
     window.addEventListener('offline', function() { setSyncStatus('error'); });
     window.addEventListener('online',  function() { setSyncStatus('connecting'); });
 
-    var OWNER_EMAIL = 'ma303300@gmail.com';
+    var MANAGER_PIN = 'אהבת חינם';
 
     function enterManager() {
-      var user = auth.currentUser;
-      if (user && user.email === OWNER_EMAIL) {
+      var inp = document.getElementById('mgr-pin-input');
+      if (inp) { inp.value = ''; inp.style.borderColor = 'rgba(201,168,76,0.3)'; inp.placeholder = 'סיסמה...'; }
+      document.getElementById('mgr-pin-overlay').classList.add('open');
+      setTimeout(function() { if (inp) inp.focus(); }, 120);
+    }
+
+    function submitManagerPin() {
+      var inp = document.getElementById('mgr-pin-input');
+      if (!inp) return;
+      if (inp.value === MANAGER_PIN) {
+        closeManagerPin();
         _openManagerDashboard();
-        return;
+      } else {
+        inp.value = '';
+        inp.placeholder = '❌ סיסמה שגויה';
+        inp.style.borderColor = 'rgba(255,60,60,0.55)';
+        inp.focus();
       }
-      var provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ login_hint: OWNER_EMAIL });
-      auth.signInWithPopup(provider)
-        .then(function(result) {
-          if (result.user.email !== OWNER_EMAIL) {
-            showModal('🚫', 'גישה נדחתה', 'רק מנהלת המערכת יכולה להיכנס.', function() {
-              auth.signOut().then(function() { auth.signInAnonymously(); });
-            });
-            return;
-          }
-          _openManagerDashboard();
-        })
-        .catch(function() {
-          showModal('⚠️', 'שגיאה', 'הכניסה נכשלה, נסה שוב.', null);
-        });
+    }
+
+    function closeManagerPin() {
+      document.getElementById('mgr-pin-overlay').classList.remove('open');
     }
 
     function _openManagerDashboard() {
@@ -937,14 +952,7 @@
       checkEmpConstraintStatus(emp.id);
     }
 
-    function logout() {
-      /* If signed in as owner via Google, sign out and restore anonymous session */
-      var user = auth.currentUser;
-      if (user && user.email === OWNER_EMAIL) {
-        auth.signOut().then(function() { auth.signInAnonymously().catch(function(){}); });
-      }
-      goHome();
-    }
+    function logout() { goHome(); }
 
     /* ═══════════════════════════════════
        CONTENT RENDERING
@@ -1800,7 +1808,7 @@
     /* ANONYMOUS AUTH → then seed + auto-login */
     auth.onAuthStateChanged(function(user) {
       if (user) {
-        if (user.email === OWNER_EMAIL) { seedChecklistItems(); }
+        seedChecklistItems();
         /* AUTO-LOGIN */
         (function() {
           var branches = ['raanana', 'hadera'];
