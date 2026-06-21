@@ -1898,7 +1898,10 @@
     function openSchedule(editable) {
       _schEditable  = !!editable;
       _schWeekStart = _schGetWeekStart();
-      _schBranch    = editable ? 'raanana' : (currentEmployee ? currentEmployee.branch : 'raanana');
+      var savedBranch = editable ? sessionStorage.getItem('bbwor_sch_branch') : null;
+      _schBranch    = editable
+        ? (savedBranch || 'raanana')
+        : (currentEmployee ? currentEmployee.branch : 'raanana');
       sessionStorage.setItem('bbwor_sch_editable', editable ? '1' : '');
       show('schedule');
       _schRenderHeader();
@@ -1922,6 +1925,7 @@
     }
     function switchSchBranch(b) {
       _schBranch = b;
+      sessionStorage.setItem('bbwor_sch_branch', b);
       _schRenderHeader();
       _schLoadEmpsAndListen();
     }
@@ -2017,13 +2021,15 @@
       return cell;
     }
 
-    var _schPickerRect = null;
+    var _schPickerRect     = null;
+    var _schPickerOpenedAt = 0;
 
     function openSchPicker(di, shift, evt) {
       _schPickerDay   = di;
       _schPickerShift = shift;
       _schPickerSel   = (_schCells[di + '_' + shift] || []).slice();
-      _schPickerRect  = evt.currentTarget.getBoundingClientRect();
+      _schPickerRect  = (evt.currentTarget || evt.target).getBoundingClientRect();
+      _schPickerOpenedAt = Date.now();
       _schPositionWrap();
       document.getElementById('sch-picker-overlay').classList.add('open');
       _schOpenCards();
@@ -2047,6 +2053,13 @@
     function _schOpenCards() {
       var wrap = document.getElementById('sch-float-wrap');
       wrap.innerHTML = '';
+      if (!_schAllEmps.length) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'padding:14px 16px;color:rgba(255,255,255,0.5);font-size:13px;text-align:center;min-width:195px;background:rgba(24,21,14,0.97);border-radius:15px;border:1.5px solid rgba(201,168,76,0.28)';
+        empty.textContent = 'אין עובדים מאושרים בסניף';
+        wrap.appendChild(empty);
+        return;
+      }
       _schAllEmps.forEach(function(emp, idx) {
         wrap.appendChild(_schMakeFloatCard(emp, idx));
       });
@@ -2093,6 +2106,8 @@
     }
 
     function closeSchPicker() {
+      /* ignore ghost clicks that arrive within 250ms of opening */
+      if (Date.now() - _schPickerOpenedAt < 250) return;
       _schCollapseCards(function() {
         document.getElementById('sch-picker-overlay').classList.remove('open');
         var wrap = document.getElementById('sch-float-wrap');
