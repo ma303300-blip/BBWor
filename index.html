@@ -224,6 +224,52 @@
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
     .modal-box.zoom-anim { animation: modal-zoom-out 1.2s ease-out forwards; }
 
+    /* SCHEDULE SCREEN */
+    #screen-schedule { flex-direction: column; padding: 0; overflow: hidden; }
+    .sch-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px; padding-top: calc(14px + env(safe-area-inset-top,0px)); border-bottom: 1px solid rgba(255,255,255,0.08); gap: 8px; flex-shrink: 0; background: rgba(14,13,12,0.6); }
+    .sch-close-btn { background: rgba(14,13,12,0.5); border: 1px solid rgba(255,255,255,0.13); border-radius: 8px; padding: 7px 12px; color: rgba(255,255,255,0.7); font-size: 14px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+    .sch-week-nav { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
+    .sch-week-btn { background: none; border: none; color: var(--gold); font-size: 24px; cursor: pointer; padding: 0 2px; line-height: 1; }
+    .sch-week-label { font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
+    .sch-branch-tabs { display: flex; gap: 5px; flex-shrink: 0; }
+    .sch-branch-tab { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 6px 9px; color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .sch-branch-tab.active { background: rgba(201,168,76,0.18); border-color: var(--gold); color: var(--gold); }
+    .sch-screen-title { text-align: center; font-size: 13px; font-weight: 700; color: var(--gold); padding: 8px 0 4px; flex-shrink: 0; letter-spacing: 0.5px; }
+    .sch-table-wrap { flex: 1; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 4px 20px; }
+    .sch-table { display: grid; grid-template-columns: 44px repeat(7, 82px); min-width: calc(44px + 7*82px); }
+    .sch-corner { }
+    .sch-day-col { display: flex; flex-direction: column; align-items: center; padding: 8px 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .sch-day-letter { font-size: 14px; font-weight: 700; color: var(--gold); }
+    .sch-day-date { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+    .sch-day-col.today .sch-day-letter { color: #2ecc71; }
+    .sch-day-col.today .sch-day-date { color: rgba(46,204,113,0.8); }
+    .sch-shift-label { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 10px 2px 0; gap: 3px; }
+    .sch-shift-icon { font-size: 15px; }
+    .sch-shift-txt { font-size: 9px; color: var(--text-dim); writing-mode: vertical-rl; transform: rotate(180deg); }
+    .sch-cell { min-height: 72px; border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; margin: 2px; padding: 5px 3px; display: flex; flex-direction: column; align-items: center; gap: 4px; background: rgba(255,255,255,0.02); box-sizing: border-box; }
+    .sch-cell.editable { cursor: pointer; transition: background 0.15s; }
+    .sch-cell.editable:active { background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.3); }
+    .sch-emp-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .sch-emp-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(201,168,76,0.5); }
+    .sch-emp-avatar-ph { width: 34px; height: 34px; border-radius: 50%; background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+    .sch-emp-name { font-size: 9px; color: rgba(255,255,255,0.75); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sch-add-hint { color: rgba(255,255,255,0.12); font-size: 22px; margin: auto; line-height: 1; }
+    .sch-separator { grid-column: 1 / -1; height: 1px; background: rgba(201,168,76,0.18); margin: 6px 4px; }
+    .sch-picker { position: fixed; bottom: 0; left: 0; right: 0; background: #1b1916; border-radius: 20px 20px 0 0; border-top: 1.5px solid rgba(201,168,76,0.3); z-index: 500; transform: translateY(100%); transition: transform 0.3s ease; max-height: 72vh; display: flex; flex-direction: column; }
+    .sch-picker.open { transform: translateY(0); }
+    .sch-picker-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .sch-picker-title { font-size: 14px; font-weight: 700; color: var(--gold); }
+    .sch-picker-save { background: var(--gold); border: none; border-radius: 10px; padding: 9px 20px; color: #111; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .sch-picker-list { flex: 1; overflow-y: auto; padding: 10px 16px 24px; display: flex; flex-direction: column; gap: 8px; }
+    .sch-picker-emp { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.15s; }
+    .sch-picker-emp.selected { border-color: var(--gold); background: rgba(201,168,76,0.09); }
+    .sch-picker-emp-photo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+    .sch-picker-emp-ph { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; background: rgba(201,168,76,0.15); border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: var(--gold); }
+    .sch-picker-emp-name { flex: 1; font-size: 14px; font-weight: 600; color: #fff; }
+    .sch-picker-emp.selected .sch-picker-emp-name { color: var(--gold); }
+    .sch-picker-check { font-size: 16px; color: var(--gold); visibility: hidden; flex-shrink: 0; }
+    .sch-picker-emp.selected .sch-picker-check { visibility: visible; }
+
     /* CONSTRAINT DAY/SHIFT SELECTOR */
     .constraint-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.28); border-radius: 14px; padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; }
     .constraint-box-title { font-size: 12px; color: var(--gold); font-weight: 700; text-align: center; letter-spacing: 0.5px; }
@@ -607,6 +653,36 @@
         <button class="edit-cancel-btn" onclick="closeConstraintStatus()">סגור</button>
       </div>
     </div>
+  </div>
+
+  <!-- SCHEDULE SCREEN -->
+  <div id="screen-schedule" class="screen">
+    <div class="sch-header">
+      <button class="sch-close-btn" onclick="closeSchedule()">✕</button>
+      <div class="sch-week-nav">
+        <button class="sch-week-btn" onclick="schPrevWeek()">‹</button>
+        <span class="sch-week-label" id="sch-week-label"></span>
+        <button class="sch-week-btn" onclick="schNextWeek()">›</button>
+      </div>
+      <div class="sch-branch-tabs" id="sch-branch-tabs" style="display:none">
+        <button class="sch-branch-tab" id="sch-tab-raanana" onclick="switchSchBranch('raanana')">רעננה</button>
+        <button class="sch-branch-tab" id="sch-tab-hadera" onclick="switchSchBranch('hadera')">חדרה</button>
+      </div>
+    </div>
+    <div class="sch-screen-title">📅 סידור עבודה</div>
+    <div class="sch-table-wrap">
+      <div class="sch-table" id="sch-table"></div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE PICKER (manager) -->
+  <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490"></div>
+  <div class="sch-picker" id="sch-picker">
+    <div class="sch-picker-header">
+      <span class="sch-picker-title" id="sch-picker-title">בחר עובדים</span>
+      <button class="sch-picker-save" onclick="saveSchCell()">שמור ✓</button>
+    </div>
+    <div class="sch-picker-list" id="sch-picker-list"></div>
   </div>
 
   <!-- MONTHLY GOAL MODAL (Manager) -->
@@ -1050,7 +1126,7 @@
       bannerWrap.style.gap = '';
       var bEl = document.createElement('div');
       bEl.className = 'work-banner';
-      (function(lbl){ bEl.onclick = function() { alert(lbl + ' — בקרוב'); }; })(c.banner.label);
+      bEl.onclick = function() { openSchedule(false); };
       bEl.innerHTML = '<span class="banner-icon">' + c.banner.icon + '</span><span class="banner-label">' + c.banner.label + '</span>';
       bannerWrap.appendChild(bEl);
       ['btn3', 'btn4'].forEach(function(key) {
@@ -1099,6 +1175,8 @@
       bannerWrap.innerHTML = '';
       var bEl = document.createElement('div');
       bEl.className = 'work-banner';
+      bEl.style.cursor = 'pointer';
+      bEl.onclick = function() { openSchedule(true); };
       bEl.innerHTML =
         '<span class="banner-icon">' + c.banner.icon + '</span>' +
         '<span class="banner-label">' + c.banner.label + '</span>' +
@@ -1792,6 +1870,197 @@
         var box = document.getElementById('modal-text');
         box.parentNode.insertBefore(img, box.nextSibling);
       }, 50);
+    }
+
+    /* ═══════════════════════════════════
+       SCHEDULE
+    ═══════════════════════════════════ */
+    var _schWeekStart  = null;
+    var _schBranch     = 'raanana';
+    var _schEditable   = false;
+    var _schCells      = {};
+    var _schAllEmps    = [];
+    var _schEmpMap     = {};
+    var _schUnsub      = null;
+    var _schPickerDay  = null;
+    var _schPickerShift= null;
+    var _schPickerSel  = [];
+    var SCH_DAYS       = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+    var SCH_DAY_NAMES  = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    var SCH_MONTHS     = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+
+    function _schGetWeekStart(ref) {
+      var d = new Date(ref || Date.now());
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() - d.getDay());
+      return d;
+    }
+    function _schWeekId() {
+      var d = _schWeekStart;
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function _schDocId() { return _schBranch + '_' + _schWeekId(); }
+
+    function openSchedule(editable) {
+      _schEditable  = !!editable;
+      _schWeekStart = _schGetWeekStart();
+      _schBranch    = editable ? 'raanana' : (currentEmployee ? currentEmployee.branch : 'raanana');
+      show('schedule');
+      _schRenderHeader();
+      _schLoadEmpsAndListen();
+    }
+
+    function closeSchedule() {
+      if (_schUnsub) { _schUnsub(); _schUnsub = null; }
+      show(_schEditable ? 'manager' : 'employee');
+    }
+
+    function schPrevWeek() {
+      _schWeekStart.setDate(_schWeekStart.getDate() - 7);
+      _schRenderHeader();
+      _schLoadEmpsAndListen();
+    }
+    function schNextWeek() {
+      _schWeekStart.setDate(_schWeekStart.getDate() + 7);
+      _schRenderHeader();
+      _schLoadEmpsAndListen();
+    }
+    function switchSchBranch(b) {
+      _schBranch = b;
+      _schRenderHeader();
+      _schLoadEmpsAndListen();
+    }
+
+    function _schRenderHeader() {
+      var end = new Date(_schWeekStart);
+      end.setDate(end.getDate() + 6);
+      var label = _schWeekStart.getDate() + ' ' + SCH_MONTHS[_schWeekStart.getMonth()] +
+                  ' — ' + end.getDate() + ' ' + SCH_MONTHS[end.getMonth()];
+      document.getElementById('sch-week-label').textContent = label;
+      var tabs = document.getElementById('sch-branch-tabs');
+      tabs.style.display = _schEditable ? 'flex' : 'none';
+      if (_schEditable) {
+        document.getElementById('sch-tab-raanana').classList.toggle('active', _schBranch === 'raanana');
+        document.getElementById('sch-tab-hadera').classList.toggle('active', _schBranch === 'hadera');
+      }
+    }
+
+    function _schLoadEmpsAndListen() {
+      if (_schUnsub) { _schUnsub(); _schUnsub = null; }
+      var tbl = document.getElementById('sch-table');
+      tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">טוען...</div>';
+      db.collection('employees').where('branch','==',_schBranch).where('status','==','approved').get()
+        .then(function(snap) {
+          _schAllEmps = []; _schEmpMap = {};
+          snap.forEach(function(d) {
+            var e = Object.assign({ id: d.id }, d.data());
+            _schAllEmps.push(e); _schEmpMap[d.id] = e;
+          });
+          /* live listener on the schedule document */
+          _schUnsub = db.collection('schedules').doc(_schDocId())
+            .onSnapshot(function(doc) {
+              _schCells = doc.exists ? (doc.data().cells || {}) : {};
+              _schRenderTable();
+            }, function() {
+              tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
+            });
+        });
+    }
+
+    function _schRenderTable() {
+      var tbl = document.getElementById('sch-table');
+      tbl.innerHTML = '';
+      var today = new Date(); today.setHours(0,0,0,0);
+
+      tbl.appendChild(document.createElement('div')); /* corner */
+      for (var di = 0; di < 7; di++) {
+        var dd = new Date(_schWeekStart); dd.setDate(_schWeekStart.getDate() + di);
+        var isToday = dd.getTime() === today.getTime();
+        var h = document.createElement('div');
+        h.className = 'sch-day-col' + (isToday ? ' today' : '');
+        h.innerHTML = '<div class="sch-day-letter">' + SCH_DAYS[di] + '</div>' +
+                      '<div class="sch-day-date">' + dd.getDate() + '/' + (dd.getMonth()+1) + '</div>';
+        tbl.appendChild(h);
+      }
+
+      ['morning','evening'].forEach(function(shift, si) {
+        var sep = document.createElement('div'); sep.className = 'sch-separator'; tbl.appendChild(sep);
+        var lbl = document.createElement('div'); lbl.className = 'sch-shift-label';
+        lbl.innerHTML = '<span class="sch-shift-icon">' + (shift==='morning'?'☀️':'🌙') + '</span>' +
+                        '<span class="sch-shift-txt">' + (shift==='morning'?'בוקר':'ערב') + '</span>';
+        tbl.appendChild(lbl);
+        for (var di = 0; di < 7; di++) { tbl.appendChild(_schMakeCell(di, shift)); }
+      });
+    }
+
+    function _schMakeCell(di, shift) {
+      var key    = di + '_' + shift;
+      var empIds = _schCells[key] || [];
+      var cell   = document.createElement('div');
+      cell.className = 'sch-cell' + (_schEditable ? ' editable' : '');
+      cell.id = 'sch-cell-' + key;
+      if (empIds.length === 0) {
+        if (_schEditable) cell.innerHTML = '<span class="sch-add-hint">+</span>';
+      } else {
+        var html = '';
+        empIds.forEach(function(id) {
+          var e = _schEmpMap[id]; if (!e) return;
+          html += '<div class="sch-emp-chip">' +
+            (e.photo ? '<img class="sch-emp-avatar" src="'+e.photo+'">'
+                     : '<div class="sch-emp-avatar-ph">'+e.firstName.charAt(0)+'</div>') +
+            '<div class="sch-emp-name">' + e.firstName + '</div></div>';
+        });
+        cell.innerHTML = html;
+      }
+      if (_schEditable) {
+        (function(d,s){ cell.onclick = function(){ openSchPicker(d,s); }; })(di, shift);
+      }
+      return cell;
+    }
+
+    function openSchPicker(di, shift) {
+      _schPickerDay   = di;
+      _schPickerShift = shift;
+      _schPickerSel   = (_schCells[di + '_' + shift] || []).slice();
+      document.getElementById('sch-picker-title').textContent =
+        'יום ' + SCH_DAY_NAMES[di] + ' — ' + (shift==='morning'?'☀️ בוקר':'🌙 ערב');
+      var list = document.getElementById('sch-picker-list');
+      list.innerHTML = '';
+      _schAllEmps.forEach(function(emp) {
+        var sel = _schPickerSel.indexOf(emp.id) !== -1;
+        var el  = document.createElement('div');
+        el.className = 'sch-picker-emp' + (sel ? ' selected' : '');
+        el.innerHTML =
+          (emp.photo ? '<img class="sch-picker-emp-photo" src="'+emp.photo+'">'
+                     : '<div class="sch-picker-emp-ph">'+emp.firstName.charAt(0)+'</div>') +
+          '<div class="sch-picker-emp-name">'+emp.firstName+' '+emp.lastName+'</div>' +
+          '<span class="sch-picker-check">✓</span>';
+        (function(id, node){
+          node.onclick = function() {
+            var i = _schPickerSel.indexOf(id);
+            if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i,1);
+            node.classList.toggle('selected', _schPickerSel.indexOf(id) !== -1);
+          };
+        })(emp.id, el);
+        list.appendChild(el);
+      });
+      document.getElementById('sch-picker-overlay').classList.add('open');
+      document.getElementById('sch-picker').classList.add('open');
+    }
+
+    function closeSchPicker() {
+      document.getElementById('sch-picker-overlay').classList.remove('open');
+      document.getElementById('sch-picker').classList.remove('open');
+    }
+
+    function saveSchCell() {
+      var key = _schPickerDay + '_' + _schPickerShift;
+      _schCells[key] = _schPickerSel.slice();
+      closeSchPicker();
+      db.collection('schedules').doc(_schDocId()).set(
+        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, updatedAt: new Date().toISOString() },
+        { merge: true }
+      ).catch(function() { showModal('⚠️','שגיאה','לא ניתן לשמור.',null); });
     }
 
     /* ═══════════════════════════════════
