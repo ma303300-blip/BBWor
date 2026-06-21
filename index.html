@@ -256,8 +256,9 @@
     .sch-add-hint { color: rgba(0,0,0,0.22); font-size: 22px; margin: auto; line-height: 1; }
     .sch-separator { grid-column: 1 / -1; height: 2px; background: rgba(0,0,0,0.15); margin: 6px 4px; }
     @keyframes schCardDrop { from { opacity:0; transform:translateY(-10px) scale(0.92); } to { opacity:1; transform:translateY(0) scale(1); } }
+    @keyframes schCardOut  { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-8px) scale(0.9); } }
     #sch-float-wrap { position: fixed; z-index: 510; display: none; flex-direction: column; gap: 5px; max-height: 62vh; overflow-y: auto; padding: 2px; }
-    .sch-float-card { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 15px; background: rgba(24,21,14,0.97); border: 1.5px solid rgba(201,168,76,0.28); box-shadow: 0 6px 24px rgba(0,0,0,0.6); cursor: pointer; animation: schCardDrop 0.22s ease both; min-width: 195px; }
+    .sch-float-card { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 15px; background: rgba(24,21,14,0.97); border: 1.5px solid rgba(201,168,76,0.28); box-shadow: 0 6px 24px rgba(0,0,0,0.6); cursor: pointer; min-width: 195px; }
     .sch-float-card.active { border-color: #16a34a; background: rgba(10,28,12,0.97); }
     .sch-float-card-photo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.12); }
     .sch-float-card-ph { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: rgba(201,168,76,0.15); border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--gold); }
@@ -2009,57 +2010,88 @@
       return cell;
     }
 
+    var _schPickerRect = null;
+
     function openSchPicker(di, shift, evt) {
       _schPickerDay   = di;
       _schPickerShift = shift;
       _schPickerSel   = (_schCells[di + '_' + shift] || []).slice();
-      var wrap = document.getElementById('sch-float-wrap');
-      wrap.innerHTML = '';
-      /* position near the tapped cell */
-      var rect = evt.currentTarget.getBoundingClientRect();
-      var top  = rect.bottom + 6;
-      var cardW = 210;
-      var left = rect.left;
+      _schPickerRect  = evt.currentTarget.getBoundingClientRect();
+      _schPositionWrap();
+      document.getElementById('sch-picker-overlay').classList.add('open');
+      _schOpenCards();
+    }
+
+    function _schPositionWrap() {
+      var wrap  = document.getElementById('sch-float-wrap');
+      var rect  = _schPickerRect;
+      var cardW = 215;
+      var top   = rect.bottom + 6;
+      var left  = rect.left;
       if (left + cardW > window.innerWidth - 6) left = window.innerWidth - cardW - 6;
       if (left < 4) left = 4;
-      /* if cards would overflow bottom, flip above */
-      var estH = Math.min(_schAllEmps.length, 6) * 58;
+      var estH  = Math.min(_schAllEmps.length, 6) * 58;
       if (top + estH > window.innerHeight - 20) top = Math.max(60, rect.top - estH - 6);
       wrap.style.top  = top + 'px';
       wrap.style.left = left + 'px';
       wrap.style.display = 'flex';
+    }
+
+    function _schOpenCards() {
+      var wrap = document.getElementById('sch-float-wrap');
+      wrap.innerHTML = '';
       _schAllEmps.forEach(function(emp, idx) {
-        var active = _schPickerSel.indexOf(emp.id) !== -1;
-        var el = document.createElement('div');
-        el.className = 'sch-float-card' + (active ? ' active' : '');
-        el.style.animationDelay = (idx * 62) + 'ms';
-        el.innerHTML =
-          (emp.photo ? '<img class="sch-float-card-photo" src="' + emp.photo + '">'
-                     : '<div class="sch-float-card-ph">' + emp.firstName.charAt(0) + '</div>') +
-          '<div class="sch-float-card-info">' +
-            '<div class="sch-float-card-name">' + emp.firstName + ' ' + emp.lastName + '</div>' +
-            '<div class="sch-float-card-phone">' + (emp.phone || '') + '</div>' +
-          '</div>' +
-          '<span class="sch-float-card-check">✅</span>';
-        (function(id, node) {
-          node.onclick = function(e) {
-            e.stopPropagation();
-            var i = _schPickerSel.indexOf(id);
-            if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i, 1);
-            node.classList.toggle('active', _schPickerSel.indexOf(id) !== -1);
-            _schSaveImmediate();
-          };
-        })(emp.id, el);
-        wrap.appendChild(el);
+        wrap.appendChild(_schMakeFloatCard(emp, idx));
       });
-      document.getElementById('sch-picker-overlay').classList.add('open');
+    }
+
+    function _schMakeFloatCard(emp, idx) {
+      var active = _schPickerSel.indexOf(emp.id) !== -1;
+      var el = document.createElement('div');
+      el.className = 'sch-float-card' + (active ? ' active' : '');
+      /* cascade-in: top card first */
+      el.style.animation = 'schCardDrop 0.22s ease ' + (idx * 62) + 'ms both';
+      el.innerHTML =
+        (emp.photo ? '<img class="sch-float-card-photo" src="' + emp.photo + '">'
+                   : '<div class="sch-float-card-ph">' + emp.firstName.charAt(0) + '</div>') +
+        '<div class="sch-float-card-info">' +
+          '<div class="sch-float-card-name">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+          '<div class="sch-float-card-phone">' + (emp.phone || '') + '</div>' +
+        '</div>' +
+        '<span class="sch-float-card-check">✅</span>';
+      (function(id, node) {
+        node.onclick = function(e) {
+          e.stopPropagation();
+          var i = _schPickerSel.indexOf(id);
+          if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i, 1);
+          _schSaveImmediate();
+          /* collapse then reopen so manager can pick next employee */
+          _schCollapseCards(function() { _schOpenCards(); });
+        };
+      })(emp.id, el);
+      return el;
+    }
+
+    function _schCollapseCards(cb) {
+      var wrap  = document.getElementById('sch-float-wrap');
+      var cards = wrap.querySelectorAll('.sch-float-card');
+      var n     = cards.length;
+      if (!n) { if (cb) cb(); return; }
+      var stagger = 45, dur = 180;
+      for (var i = 0; i < n; i++) {
+        /* reverse stagger: last card exits first, first card exits last */
+        cards[i].style.animation = 'schCardOut ' + dur + 'ms ease ' + ((n - 1 - i) * stagger) + 'ms both';
+      }
+      setTimeout(function() { if (cb) cb(); }, (n - 1) * stagger + dur + 20);
     }
 
     function closeSchPicker() {
-      document.getElementById('sch-picker-overlay').classList.remove('open');
-      var wrap = document.getElementById('sch-float-wrap');
-      wrap.style.display = 'none';
-      wrap.innerHTML = '';
+      _schCollapseCards(function() {
+        document.getElementById('sch-picker-overlay').classList.remove('open');
+        var wrap = document.getElementById('sch-float-wrap');
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+      });
     }
 
     function _schSaveImmediate() {
