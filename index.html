@@ -870,7 +870,7 @@
       }
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
-      localStorage.setItem('bbwor_screen', name);
+      sessionStorage.setItem('bbwor_screen', name);
     }
 
     document.getElementById('screen-home').addEventListener('touchmove', function(e) {
@@ -2426,7 +2426,7 @@
         (function() {
           var branches = ['raanana', 'hadera'];
           var i = 0;
-          var lastScreen = localStorage.getItem('bbwor_screen');
+          var lastScreen = sessionStorage.getItem('bbwor_screen');
           function tryBranch() {
             if (i >= branches.length) {
               if (lastScreen === 'manager') { enterManager(); }
