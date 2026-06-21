@@ -200,6 +200,33 @@
     .drawer-empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 30px 0; }
     .req-card { background: rgba(14,13,12,0.9); border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
     .req-branch-tag { font-size: 10px; color: var(--gold); background: rgba(201,168,76,0.1); border-radius: 5px; padding: 2px 7px; margin-top: 3px; display: inline-block; }
+
+    /* CONSTRAINT BADGES */
+    .constraint-badge-green { position: absolute; top: 7px; right: 8px; background: #2ecc71; color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; z-index: 2; }
+    .constraint-badge-green.show { display: flex; }
+    .constraint-badge-red { position: absolute; top: 7px; right: 8px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; z-index: 2; }
+    .constraint-badge-red.show { display: flex; }
+
+    /* MODAL ZOOM ANIMATION */
+    @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
+    .modal-box.zoom-anim { animation: modal-zoom-out 1.2s ease-out forwards; }
+
+    /* CONSTRAINT FORM */
+    .constraint-textarea { background: rgba(255,255,255,0.07); border: 1px solid rgba(201,168,76,0.4); border-radius: 10px; padding: 11px 13px; color: #fff; font-size: 14px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box; resize: none; min-height: 64px; }
+    .constraint-textarea:focus { border-color: var(--gold); }
+    .constraint-textarea::placeholder { color: rgba(255,255,255,0.25); }
+    .constraint-row-btns { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+    .constraint-send-btn { flex: 1; background: var(--gold); border: none; border-radius: 11px; padding: 14px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .constraint-back-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 11px; padding: 14px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
+
+    /* CONSTRAINT DRAWER ITEMS */
+    .constraint-item { background: rgba(14,13,12,0.9); border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .constraint-item-name { font-size: 15px; font-weight: 700; color: #fff; }
+    .constraint-item-branch { font-size: 10px; color: var(--gold); background: rgba(201,168,76,0.1); border-radius: 5px; padding: 2px 7px; display: inline-block; }
+    .constraint-item-week { font-size: 11px; color: var(--text-dim); }
+    .constraint-item-texts { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+    .constraint-item-text { font-size: 13px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); border-radius: 7px; padding: 6px 10px; }
+    .constraint-approve-btn { align-self: flex-end; background: rgba(70,185,80,0.85); border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; color: #fff; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -318,6 +345,43 @@
         <button class="drawer-close-btn" onclick="closePendingDrawer()">✕</button>
       </div>
       <div class="drawer-body" id="drawer-body"></div>
+    </div>
+    <!-- Constraint overlay + drawer -->
+    <div class="pending-overlay" id="constraint-overlay" onclick="closeConstraintDrawer()"></div>
+    <div class="pending-drawer" id="constraint-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">📌 אילוצים ממתינים</span>
+        <button class="drawer-close-btn" onclick="closeConstraintDrawer()">✕</button>
+      </div>
+      <div class="drawer-body" id="constraint-drawer-body"></div>
+    </div>
+  </div>
+
+  <!-- CONSTRAINT INFO MODAL -->
+  <div class="modal-overlay" id="constraint-info-modal">
+    <div class="modal-box" id="constraint-info-box">
+      <div class="modal-big-icon">📌</div>
+      <div class="modal-heading" id="constraint-info-name"></div>
+      <div class="modal-body-text">ניתן כל שבוע להוסיף שני אילוצים לסידור העבודה.<br>ניתן להוסיף את האילוצים עד יום רביעי.</div>
+      <div class="edit-row-btns" style="width:100%;margin-top:6px">
+        <button class="edit-save-btn" onclick="openConstraintForm()">אישור ✦</button>
+        <button class="edit-cancel-btn" onclick="closeConstraintInfo()">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSTRAINT FORM MODAL -->
+  <div class="modal-overlay" id="constraint-form-modal">
+    <div class="modal-box" id="constraint-form-box" style="gap:12px;align-items:stretch">
+      <div style="text-align:center;font-size:22px;font-weight:700;color:var(--gold)">הוסף אילוצים</div>
+      <div style="font-size:12px;color:var(--text-dim)">אילוץ ראשון</div>
+      <textarea class="constraint-textarea" id="constraint-text-1" placeholder="כתוב/י את האילוץ הראשון שלך..." rows="2"></textarea>
+      <div style="font-size:12px;color:var(--text-dim)">אילוץ שני</div>
+      <textarea class="constraint-textarea" id="constraint-text-2" placeholder="כתוב/י את האילוץ השני שלך..." rows="2"></textarea>
+      <div class="constraint-row-btns">
+        <button class="constraint-send-btn" onclick="submitConstraints()">שלח ✦</button>
+        <button class="constraint-back-btn" onclick="backToConstraintInfo()">ביטול לעריכה</button>
+      </div>
     </div>
   </div>
 
@@ -451,6 +515,9 @@
     var modalCallback = null;
     var _editKey = null;
     var _badgeUnsub = null;
+    var currentEmployee = null;
+    var _constraintBadgeUnsub = null;
+    var _constraintEmpUnsub = null;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -479,7 +546,13 @@
       e.preventDefault();
     }, { passive: false });
 
-    function goHome() { activeBranch = null; pendingPhoto = null; show('home'); }
+    function goHome() {
+      activeBranch = null;
+      pendingPhoto = null;
+      currentEmployee = null;
+      if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
+      show('home');
+    }
 
     function setSyncStatus(s) {
       var dot = document.getElementById('sync-dot');
@@ -508,6 +581,14 @@
             var badge = document.getElementById('fab-badge');
             badge.textContent = count;
             badge.classList.toggle('show', count > 0);
+          });
+      }
+      if (!_constraintBadgeUnsub) {
+        _constraintBadgeUnsub = db.collection('constraints').where('status', '==', 'pending')
+          .onSnapshot(function(snap) {
+            var count = snap.size;
+            var badge = document.getElementById('mgr-constraint-badge');
+            if (badge) { badge.textContent = count; badge.classList.toggle('show', count > 0); }
           });
       }
       show('manager');
@@ -610,11 +691,13 @@
     }
 
     function openEmployeeHome(emp) {
+      currentEmployee = emp;
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
       renderEmployeeGrid();
       show('employee');
       showGreeting(emp.firstName);
+      checkEmpConstraintStatus(emp.id);
     }
 
     function logout() { goHome(); }
@@ -646,8 +729,14 @@
         var item = c[key];
         var el = document.createElement('button');
         el.className = 'action-btn';
-        el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
-        (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label);
+        if (key === 'btn4') {
+          el.id = 'emp-constraint-btn';
+          el.innerHTML = '<span class="constraint-badge-green" id="emp-constraint-badge"></span><span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          el.onclick = openConstraintModal;
+        } else {
+          el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label);
+        }
         grid2.appendChild(el);
       });
     }
@@ -680,10 +769,21 @@
         var item = c[key];
         var el = document.createElement('div');
         el.className = 'action-btn';
-        el.innerHTML =
-          '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
-          '<span class="a-icon">' + item.icon + '</span>' +
-          '<span class="a-label">' + item.label + '</span>';
+        if (key === 'btn4') {
+          el.id = 'mgr-constraint-btn';
+          el.style.cursor = 'pointer';
+          el.innerHTML =
+            '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+            '<span class="constraint-badge-red" id="mgr-constraint-badge"></span>' +
+            '<span class="a-icon">' + item.icon + '</span>' +
+            '<span class="a-label">' + item.label + '</span>';
+          el.onclick = openConstraintDrawer;
+        } else {
+          el.innerHTML =
+            '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
+            '<span class="a-icon">' + item.icon + '</span>' +
+            '<span class="a-label">' + item.label + '</span>';
+        }
         grid2.appendChild(el);
       });
     }
@@ -796,6 +896,134 @@
     function closeModal() {
       document.getElementById('modal').classList.remove('open');
       if (modalCallback) { var cb = modalCallback; modalCallback = null; cb(); }
+    }
+
+    /* ═══════════════════════════════════
+       CONSTRAINTS
+    ═══════════════════════════════════ */
+    function getWeekId() {
+      var now = new Date();
+      var d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return d.getUTCFullYear() + '-W' + String(weekNo).padStart(2, '0');
+    }
+
+    function openConstraintModal() {
+      if (!currentEmployee) return;
+      document.getElementById('constraint-info-name').textContent = 'היי ' + currentEmployee.firstName + '!';
+      var box = document.getElementById('constraint-info-box');
+      box.classList.remove('zoom-anim');
+      void box.offsetWidth;
+      box.classList.add('zoom-anim');
+      document.getElementById('constraint-info-modal').classList.add('open');
+    }
+
+    function closeConstraintInfo() {
+      document.getElementById('constraint-info-modal').classList.remove('open');
+    }
+
+    function openConstraintForm() {
+      closeConstraintInfo();
+      document.getElementById('constraint-text-1').value = '';
+      document.getElementById('constraint-text-2').value = '';
+      var box = document.getElementById('constraint-form-box');
+      box.classList.remove('zoom-anim');
+      void box.offsetWidth;
+      box.classList.add('zoom-anim');
+      document.getElementById('constraint-form-modal').classList.add('open');
+    }
+
+    function backToConstraintInfo() {
+      document.getElementById('constraint-form-modal').classList.remove('open');
+      openConstraintModal();
+    }
+
+    function submitConstraints() {
+      var c1 = document.getElementById('constraint-text-1').value.trim();
+      var c2 = document.getElementById('constraint-text-2').value.trim();
+      if (!c1 || !c2) { showModal('⚠️', 'שדות חסרים', 'יש למלא את שני האילוצים.', null); return; }
+      if (!currentEmployee) return;
+      var data = {
+        empId: currentEmployee.id,
+        empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
+        branch: currentEmployee.branch,
+        week: getWeekId(),
+        constraint1: c1,
+        constraint2: c2,
+        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        approvedAt: null
+      };
+      db.collection('constraints').add(data)
+        .then(function() {
+          document.getElementById('constraint-form-modal').classList.remove('open');
+          showModal('✅', 'נשלח!', 'האילוצים שלך נשלחו למנהלת.\nתקבל/י הודעה לאחר האישור.', null);
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. בדקי חיבור לאינטרנט.', null); });
+    }
+
+    function checkEmpConstraintStatus(empId) {
+      if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
+      var week = getWeekId();
+      _constraintEmpUnsub = db.collection('constraints')
+        .where('empId', '==', empId)
+        .where('week', '==', week)
+        .onSnapshot(function(snap) {
+          var badge = document.getElementById('emp-constraint-badge');
+          if (!badge) return;
+          var approved = false;
+          snap.forEach(function(doc) { if (doc.data().status === 'approved') approved = true; });
+          badge.textContent = '✓';
+          badge.classList.toggle('show', approved);
+        });
+    }
+
+    function openConstraintDrawer() {
+      var body = document.getElementById('constraint-drawer-body');
+      body.innerHTML = '<div class="drawer-empty">טוען...</div>';
+      document.getElementById('constraint-overlay').classList.add('open');
+      document.getElementById('constraint-drawer').classList.add('open');
+      db.collection('constraints').where('status', '==', 'pending').get()
+        .then(function(snap) {
+          body.innerHTML = '';
+          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין אילוצים ממתינים 🎉</div>'; return; }
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            var item = document.createElement('div');
+            item.className = 'constraint-item';
+            item.id = 'citem-' + doc.id;
+            item.innerHTML =
+              '<div class="constraint-item-name">' + d.empName + '</div>' +
+              '<span class="constraint-item-branch">' + BRANCH_NAME[d.branch] + '</span>' +
+              ' <span class="constraint-item-week">שבוע: ' + d.week + '</span>' +
+              '<div class="constraint-item-texts">' +
+                '<div class="constraint-item-text">1. ' + d.constraint1 + '</div>' +
+                '<div class="constraint-item-text">2. ' + d.constraint2 + '</div>' +
+              '</div>' +
+              '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + doc.id + '\')">✓ אשר</button>';
+            body.appendChild(item);
+          });
+        })
+        .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
+    }
+
+    function closeConstraintDrawer() {
+      document.getElementById('constraint-overlay').classList.remove('open');
+      document.getElementById('constraint-drawer').classList.remove('open');
+    }
+
+    function approveConstraint(docId) {
+      db.collection('constraints').doc(docId).update({ status: 'approved', approvedAt: new Date().toISOString() })
+        .then(function() {
+          var item = document.getElementById('citem-' + docId);
+          if (item) item.remove();
+          if (!document.querySelector('#constraint-drawer-body .constraint-item')) {
+            document.getElementById('constraint-drawer-body').innerHTML = '<div class="drawer-empty">אין אילוצים ממתינים 🎉</div>';
+          }
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר. נסי שוב.', null); });
     }
 
     /* AUTO-LOGIN */
