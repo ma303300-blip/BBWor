@@ -32,5 +32,11 @@ service cloud.firestore {
       allow read, write, delete: if isOwner();
       allow create, read: if isSignedIn();
     }
+
+    // Shift submissions: employees submit when done; owner reads all
+    match /shift_submissions/{subId} {
+      allow read, write, delete: if isOwner();
+      allow create, read: if isSignedIn();
+    }
   }
 }
