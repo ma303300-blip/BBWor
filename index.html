@@ -162,6 +162,18 @@
     .edit-save-btn { flex: 1; background: var(--gold); border: none; border-radius: 10px; padding: 13px; color: #111; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .edit-cancel-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 13px 16px; color: rgba(255,255,255,0.6); font-size: 14px; font-family: inherit; cursor: pointer; }
 
+    /* GREETING OVERLAY */
+    #greet-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 400; background: rgba(14,13,12,0.93); pointer-events: none; }
+    #greet-overlay.active { display: flex; }
+    #greet-text { font-family: 'Playfair Display', serif; font-style: italic; font-size: 44px; font-weight: 900; color: var(--gold); text-align: center; text-shadow: 0 0 30px rgba(201,168,76,0.7), 0 0 60px rgba(201,168,76,0.4); opacity: 0; }
+    #greet-text.run { animation: greet-zoom-fade 1.8s ease-out forwards; }
+    @keyframes greet-zoom-fade {
+      0%   { opacity: 0;   transform: scale(0.15); }
+      28%  { opacity: 1;   transform: scale(1.05); }
+      58%  { opacity: 1;   transform: scale(1.12); }
+      100% { opacity: 0;   transform: scale(1.5);  }
+    }
+
     /* SYNC PILL */
     #sync-bar { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); padding: 5px 12px; background: rgba(14,13,12,0.38); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; z-index: 55; white-space: nowrap; }
     #sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #f0a500; flex-shrink: 0; }
@@ -589,7 +601,17 @@
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
       renderEmployeeGrid();
-      show('employee');
+      var overlay = document.getElementById('greet-overlay');
+      var txt = document.getElementById('greet-text');
+      txt.textContent = 'היי ' + emp.firstName + '!';
+      txt.classList.remove('run');
+      void txt.offsetWidth;
+      txt.classList.add('run');
+      overlay.classList.add('active');
+      setTimeout(function() {
+        overlay.classList.remove('active');
+        show('employee');
+      }, 1800);
     }
 
     function logout() { goHome(); }
@@ -803,6 +825,8 @@
       tryBranch();
     })();
   </script>
+  <div id="greet-overlay"><div id="greet-text"></div></div>
+
   <div id="sync-bar">
     <span id="sync-dot"></span>
     <span id="sync-label">מתחבר...</span>
