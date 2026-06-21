@@ -752,11 +752,14 @@
       if (!first || !last || !phone) { showModal('⚠️', 'שדות חסרים', 'יש למלא שם פרטי, שם משפחה וטלפון.', null); return; }
       db.collection('employees')
         .where('phone', '==', phone)
-        .where('branch', '==', activeBranch)
         .get()
         .then(function(snap) {
-          if (!snap.empty) {
-            var existing = snap.docs[0].data();
+          var existing = null;
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            if (d.branch === activeBranch) existing = d;
+          });
+          if (existing) {
             setSession(activeBranch, { empId: existing.id });
             if (existing.status === 'approved') { openEmployeeHome(existing); }
             else { showPendingModal(existing.firstName + ' ' + existing.lastName); }
