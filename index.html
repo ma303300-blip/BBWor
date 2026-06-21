@@ -34,7 +34,9 @@
     /* HOME */
     #screen-home { align-items: center; justify-content: center; padding: 24px 16px; }
     .bsd-corner { position: fixed; top: 14px; right: 18px; color: rgba(255,255,255,0.4); font-size: 13px; letter-spacing: 1px; z-index: 50; pointer-events: none; }
-    .home-card { width: 100%; max-width: 360px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 22px; padding: 30px 22px 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+    @property --ba { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes border-spin { to { --ba: 360deg; } }
+    .home-card { width: 100%; max-width: 360px; border-radius: 22px; padding: 30px 22px 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); border: 2px solid transparent; background: rgba(14,13,12,0.6) padding-box, conic-gradient(from var(--ba), transparent 0%, #c9a84c 20%, #f5d88a 25%, #c9a84c 30%, transparent 50%) border-box; animation: border-spin 2.5s linear infinite; }
     .sparkle-top { color: var(--gold); font-size: 22px; opacity: 0.8; }
     .manager-btn { width: 100%; background: transparent; border: 1px solid rgba(201,168,76,0.22); border-radius: 14px; padding: 16px 12px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
     .manager-btn:active { background: rgba(201,168,76,0.09); border-color: rgba(201,168,76,0.5); }
