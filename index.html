@@ -1995,18 +1995,39 @@
     }
 
     function cleanOldCompletions(shift, currentSessionId) {
+      /* single-field query only — no composite index required */
       db.collection('checklist_completions')
         .where('branch', '==', activeBranch)
-        .where('shift', '==', shift)
         .get()
         .then(function(snap) {
           var batch = db.batch();
-          var count = 0;
+          var n = 0;
           snap.forEach(function(doc) {
-            if (doc.data().sessionId !== currentSessionId) { batch.delete(doc.ref); count++; }
+            var d = doc.data();
+            if (d.shift === shift && d.sessionId !== currentSessionId && n < 490) {
+              batch.delete(doc.ref); n++;
+            }
           });
-          if (count) batch.commit();
-        });
+          if (n) return batch.commit();
+        })
+        .catch(function() {});
+      /* also clean stale shift_submissions for this employee */
+      if (!currentEmployee) return;
+      db.collection('shift_submissions')
+        .where('empId', '==', currentEmployee.id)
+        .get()
+        .then(function(snap) {
+          var batch = db.batch();
+          var n = 0;
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            if (d.shift === shift && d.sessionId !== currentSessionId && n < 490) {
+              batch.delete(doc.ref); n++;
+            }
+          });
+          if (n) return batch.commit();
+        })
+        .catch(function() {});
     }
 
     function viewClPhoto(src) {
