@@ -1732,6 +1732,9 @@
         return;
       }
       if (!currentEmployee) return;
+      if (currentConstraintPendingDocId || currentConstraintDocId) { closeConstraintForm(); return; }
+      var sendBtn = document.querySelector('.constraint-send-btn');
+      if (sendBtn) sendBtn.disabled = true;
       var data = {
         empId: currentEmployee.id,
         empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
@@ -1749,7 +1752,10 @@
           closeConstraintForm();
           showModal('✅', 'נשלח!', 'האילוצים שלך נשלחו למנהלת.\nתקבל/י הודעה לאחר האישור.', null);
         })
-        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. בדקי חיבור לאינטרנט.', null); });
+        .catch(function() {
+          if (sendBtn) sendBtn.disabled = false;
+          showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. בדקי חיבור לאינטרנט.', null);
+        });
     }
 
     function checkEmpConstraintStatus(empId) {
@@ -1800,7 +1806,7 @@
 
     function _doAssignConstraint(con, btn, allConstraints) {
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
-      var weekStart = _schGetWeekStart();
+      var weekStart = _nextSchWeekStart();
       var weekId = weekStart.getFullYear() + '-' +
                    String(weekStart.getMonth()+1).padStart(2,'0') + '-' +
                    String(weekStart.getDate()).padStart(2,'0');
@@ -1946,7 +1952,7 @@
               allBtn.disabled = true; allBtn.textContent = '...';
               var byBranch = {};
               allCons.forEach(function(c) { if (!byBranch[c.branch]) byBranch[c.branch] = []; byBranch[c.branch].push(c); });
-              var ws = _schGetWeekStart();
+              var ws = _nextSchWeekStart();
               var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
               Promise.all(Object.keys(byBranch).map(function(branch) {
                 var docId = branch + '_' + wid;
@@ -2209,6 +2215,13 @@
       var d = new Date(ref || Date.now());
       d.setHours(0,0,0,0);
       d.setDate(d.getDate() - d.getDay());
+      return d;
+    }
+    /* next (or current if today is Sunday) schedule-week Sunday — used for constraint assignment */
+    function _nextSchWeekStart() {
+      var d = new Date();
+      d.setHours(0,0,0,0);
+      d.setDate(d.getDate() + (7 - d.getDay()) % 7);
       return d;
     }
     function _schWeekId() {
