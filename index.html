@@ -711,9 +711,11 @@
           if (emp.status === 'approved') {
             try { openEmployeeHome(emp); }
             catch(e) { clearSession(branch); }
-          } else { clearSession(branch); }
+          } else {
+            showPendingModal(emp.firstName + ' ' + emp.lastName);
+          }
         })
-        .catch(function() { clearSession(branch); });
+        .catch(function() { /* network error — keep session, user stays on form */ });
     }
 
     function openRegisterForm(branch) {
