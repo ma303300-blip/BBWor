@@ -2021,8 +2021,17 @@
 
     function closeSchedule() {
       if (_schUnsub) { _schUnsub(); _schUnsub = null; }
+      document.getElementById('sch-picker-overlay').classList.remove('open');
+      var _fw = document.getElementById('sch-float-wrap');
+      if (_fw) { _fw.style.display = 'none'; _fw.innerHTML = ''; }
       show(_schEditable ? 'manager' : 'employee');
     }
+
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && document.getElementById('screen-schedule').classList.contains('active')) {
+        _schLoadEmpsAndListen();
+      }
+    });
 
     function schPrevWeek() {
       _schWeekStart.setDate(_schWeekStart.getDate() - 7);
