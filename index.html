@@ -258,6 +258,8 @@
     .cl-mgr-item-row { display: flex; align-items: center; gap: 6px; background: rgba(245,235,210,0.5); border: 1px solid rgba(245,235,210,0.25); border-radius: 11px; padding: 10px 12px; }
     .cl-mgr-item-text { flex: 1; font-size: 14px; color: #fff; text-align: right; line-height: 1.4; }
     .cl-section-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 10px 0 6px; text-align: right; }
+    .goal-bar-track { background: rgba(255,255,255,0.08); border-radius: 6px; height: 7px; overflow: hidden; margin-top: 2px; }
+    .goal-bar-fill { height: 100%; background: var(--gold); border-radius: 6px; width: 0%; transition: width 0.9s ease; }
     .cl-submit-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.35s; margin-top: 14px; -webkit-tap-highlight-color: transparent; }
     .cl-submit-btn.inactive { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.25); cursor: not-allowed; }
     .cl-submit-btn.ready { background: rgba(46,204,113,0.18); color: #2ecc71; border: 1.5px solid rgba(46,204,113,0.45); }
@@ -597,6 +599,54 @@
         <button class="edit-save-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:14px" onclick="resetAndResubmit()">שלח מחדש ✏️</button>
         <button class="edit-cancel-btn" onclick="closeConstraintStatus()">סגור</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MONTHLY GOAL MODAL (Manager) -->
+  <div class="modal-overlay" id="goal-modal" onclick="if(event.target===this)closeGoalModal()">
+    <div class="modal-box" id="goal-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px">
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">🎯 יעד חודשי</div>
+      <div style="text-align:center;font-size:12px;color:var(--text-dim)" id="goal-month-label"></div>
+      <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text-dim)">יעד</span>
+          <span style="font-size:16px;font-weight:700;color:var(--gold)" id="goal-display">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text-dim)">נצבר החודש</span>
+          <span style="font-size:16px;font-weight:700;color:#fff" id="goal-total-display">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:var(--text-dim)">היום</span>
+          <span style="font-size:14px;color:rgba(255,255,255,0.7)" id="goal-today-display">—</span>
+        </div>
+        <div class="goal-bar-track"><div class="goal-bar-fill" id="goal-bar"></div></div>
+        <div style="text-align:left;font-size:11px;color:var(--gold)" id="goal-pct">0%</div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:12px">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">שינוי יעד חודשי</div>
+        <div style="display:flex;gap:8px">
+          <input class="cl-add-input" id="goal-input" type="number" placeholder="סכום היעד..." style="direction:ltr">
+          <button class="cl-add-btn" onclick="saveMonthlyGoal()">שמור</button>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:12px">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">עדכון יומי — <span id="goal-today-label"></span></div>
+        <div style="display:flex;gap:8px">
+          <input class="cl-add-input" id="daily-input" type="number" placeholder="מה נעשה היום?" style="direction:ltr">
+          <button class="cl-add-btn" onclick="saveDailySales()">עדכן</button>
+        </div>
+      </div>
+      <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeGoalModal()">סגור</button>
+    </div>
+  </div>
+
+  <!-- MONTHLY GOAL MODAL (Employee) -->
+  <div class="modal-overlay" id="emp-goal-modal" onclick="if(event.target===this)closeEmpGoalModal()">
+    <div class="modal-box" id="emp-goal-box" style="gap:14px;align-items:stretch;max-width:340px;padding:24px 20px">
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">🎯 יעד חודשי</div>
+      <div id="emp-goal-display"><div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div></div>
+      <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeEmpGoalModal()">סגור</button>
     </div>
   </div>
 
@@ -976,6 +1026,7 @@
         el.className = 'action-btn';
         el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
         if (key === 'btn1') { el.onclick = openChecklist; }
+        else if (key === 'btn2') { el.onclick = openEmpGoalModal; }
         else { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
         grid.appendChild(el);
       });
@@ -1017,6 +1068,7 @@
           '<span class="a-icon">' + item.icon + '</span>' +
           '<span class="a-label">' + item.label + '</span>';
         if (key === 'btn1') { el.onclick = openClMgr; }
+        else if (key === 'btn2') { el.onclick = openGoalModal; }
         grid.appendChild(el);
       });
       bannerWrap.innerHTML = '';
@@ -1716,6 +1768,150 @@
         box.parentNode.insertBefore(img, box.nextSibling);
       }, 50);
     }
+
+    /* ═══════════════════════════════════
+       MONTHLY GOAL
+    ═══════════════════════════════════ */
+    var _goalState = { goal: 0, total: 0, todayAmt: 0 };
+
+    function getMonthId() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    }
+    function getTodayId() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function fmtMoney(n) { return '₪' + Math.round(n).toLocaleString('he-IL'); }
+
+    function animateCount(el, from, to, ms) {
+      var start = Date.now();
+      var timer = setInterval(function() {
+        var p = Math.min((Date.now() - start) / ms, 1);
+        var e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmtMoney(Math.round(from + (to - from) * e));
+        if (p >= 1) { clearInterval(timer); el.textContent = fmtMoney(to); }
+      }, 16);
+    }
+
+    function _refreshGoalUI(animate, prevTotal) {
+      var g = _goalState.goal, t = _goalState.total, today = _goalState.todayAmt;
+      var pct = g > 0 ? Math.min(Math.round(t / g * 100), 100) : 0;
+      document.getElementById('goal-display').textContent = g > 0 ? fmtMoney(g) : '—';
+      document.getElementById('goal-today-display').textContent = today > 0 ? fmtMoney(today) : '—';
+      document.getElementById('goal-pct').textContent = pct + '%';
+      document.getElementById('goal-bar').style.width = pct + '%';
+      var totalEl = document.getElementById('goal-total-display');
+      if (animate && prevTotal !== undefined) { animateCount(totalEl, prevTotal, t, 1500); }
+      else { totalEl.textContent = t > 0 ? fmtMoney(t) : '—'; }
+    }
+
+    function openGoalModal() {
+      var box = document.getElementById('goal-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('goal-modal').classList.add('open');
+      var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+      var d = new Date();
+      document.getElementById('goal-month-label').textContent = MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+      var tid = getTodayId();
+      document.getElementById('goal-today-label').textContent = tid.split('-').slice(1).reverse().join('/') + '/' + tid.split('-')[0];
+      document.getElementById('goal-input').value = '';
+      document.getElementById('daily-input').value = '';
+      _goalState = { goal: 0, total: 0, todayAmt: 0 };
+      var monthId = getMonthId();
+      db.collection('monthly_goals').doc(monthId).get()
+        .then(function(doc) {
+          if (doc.exists) { _goalState.goal = doc.data().goal || 0; document.getElementById('goal-input').value = _goalState.goal || ''; }
+          return db.collection('daily_sales').where('month','==',monthId).get();
+        })
+        .then(function(snap) {
+          _goalState.total = 0;
+          snap.forEach(function(d) { _goalState.total += d.data().amount || 0; });
+          return db.collection('daily_sales').doc(getTodayId()).get();
+        })
+        .then(function(td) {
+          _goalState.todayAmt = td.exists ? (td.data().amount || 0) : 0;
+          if (_goalState.todayAmt) document.getElementById('daily-input').value = _goalState.todayAmt;
+          _refreshGoalUI(false);
+        })
+        .catch(function() {});
+    }
+
+    function closeGoalModal() { document.getElementById('goal-modal').classList.remove('open'); }
+
+    function saveMonthlyGoal() {
+      var val = parseFloat(document.getElementById('goal-input').value);
+      if (!val || val <= 0) return;
+      db.collection('monthly_goals').doc(getMonthId()).set({ goal: val, month: getMonthId(), updatedAt: new Date().toISOString() })
+        .then(function() { _goalState.goal = val; _refreshGoalUI(false); showModal('✅', 'נשמר!', 'היעד החודשי עודכן ל-' + fmtMoney(val), null); })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור.', null); });
+    }
+
+    function saveDailySales() {
+      var val = parseFloat(document.getElementById('daily-input').value);
+      if (!val || val <= 0) return;
+      var prevTotal = _goalState.total - (_goalState.todayAmt || 0);
+      db.collection('daily_sales').doc(getTodayId()).set({ amount: val, month: getMonthId(), date: getTodayId(), updatedAt: new Date().toISOString() })
+        .then(function() {
+          _goalState.todayAmt = val;
+          _goalState.total = prevTotal + val;
+          var pct = _goalState.goal > 0 ? Math.min(Math.round(_goalState.total / _goalState.goal * 100), 100) : 0;
+          animateCount(document.getElementById('goal-total-display'), prevTotal, _goalState.total, 1500);
+          document.getElementById('goal-today-display').textContent = fmtMoney(val);
+          document.getElementById('goal-pct').textContent = pct + '%';
+          document.getElementById('goal-bar').style.width = pct + '%';
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור.', null); });
+    }
+
+    /* Employee goal modal */
+    function openEmpGoalModal() {
+      var box = document.getElementById('emp-goal-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('emp-goal-modal').classList.add('open');
+      var el = document.getElementById('emp-goal-display');
+      el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
+      var monthId = getMonthId(), todayId = getTodayId();
+      var goal = 0, total = 0, todayAmt = 0;
+      db.collection('monthly_goals').doc(monthId).get()
+        .then(function(doc) {
+          if (doc.exists) goal = doc.data().goal || 0;
+          return db.collection('daily_sales').where('month','==',monthId).get();
+        })
+        .then(function(snap) {
+          snap.forEach(function(d) { total += d.data().amount || 0; });
+          return db.collection('daily_sales').doc(todayId).get();
+        })
+        .then(function(td) {
+          todayAmt = td.exists ? (td.data().amount || 0) : 0;
+          var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+          var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+          var d = new Date();
+          el.innerHTML =
+            '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-bottom:10px">' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + '</div>' +
+            '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:12px;color:var(--text-dim)">יעד חודשי</span>' +
+                '<span style="font-size:15px;font-weight:700;color:var(--gold)">' + (goal > 0 ? fmtMoney(goal) : '—') + '</span>' +
+              '</div>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:12px;color:var(--text-dim)">נצבר עד היום</span>' +
+                '<span style="font-size:22px;font-weight:700;color:#fff" id="emp-total-anim">' + fmtMoney(total) + '</span>' +
+              '</div>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-size:12px;color:var(--text-dim)">היום</span>' +
+                '<span style="font-size:14px;color:rgba(255,255,255,0.7)">' + (todayAmt > 0 ? fmtMoney(todayAmt) : '—') + '</span>' +
+              '</div>' +
+              '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+              '<div style="text-align:left;font-size:14px;font-weight:700;color:var(--gold)">' + pct + '%</div>' +
+            '</div>';
+          var animEl = document.getElementById('emp-total-anim');
+          if (animEl && total > 0) animateCount(animEl, 0, total, 1500);
+        })
+        .catch(function() { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">שגיאת חיבור</div>'; });
+    }
+
+    function closeEmpGoalModal() { document.getElementById('emp-goal-modal').classList.remove('open'); }
 
     /* Manager checklist */
     function openClMgr() {
