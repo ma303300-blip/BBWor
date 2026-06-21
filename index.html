@@ -255,25 +255,19 @@
     .sch-emp-name { font-size: 9px; color: #111; font-weight: 700; text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sch-add-hint { color: rgba(0,0,0,0.22); font-size: 22px; margin: auto; line-height: 1; }
     .sch-separator { grid-column: 1 / -1; height: 2px; background: rgba(0,0,0,0.15); margin: 6px 4px; }
-    @keyframes schEmpIn { from { opacity:0; transform:translateX(-22px); } to { opacity:1; transform:translateX(0); } }
-    .sch-side-panel { position: fixed; top: 0; left: 0; bottom: 0; width: 72vw; max-width: 265px; background: #1a1710; border-right: 1.5px solid rgba(201,168,76,0.3); z-index: 500; transform: translateX(-100%); transition: transform 0.28s ease; display: flex; flex-direction: column; }
-    .sch-side-panel.open { transform: translateX(0); }
-    .sch-side-emp.anim-in { animation: schEmpIn 0.28s ease both; }
-    .sch-side-header { padding: 18px 14px 12px; padding-top: calc(18px + env(safe-area-inset-top,0px)); border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
-    .sch-side-title { font-size: 13px; font-weight: 700; color: var(--gold); }
-    .sch-side-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
-    .sch-side-list { flex: 1; overflow-y: auto; padding: 8px 10px 30px; display: flex; flex-direction: column; gap: 6px; }
-    .sch-side-emp { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); cursor: pointer; transition: all 0.15s; }
-    .sch-side-emp.active { border-color: #16a34a; background: rgba(22,163,74,0.12); }
-    .sch-side-emp-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.12); }
-    .sch-side-emp-ph { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: rgba(201,168,76,0.15); border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--gold); }
-    .sch-side-emp.active .sch-side-emp-ph { border-color: #16a34a; background: rgba(22,163,74,0.15); color: #4ade80; }
-    .sch-side-emp-info { flex: 1; min-width: 0; }
-    .sch-side-emp-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sch-side-emp.active .sch-side-emp-name { color: #4ade80; }
-    .sch-side-emp-phone { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; direction: ltr; text-align: left; }
-    .sch-side-emp-check { font-size: 17px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
-    .sch-side-emp.active .sch-side-emp-check { opacity: 1; }
+    @keyframes schCardDrop { from { opacity:0; transform:translateY(-10px) scale(0.92); } to { opacity:1; transform:translateY(0) scale(1); } }
+    #sch-float-wrap { position: fixed; z-index: 510; display: none; flex-direction: column; gap: 5px; max-height: 62vh; overflow-y: auto; padding: 2px; }
+    .sch-float-card { display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 15px; background: rgba(24,21,14,0.97); border: 1.5px solid rgba(201,168,76,0.28); box-shadow: 0 6px 24px rgba(0,0,0,0.6); cursor: pointer; animation: schCardDrop 0.22s ease both; min-width: 195px; }
+    .sch-float-card.active { border-color: #16a34a; background: rgba(10,28,12,0.97); }
+    .sch-float-card-photo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.12); }
+    .sch-float-card-ph { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: rgba(201,168,76,0.15); border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--gold); }
+    .sch-float-card.active .sch-float-card-ph { border-color: #16a34a; color: #4ade80; background: rgba(22,163,74,0.18); }
+    .sch-float-card-info { flex: 1; min-width: 0; }
+    .sch-float-card-name { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sch-float-card.active .sch-float-card-name { color: #4ade80; }
+    .sch-float-card-phone { font-size: 10px; color: rgba(255,255,255,0.38); direction: ltr; text-align: left; margin-top: 1px; }
+    .sch-float-card-check { font-size: 16px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+    .sch-float-card.active .sch-float-card-check { opacity: 1; }
 
     /* CONSTRAINT DAY/SHIFT SELECTOR */
     .constraint-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.28); border-radius: 14px; padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -680,15 +674,9 @@
     </div>
   </div>
 
-  <!-- SCHEDULE SIDE PANEL (manager) -->
-  <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490"></div>
-  <div class="sch-side-panel" id="sch-picker">
-    <div class="sch-side-header">
-      <div class="sch-side-title" id="sch-picker-title">עובדי הסניף</div>
-      <div class="sch-side-sub" id="sch-picker-sub"></div>
-    </div>
-    <div class="sch-side-list" id="sch-picker-list"></div>
-  </div>
+  <!-- SCHEDULE FLOATING CARDS (manager) -->
+  <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490;background:transparent"></div>
+  <div id="sch-float-wrap"></div>
 
   <!-- MONTHLY GOAL MODAL (Manager) -->
   <div class="modal-overlay" id="goal-modal" onclick="if(event.target===this)closeGoalModal()">
@@ -1954,21 +1942,19 @@
       if (_schUnsub) { _schUnsub(); _schUnsub = null; }
       var tbl = document.getElementById('sch-table');
       tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">טוען...</div>';
-      db.collection('employees').where('branch','==',_schBranch).where('status','==','approved').get()
-        .then(function(snap) {
-          _schAllEmps = []; _schEmpMap = {};
-          snap.forEach(function(d) {
-            var e = Object.assign({ id: d.id }, d.data());
-            _schAllEmps.push(e); _schEmpMap[d.id] = e;
-          });
-          /* live listener on the schedule document */
-          _schUnsub = db.collection('schedules').doc(_schDocId())
-            .onSnapshot(function(doc) {
-              _schCells = doc.exists ? (doc.data().cells || {}) : {};
-              _schRenderTable();
-            }, function() {
-              tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
-            });
+      /* load employees from localStorage */
+      _schAllEmps = []; _schEmpMap = {};
+      var all = getEmployees(_schBranch);
+      all.forEach(function(e) {
+        if (e.status === 'approved') { _schAllEmps.push(e); _schEmpMap[e.id] = e; }
+      });
+      /* live listener on the schedule document */
+      _schUnsub = db.collection('schedules').doc(_schDocId())
+        .onSnapshot(function(doc) {
+          _schCells = doc.exists ? (doc.data().cells || {}) : {};
+          _schRenderTable();
+        }, function() {
+          tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
         });
     }
 
@@ -2018,54 +2004,62 @@
         cell.innerHTML = html;
       }
       if (_schEditable) {
-        (function(d,s){ cell.onclick = function(){ openSchPicker(d,s); }; })(di, shift);
+        (function(d,s){ cell.onclick = function(evt){ openSchPicker(d,s,evt); }; })(di, shift);
       }
       return cell;
     }
 
-    function openSchPicker(di, shift) {
+    function openSchPicker(di, shift, evt) {
       _schPickerDay   = di;
       _schPickerShift = shift;
       _schPickerSel   = (_schCells[di + '_' + shift] || []).slice();
-      document.getElementById('sch-picker-title').textContent = 'עובדי הסניף';
-      document.getElementById('sch-picker-sub').textContent =
-        'יום ' + SCH_DAY_NAMES[di] + ' — ' + (shift === 'morning' ? '☀️ בוקר' : '🌙 ערב');
-      _schRenderSideList();
-      document.getElementById('sch-picker-overlay').classList.add('open');
-      document.getElementById('sch-picker').classList.add('open');
-    }
-
-    function _schRenderSideList() {
-      var list = document.getElementById('sch-picker-list');
-      list.innerHTML = '';
+      var wrap = document.getElementById('sch-float-wrap');
+      wrap.innerHTML = '';
+      /* position near the tapped cell */
+      var rect = evt.currentTarget.getBoundingClientRect();
+      var top  = rect.bottom + 6;
+      var cardW = 210;
+      var left = rect.left;
+      if (left + cardW > window.innerWidth - 6) left = window.innerWidth - cardW - 6;
+      if (left < 4) left = 4;
+      /* if cards would overflow bottom, flip above */
+      var estH = Math.min(_schAllEmps.length, 6) * 58;
+      if (top + estH > window.innerHeight - 20) top = Math.max(60, rect.top - estH - 6);
+      wrap.style.top  = top + 'px';
+      wrap.style.left = left + 'px';
+      wrap.style.display = 'flex';
       _schAllEmps.forEach(function(emp, idx) {
         var active = _schPickerSel.indexOf(emp.id) !== -1;
         var el = document.createElement('div');
-        el.className = 'sch-side-emp anim-in' + (active ? ' active' : '');
-        el.style.animationDelay = (idx * 60) + 'ms';
+        el.className = 'sch-float-card' + (active ? ' active' : '');
+        el.style.animationDelay = (idx * 62) + 'ms';
         el.innerHTML =
-          (emp.photo ? '<img class="sch-side-emp-photo" src="' + emp.photo + '">'
-                     : '<div class="sch-side-emp-ph">' + emp.firstName.charAt(0) + '</div>') +
-          '<div class="sch-side-emp-info">' +
-            '<div class="sch-side-emp-name">' + emp.firstName + ' ' + emp.lastName + '</div>' +
-            '<div class="sch-side-emp-phone">' + (emp.phone || '') + '</div>' +
+          (emp.photo ? '<img class="sch-float-card-photo" src="' + emp.photo + '">'
+                     : '<div class="sch-float-card-ph">' + emp.firstName.charAt(0) + '</div>') +
+          '<div class="sch-float-card-info">' +
+            '<div class="sch-float-card-name">' + emp.firstName + ' ' + emp.lastName + '</div>' +
+            '<div class="sch-float-card-phone">' + (emp.phone || '') + '</div>' +
           '</div>' +
-          '<span class="sch-side-emp-check">✅</span>';
+          '<span class="sch-float-card-check">✅</span>';
         (function(id, node) {
-          node.onclick = function() {
+          node.onclick = function(e) {
+            e.stopPropagation();
             var i = _schPickerSel.indexOf(id);
             if (i === -1) _schPickerSel.push(id); else _schPickerSel.splice(i, 1);
             node.classList.toggle('active', _schPickerSel.indexOf(id) !== -1);
             _schSaveImmediate();
           };
         })(emp.id, el);
-        list.appendChild(el);
+        wrap.appendChild(el);
       });
+      document.getElementById('sch-picker-overlay').classList.add('open');
     }
 
     function closeSchPicker() {
       document.getElementById('sch-picker-overlay').classList.remove('open');
-      document.getElementById('sch-picker').classList.remove('open');
+      var wrap = document.getElementById('sch-float-wrap');
+      wrap.style.display = 'none';
+      wrap.innerHTML = '';
     }
 
     function _schSaveImmediate() {
