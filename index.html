@@ -1758,11 +1758,10 @@
       var inp = document.getElementById('cl-new-item-input');
       var text = inp.value.trim();
       if (!text) return;
-      db.collection('checklist_items').get()
+      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
         .then(function(snap) {
           var maxOrder = snap.size;
-          /* כל מטלה חדשה נוצרת לשתי המשמרות — בוקר וערב */
-          return db.collection('checklist_items').add({ text: text, shifts: ['morning', 'evening'], order: maxOrder, createdAt: new Date().toISOString() });
+          return db.collection('checklist_items').add({ text: text, shifts: [_clMgrTab], order: maxOrder, createdAt: new Date().toISOString() });
         })
         .then(function() { inp.value = ''; renderClMgrTab(); })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן להוסיף פריט.',null); });
