@@ -845,8 +845,28 @@
     <div class="modal-box" id="comp-ended-box" style="gap:18px">
       <div class="modal-big-icon">🏆</div>
       <div class="modal-heading" style="font-size:18px">התחרות הסתיימה!</div>
-      <div style="font-size:14px;color:var(--text-dim);text-align:center;line-height:1.8">בקרוב תקבלו את התוצאות<br>ואת הזוכה בתחרות</div>
+      <div id="comp-ended-body" style="font-size:14px;color:var(--text-dim);text-align:center;line-height:1.8">בקרוב תקבלו את התוצאות<br>ואת הזוכה בתחרות</div>
       <button class="modal-ok-btn" onclick="closeCompEnded()">הבנתי</button>
+    </div>
+  </div>
+
+  <!-- COMPETITION WINNER ENTRY (manager) -->
+  <div class="modal-overlay" id="comp-winner-modal" onclick="if(event.target===this)closeCompWinner()">
+    <div class="modal-box" id="comp-winner-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px">
+      <div style="text-align:center;font-size:36px">🏆</div>
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">התחרות הסתיימה!</div>
+      <div style="text-align:center;font-size:13px;color:var(--text-dim)">הזיני את פרטי הזוכה ופרסמי לעובדים</div>
+      <div>
+        <div class="comp-field-label">שם הזוכה *</div>
+        <input id="comp-winner-name" class="comp-field" type="text" placeholder="שם העובד/ת הזוכה">
+      </div>
+      <div>
+        <div class="comp-field-label">הערה (אופציונלי)</div>
+        <input id="comp-winner-note" class="comp-field" type="text" placeholder="למשל: מכרה הכי הרבה השבוע!">
+      </div>
+      <button class="comp-send-btn" onclick="submitCompWinner()">📢 פרסם תוצאות</button>
+      <button class="comp-stop-btn" onclick="deleteCompetitionFromWinner()">🗑 מחק תחרות</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeCompWinner()">סגור</button>
     </div>
   </div>
 
@@ -1143,6 +1163,7 @@
     var _compAutoEndedId = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
+    var _compWinnerId     = null;
     var _compMgrUnsub = null;
     var _shiftCheckTimer = null;
     var _lastKnownShift = null;
@@ -3904,6 +3925,7 @@
       history.pushState({ bbwor: 1 }, '');
       var layers = [
         { id: 'confirm-modal',         fn: closeConfirm },
+        { id: 'comp-winner-modal',     fn: closeCompWinner },
         { id: 'comp-mgr-modal',        fn: closeCompMgr },
         { id: 'comp-detail-modal',     fn: closeCompDetail },
         { id: 'comp-nocomp-modal',     fn: closeNoComp },
@@ -3953,7 +3975,15 @@
         if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
         if (comp && comp.status === 'active' && _compAutoEndedId !== comp.id) {
           _compAutoEndedId = comp.id;
+          var _autoEndComp = comp;
           db.collection('competitions').doc(comp.id).update({ status: 'ended', endedAt: new Date().toISOString() })
+            .then(function() {
+              var mgrScreen = document.getElementById('screen-manager');
+              if (mgrScreen && mgrScreen.classList.contains('active')) {
+                document.getElementById('comp-mgr-modal').classList.remove('open');
+                openCompWinnerModal(_autoEndComp);
+              }
+            })
             .catch(function() {});
         }
         return;
@@ -4100,10 +4130,54 @@
             .then(function(endedSnap) {
               var ended = null;
               endedSnap.forEach(function(doc) { if (!ended) ended = Object.assign({ id: doc.id }, doc.data()); });
-              if (ended) { _showCompEnded(); } else { _showNoComp(); }
+              if (ended) { _showCompEnded(ended); } else { _showNoComp(); }
             });
         })
         .catch(function() { _showNoComp(); });
+    }
+
+    function openCompWinnerModal(comp) {
+      _compWinnerId = comp ? comp.id : null;
+      var nameEl = document.getElementById('comp-winner-name');
+      var noteEl = document.getElementById('comp-winner-note');
+      if (nameEl) nameEl.value = '';
+      if (noteEl) noteEl.value = '';
+      var box = document.getElementById('comp-winner-box');
+      if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
+      document.getElementById('comp-winner-modal').classList.add('open');
+    }
+
+    function closeCompWinner() {
+      document.getElementById('comp-winner-modal').classList.remove('open');
+      _compWinnerId = null;
+    }
+
+    function submitCompWinner() {
+      var name = (document.getElementById('comp-winner-name').value || '').trim();
+      if (!name) { showModal('⚠️', 'שגיאה', 'יש להזין שם זוכה.', null); return; }
+      if (!_compWinnerId) return;
+      var note = (document.getElementById('comp-winner-note').value || '').trim();
+      db.collection('competitions').doc(_compWinnerId).update({
+        winner: name,
+        winnerNote: note || null,
+        resultsPublished: true,
+        publishedAt: new Date().toISOString()
+      }).then(function() {
+        closeCompWinner();
+        showModal('✅', 'פורסם!', 'תוצאות התחרות פורסמו לעובדים.', null);
+      }).catch(function() {
+        showModal('⚠️', 'שגיאה', 'לא ניתן לפרסם. נסי שוב.', null);
+      });
+    }
+
+    function deleteCompetitionFromWinner() {
+      if (!_compWinnerId) return;
+      var id = _compWinnerId;
+      showConfirm('🗑', 'מחיקת תחרות', 'האם למחוק את התחרות? הפעולה תאפס את המצב לכל העובדים.', function() {
+        db.collection('competitions').doc(id).delete()
+          .then(function() { closeCompWinner(); showModal('✅', 'בוצע', 'התחרות נמחקה. המצב אופס.', null); })
+          .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
+      }, '🗑 מחק');
     }
 
     function _showNoComp() {
@@ -4119,7 +4193,16 @@
       if (el) el.classList.remove('open');
     }
 
-    function _showCompEnded() {
+    function _showCompEnded(comp) {
+      var body = document.getElementById('comp-ended-body');
+      if (body) {
+        if (comp && comp.winner) {
+          body.innerHTML = '<div style="font-size:20px;color:var(--gold);font-weight:900;text-align:center">🥇 ' + comp.winner + '</div>' +
+            (comp.winnerNote ? '<div style="font-size:13px;color:rgba(255,255,255,0.7);text-align:center;margin-top:6px">' + comp.winnerNote + '</div>' : '');
+        } else {
+          body.innerHTML = 'בקרוב תקבלו את התוצאות<br>ואת הזוכה בתחרות';
+        }
+      }
       var box = document.getElementById('comp-ended-box');
       if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
       document.getElementById('comp-ended-modal').classList.add('open');
@@ -4251,6 +4334,12 @@
             var ap = document.getElementById('comp-mgr-active-prize');
             if (ad) ad.textContent = current.description || '';
             if (ap) ap.textContent = '🏅 ' + (current.prize || '');
+            if (isEnded && !current.winner) {
+              document.getElementById('comp-mgr-modal').classList.remove('open');
+              _clearCompTimers();
+              openCompWinnerModal(current);
+              return;
+            }
             var activeBadge  = document.getElementById('comp-mgr-active-badge');
             var endedBadge   = document.getElementById('comp-mgr-ended-badge');
             var stopBtn      = document.getElementById('comp-stop-btn');
