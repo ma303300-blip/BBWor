@@ -3448,6 +3448,7 @@
       document.getElementById('cl-mgr-tab-morning').classList.toggle('active', _clMgrTab === 'morning');
       document.getElementById('cl-mgr-tab-evening').classList.toggle('active', _clMgrTab === 'evening');
       var box = document.getElementById('cl-mgr-box');
+      box.scrollTop = 0;
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
       _subscribeClMgrTab();
@@ -3642,6 +3643,7 @@
       _clMgrTab = tab;
       document.getElementById('cl-mgr-tab-morning').classList.toggle('active', tab === 'morning');
       document.getElementById('cl-mgr-tab-evening').classList.toggle('active', tab === 'evening');
+      document.getElementById('cl-mgr-box').scrollTop = 0;
       _subscribeClMgrTab();
     }
 
