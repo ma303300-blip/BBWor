@@ -405,6 +405,11 @@
     .comp-detail-prize { font-size: 16px; font-weight: 700; color: var(--gold); text-align: center; background: rgba(201,168,76,0.1); border-radius: 10px; padding: 12px; }
     .comp-join-btn { width: 100%; background: var(--gold); border: none; border-radius: 12px; padding: 15px; color: #111; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .comp-joined-label { text-align: center; font-size: 15px; color: #2ecc71; font-weight: 700; padding: 12px; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.35); border-radius: 12px; }
+    @keyframes comp-dot-pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.45;transform:scale(1.45);} }
+    .comp-btn-badge { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; margin-top: 4px; }
+    .comp-btn-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #2ecc71; animation: comp-dot-pulse 1.4s ease-in-out infinite; }
+    .comp-btn-badge-label { font-size: 10px; color: #2ecc71; font-weight: 700; letter-spacing: 0.3px; }
+    .comp-btn-badge-timer { font-size: 12px; color: var(--gold); font-weight: 900; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
@@ -1036,6 +1041,8 @@
     var _compAnnounceUnsub = null;
     var _compCountdownTimer = null;
     var _compEditorCountdownTimer = null;
+    var _compBadgeTimer = null;
+    var _compBadgeComp = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
     /* no longer needed as in-memory fallback — use storage helpers below */
@@ -1107,6 +1114,7 @@
       if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
       if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
       _stopCompListener();
+      _stopCompBadge();
       _clearCompTimers();
       show('home');
     }
@@ -1269,6 +1277,7 @@
       }
       show('manager');
       showGreeting('אוריה');
+      _startCompBadge();
     }
 
     function enterBranch(branch) {
@@ -1398,6 +1407,7 @@
       showGreeting(emp.firstName);
       checkEmpConstraintStatus(emp.id);
       _startCompListener();
+      _startCompBadge();
     }
 
     function logout() { goHome(); }
@@ -1444,7 +1454,13 @@
           el.innerHTML = '<span class="constraint-badge-green" id="emp-constraint-badge"></span><span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
           el.onclick = openConstraintModal;
         } else if (key === 'btn3') {
-          el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          el.id = 'emp-comp-btn';
+          el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>' +
+            '<span class="comp-btn-badge" id="emp-comp-badge" style="display:none">' +
+              '<span class="comp-btn-badge-dot"></span>' +
+              '<span class="comp-btn-badge-label">תחרות פעילה</span>' +
+              '<span class="comp-btn-badge-timer" id="emp-comp-badge-timer">00:00:00</span>' +
+            '</span>';
           el.onclick = openCompetition;
         } else {
           el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
@@ -1505,11 +1521,17 @@
             '<span class="a-label">' + item.label + '</span>';
           el.onclick = openConstraintDrawer;
         } else if (key === 'btn3') {
+          el.id = 'mgr-comp-btn';
           el.style.cursor = 'pointer';
           el.innerHTML =
             '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
             '<span class="a-icon">' + item.icon + '</span>' +
-            '<span class="a-label">' + item.label + '</span>';
+            '<span class="a-label">' + item.label + '</span>' +
+            '<span class="comp-btn-badge" id="mgr-comp-badge" style="display:none">' +
+              '<span class="comp-btn-badge-dot"></span>' +
+              '<span class="comp-btn-badge-label">תחרות פעילה</span>' +
+              '<span class="comp-btn-badge-timer" id="mgr-comp-badge-timer">00:00:00</span>' +
+            '</span>';
           el.onclick = openCompetitionMgr;
         } else {
           el.innerHTML =
@@ -3174,6 +3196,47 @@
     function _clearCompTimers() {
       if (_compCountdownTimer)       { clearInterval(_compCountdownTimer);       _compCountdownTimer = null; }
       if (_compEditorCountdownTimer) { clearInterval(_compEditorCountdownTimer); _compEditorCountdownTimer = null; }
+      if (_compBadgeTimer)           { clearInterval(_compBadgeTimer);           _compBadgeTimer = null; }
+    }
+
+    function _renderCompBadge() {
+      var comp = _compBadgeComp;
+      var empBadge  = document.getElementById('emp-comp-badge');
+      var mgrBadge  = document.getElementById('mgr-comp-badge');
+      var empTimer  = document.getElementById('emp-comp-badge-timer');
+      var mgrTimer  = document.getElementById('mgr-comp-badge-timer');
+      if (!comp || new Date(comp.endsAt) <= new Date()) {
+        if (empBadge) empBadge.style.display = 'none';
+        if (mgrBadge) mgrBadge.style.display = 'none';
+        if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
+        return;
+      }
+      var timeStr = _formatCountdown(new Date(comp.endsAt) - new Date());
+      if (empBadge) empBadge.style.display = 'flex';
+      if (mgrBadge) mgrBadge.style.display = 'flex';
+      if (empTimer) empTimer.textContent = timeStr;
+      if (mgrTimer) mgrTimer.textContent = timeStr;
+    }
+
+    function _startCompBadge() {
+      if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
+      _compBadgeComp = null;
+      db.collection('competitions').where('status', '==', 'active').get()
+        .then(function(snap) {
+          var comp = null;
+          snap.forEach(function(doc) { if (!comp) comp = Object.assign({ id: doc.id }, doc.data()); });
+          _compBadgeComp = comp;
+          _renderCompBadge();
+          if (comp && new Date(comp.endsAt) > new Date()) {
+            _compBadgeTimer = setInterval(_renderCompBadge, 1000);
+          }
+        })
+        .catch(function() {});
+    }
+
+    function _stopCompBadge() {
+      if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
+      _compBadgeComp = null;
     }
 
     function _stopCompListener() {
