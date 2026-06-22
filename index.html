@@ -310,6 +310,8 @@
     .goal-branch-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(201,168,76,0.35); border-radius: 14px; padding: 18px 24px; font-size: 16px; font-weight: 700; font-family: inherit; color: #fff; cursor: pointer; text-align: center; width: 100%; -webkit-tap-highlight-color: transparent; }
     .goal-branch-btn:active { background: rgba(201,168,76,0.12); }
     .emplist-section { font-size: 12px; font-weight: 700; color: var(--gold); padding: 10px 4px 4px; opacity: 0.7; }
+    .btn-call { width: 42px; height: 42px; border-radius: 12px; background: rgba(50,190,80,0.18); border: 1.5px solid rgba(50,190,80,0.4); font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .btn-call:active { background: rgba(50,190,80,0.35); }
     .sch-shift-sep { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 6px 3px; }
     .sch-sep-line { flex: 1; height: 1.5px; background: rgba(0,0,0,0.2); }
     .sch-sep-label { font-size: 11px; font-weight: 800; color: #333; white-space: nowrap; }
@@ -1839,6 +1841,7 @@
                 '<div class="emp-phone-txt">' + statusTxt + '</div>' +
               '</div>' +
               '<div class="emp-actions">' +
+                (emp.phone ? '<a href="tel:' + emp.phone + '" class="btn-call" onclick="event.stopPropagation()">📞</a>' : '') +
                 '<button class="btn-reject" onclick="event.stopPropagation();confirmDeleteEmployee(\'' + emp.id + '\',\'' + emp.firstName + ' ' + emp.lastName + '\')">🗑️</button>' +
               '</div>';
             (function(id) { card.onclick = function() { openEmpDetailModal(id); }; })(emp.id);
@@ -1858,8 +1861,7 @@
         box.innerHTML =
           (emp.photo ? '<img src="' + emp.photo + '" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;">' : '') +
           '<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">' + (BRANCH_NAME[emp.branch] || emp.branch) + '</div>' +
-          '<div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:4px">' + (emp.status === 'approved' ? '✓ פעיל' : '⏳ ממתין לאישור') + '</div>' +
-          (phone ? '<a href="tel:' + phone + '" style="display:block;font-size:17px;font-weight:700;color:var(--gold);text-decoration:none;margin-top:10px;direction:ltr">' + phone + '</a>' : '');
+          '<div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:4px">' + (emp.status === 'approved' ? '✓ פעיל' : '⏳ ממתין לאישור') + '</div>';
       }, 30);
     }
 
