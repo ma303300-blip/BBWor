@@ -1056,10 +1056,22 @@
     var _compBadgeUnsub = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
+    var _compMgrUnsub = null;
     var _shiftCheckTimer = null;
     var _lastKnownShift = null;
     var _goalRefreshTimer = null;
     var _clMgrRefreshTimer = null;
+    var _pendingDrawerUnsub = null;
+    var _empListDrawerUnsub = null;
+    var _goalMgrMonthlyUnsub = null;
+    var _goalMgrSalesUnsub = null;
+    var _goalEmpMonthlyUnsub = null;
+    var _goalEmpSalesUnsub = null;
+    var _clMgrItemsUnsub = null;
+    var _clMgrCompletionsUnsub = null;
+    var _clMgrItemsData = [];
+    var _clMgrCompData = [];
+    var _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1127,12 +1139,18 @@
       currentEmployee = null;
       if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
       if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
+      if (_pendingDrawerUnsub) { _pendingDrawerUnsub(); _pendingDrawerUnsub = null; }
+      if (_empListDrawerUnsub) { _empListDrawerUnsub(); _empListDrawerUnsub = null; }
+      if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
+      if (_clMgrCompletionsUnsub) { _clMgrCompletionsUnsub(); _clMgrCompletionsUnsub = null; }
+      if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
+      _stopGoalMgrListeners();
+      _stopGoalEmpListeners();
       _stopCompListener();
       _stopCompBadge();
       _clearCompTimers();
       _stopClStatusListener();
       _stopAutoRefresh();
-      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
       show('home');
     }
 
@@ -1608,8 +1626,9 @@
       body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('pending-overlay').classList.add('open');
       document.getElementById('pending-drawer').classList.add('open');
-      db.collection('employees').where('status', '==', 'pending').get()
-        .then(function(snap) {
+      if (_pendingDrawerUnsub) { _pendingDrawerUnsub(); _pendingDrawerUnsub = null; }
+      _pendingDrawerUnsub = db.collection('employees').where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
           body.innerHTML = '';
           if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין בקשות ממתינות 🎉</div>'; return; }
           snap.forEach(function(doc) {
@@ -1633,13 +1652,13 @@
               '</div>';
             body.appendChild(card);
           });
-        })
-        .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
+        }, function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
     }
 
     function closePendingDrawer() {
       document.getElementById('pending-overlay').classList.remove('open');
       document.getElementById('pending-drawer').classList.remove('open');
+      if (_pendingDrawerUnsub) { _pendingDrawerUnsub(); _pendingDrawerUnsub = null; }
     }
 
     function approveEmp(id, branch) {
@@ -1715,8 +1734,9 @@
       body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('emplist-overlay').classList.add('open');
       document.getElementById('emplist-drawer').classList.add('open');
-      db.collection('employees').get()
-        .then(function(snap) {
+      if (_empListDrawerUnsub) { _empListDrawerUnsub(); _empListDrawerUnsub = null; }
+      _empListDrawerUnsub = db.collection('employees')
+        .onSnapshot(function(snap) {
           body.innerHTML = '';
           if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין עובדים רשומים</div>'; return; }
           snap.forEach(function(doc) {
@@ -1740,13 +1760,13 @@
               '</div>';
             body.appendChild(card);
           });
-        })
-        .catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
+        }, function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
     }
 
     function closeEmployeeListDrawer() {
       document.getElementById('emplist-overlay').classList.remove('open');
       document.getElementById('emplist-drawer').classList.remove('open');
+      if (_empListDrawerUnsub) { _empListDrawerUnsub(); _empListDrawerUnsub = null; }
     }
 
     function confirmDeleteEmployee(empId, empName) {
@@ -2863,6 +2883,11 @@
       else { totalEl.textContent = t > 0 ? fmtMoney(t) : '—'; }
     }
 
+    function _stopGoalMgrListeners() {
+      if (_goalMgrMonthlyUnsub) { _goalMgrMonthlyUnsub(); _goalMgrMonthlyUnsub = null; }
+      if (_goalMgrSalesUnsub) { _goalMgrSalesUnsub(); _goalMgrSalesUnsub = null; }
+    }
+
     function openGoalModal() {
       var box = document.getElementById('goal-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
@@ -2875,26 +2900,30 @@
       document.getElementById('goal-input').value = '';
       document.getElementById('daily-input').value = '';
       _goalState = { goal: 0, total: 0, todayAmt: 0 };
-      var monthId = getMonthId();
-      db.collection('monthly_goals').doc(monthId).get()
-        .then(function(doc) {
-          if (doc.exists) { _goalState.goal = doc.data().goal || 0; document.getElementById('goal-input').value = _goalState.goal || ''; }
-          return db.collection('daily_sales').where('month','==',monthId).get();
-        })
-        .then(function(snap) {
-          _goalState.total = 0;
-          snap.forEach(function(d) { _goalState.total += d.data().amount || 0; });
-          return db.collection('daily_sales').doc(getTodayId()).get();
-        })
-        .then(function(td) {
-          _goalState.todayAmt = td.exists ? (td.data().amount || 0) : 0;
+      _stopGoalMgrListeners();
+      var monthId = getMonthId(), todayId = getTodayId();
+      _goalMgrMonthlyUnsub = db.collection('monthly_goals').doc(monthId)
+        .onSnapshot(function(doc) {
+          _goalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
+          document.getElementById('goal-input').value = _goalState.goal || '';
+          _refreshGoalUI(false);
+        }, function() {});
+      _goalMgrSalesUnsub = db.collection('daily_sales').where('month', '==', monthId)
+        .onSnapshot(function(snap) {
+          _goalState.total = 0; _goalState.todayAmt = 0;
+          snap.forEach(function(d) {
+            _goalState.total += d.data().amount || 0;
+            if (d.id === todayId) _goalState.todayAmt = d.data().amount || 0;
+          });
           if (_goalState.todayAmt) document.getElementById('daily-input').value = _goalState.todayAmt;
           _refreshGoalUI(false);
-        })
-        .catch(function() {});
+        }, function() {});
     }
 
-    function closeGoalModal() { document.getElementById('goal-modal').classList.remove('open'); }
+    function closeGoalModal() {
+      document.getElementById('goal-modal').classList.remove('open');
+      _stopGoalMgrListeners();
+    }
 
     function saveMonthlyGoal() {
       var val = parseFloat(document.getElementById('goal-input').value);
@@ -2922,53 +2951,67 @@
     }
 
     /* Employee goal modal */
+    function _stopGoalEmpListeners() {
+      if (_goalEmpMonthlyUnsub) { _goalEmpMonthlyUnsub(); _goalEmpMonthlyUnsub = null; }
+      if (_goalEmpSalesUnsub) { _goalEmpSalesUnsub(); _goalEmpSalesUnsub = null; }
+    }
+
+    function _renderEmpGoalDisplay() {
+      var el = document.getElementById('emp-goal-display');
+      if (!el) return;
+      var goal = _empGoalState.goal, total = _empGoalState.total, todayAmt = _empGoalState.todayAmt;
+      var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+      var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+      var d = new Date();
+      el.innerHTML =
+        '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-bottom:10px">' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + '</div>' +
+        '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:12px;color:var(--text-dim)">יעד חודשי</span>' +
+            '<span style="font-size:15px;font-weight:700;color:var(--gold)">' + (goal > 0 ? fmtMoney(goal) : '—') + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:12px;color:var(--text-dim)">נצבר עד היום</span>' +
+            '<span style="font-size:22px;font-weight:700;color:#fff">' + fmtMoney(total) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:12px;color:var(--text-dim)">היום</span>' +
+            '<span style="font-size:14px;color:rgba(255,255,255,0.7)">' + (todayAmt > 0 ? fmtMoney(todayAmt) : '—') + '</span>' +
+          '</div>' +
+          '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '<div style="text-align:left;font-size:14px;font-weight:700;color:var(--gold)">' + pct + '%</div>' +
+        '</div>';
+    }
+
     function openEmpGoalModal() {
       var box = document.getElementById('emp-goal-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('emp-goal-modal').classList.add('open');
       var el = document.getElementById('emp-goal-display');
       el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
+      _stopGoalEmpListeners();
+      _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
       var monthId = getMonthId(), todayId = getTodayId();
-      var goal = 0, total = 0, todayAmt = 0;
-      db.collection('monthly_goals').doc(monthId).get()
-        .then(function(doc) {
-          if (doc.exists) goal = doc.data().goal || 0;
-          return db.collection('daily_sales').where('month','==',monthId).get();
-        })
-        .then(function(snap) {
-          snap.forEach(function(d) { total += d.data().amount || 0; });
-          return db.collection('daily_sales').doc(todayId).get();
-        })
-        .then(function(td) {
-          todayAmt = td.exists ? (td.data().amount || 0) : 0;
-          var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
-          var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-          var d = new Date();
-          el.innerHTML =
-            '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-bottom:10px">' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + '</div>' +
-            '<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center">' +
-                '<span style="font-size:12px;color:var(--text-dim)">יעד חודשי</span>' +
-                '<span style="font-size:15px;font-weight:700;color:var(--gold)">' + (goal > 0 ? fmtMoney(goal) : '—') + '</span>' +
-              '</div>' +
-              '<div style="display:flex;justify-content:space-between;align-items:center">' +
-                '<span style="font-size:12px;color:var(--text-dim)">נצבר עד היום</span>' +
-                '<span style="font-size:22px;font-weight:700;color:#fff" id="emp-total-anim">' + fmtMoney(total) + '</span>' +
-              '</div>' +
-              '<div style="display:flex;justify-content:space-between;align-items:center">' +
-                '<span style="font-size:12px;color:var(--text-dim)">היום</span>' +
-                '<span style="font-size:14px;color:rgba(255,255,255,0.7)">' + (todayAmt > 0 ? fmtMoney(todayAmt) : '—') + '</span>' +
-              '</div>' +
-              '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
-              '<div style="text-align:left;font-size:14px;font-weight:700;color:var(--gold)">' + pct + '%</div>' +
-            '</div>';
-          var animEl = document.getElementById('emp-total-anim');
-          if (animEl && total > 0) animateCount(animEl, 0, total, 1500);
-        })
-        .catch(function() { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">שגיאת חיבור</div>'; });
+      _goalEmpMonthlyUnsub = db.collection('monthly_goals').doc(monthId)
+        .onSnapshot(function(doc) {
+          _empGoalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
+          _renderEmpGoalDisplay();
+        }, function() {});
+      _goalEmpSalesUnsub = db.collection('daily_sales').where('month', '==', monthId)
+        .onSnapshot(function(snap) {
+          _empGoalState.total = 0; _empGoalState.todayAmt = 0;
+          snap.forEach(function(d) {
+            _empGoalState.total += d.data().amount || 0;
+            if (d.id === todayId) _empGoalState.todayAmt = d.data().amount || 0;
+          });
+          _renderEmpGoalDisplay();
+        }, function() { el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">שגיאת חיבור</div>'; });
     }
 
-    function closeEmpGoalModal() { document.getElementById('emp-goal-modal').classList.remove('open'); }
+    function closeEmpGoalModal() {
+      document.getElementById('emp-goal-modal').classList.remove('open');
+      _stopGoalEmpListeners();
+    }
 
     function _fillGoalBtn(btn, silent) {
       var monthId = getMonthId();
@@ -3029,88 +3072,82 @@
       var box = document.getElementById('cl-mgr-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
-      renderClMgrTab();
-      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
-      _clMgrRefreshTimer = setInterval(function() { renderClMgrTab(true); }, 4000);
+      _subscribeClMgrTab();
     }
 
     function closeClMgr() {
       document.getElementById('cl-mgr-modal').classList.remove('open');
-      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
+      if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
+      if (_clMgrCompletionsUnsub) { _clMgrCompletionsUnsub(); _clMgrCompletionsUnsub = null; }
     }
 
     function switchClMgrTab(tab) {
       _clMgrTab = tab;
       document.getElementById('cl-mgr-tab-morning').classList.toggle('active', tab === 'morning');
       document.getElementById('cl-mgr-tab-evening').classList.toggle('active', tab === 'evening');
-      renderClMgrTab();
+      _subscribeClMgrTab();
     }
 
-    var _clMgrRenderToken = 0;
-    function renderClMgrTab(silent) {
-      var token = ++_clMgrRenderToken;
+    function _subscribeClMgrTab() {
+      if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
+      if (_clMgrCompletionsUnsub) { _clMgrCompletionsUnsub(); _clMgrCompletionsUnsub = null; }
+      _clMgrItemsData = []; _clMgrCompData = [];
       var session = getShiftSessionId(_clMgrTab);
+      _clMgrItemsUnsub = db.collection('checklist_items')
+        .where('shifts', 'array-contains', _clMgrTab)
+        .onSnapshot(function(snap) {
+          _clMgrItemsData = [];
+          snap.forEach(function(doc) { _clMgrItemsData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _clMgrItemsData.sort(function(a,b) { return (a.order||0)-(b.order||0); });
+          _renderClMgrTabDOM();
+        }, function() {});
+      _clMgrCompletionsUnsub = db.collection('checklist_completions')
+        .where('sessionId', '==', session)
+        .onSnapshot(function(snap) {
+          _clMgrCompData = [];
+          snap.forEach(function(doc) { _clMgrCompData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _renderClMgrTabDOM();
+        }, function() {});
+    }
+
+    function renderClMgrTab() { _renderClMgrTabDOM(); }
+
+    function _renderClMgrTabDOM() {
       var itemsEl = document.getElementById('cl-mgr-items');
       var compEl  = document.getElementById('cl-mgr-completions');
-      if (!silent) {
-        /* fade out WITHOUT clearing — keeps height stable, no jump */
-        compEl.style.opacity = '0';
-        itemsEl.style.opacity = '0';
-      }
-      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
-        .then(function(itemsSnap) {
-          if (token !== _clMgrRenderToken) return;
-          var itemMap = {};
-          var docs = [];
-          itemsSnap.forEach(function(doc) { docs.push(doc); itemMap[doc.id] = doc.data().text; });
-          docs.sort(function(a,b){ return (a.data().order||0)-(b.data().order||0); });
-          return db.collection('checklist_completions').where('sessionId','==',session).get()
-            .then(function(compSnap) {
-              if (token !== _clMgrRenderToken) return;
-              /* build items */
-              itemsEl.innerHTML = '';
-              if (!docs.length) {
-                itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:8px">אין פריטים</div>';
-              } else {
-                docs.forEach(function(doc) {
-                  var safeText = doc.data().text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-                  var row = document.createElement('div');
-                  row.id = 'cl-mgr-row-' + doc.id;
-                  row.className = 'cl-mgr-item-row';
-                  row.innerHTML = '<div class="cl-mgr-item-text">' + doc.data().text + '</div>' +
-                    '<button class="cl-edit-btn" onclick="editChecklistItem(\'' + doc.id + '\',\'' + safeText + '\')">✏️</button>' +
-                    '<button class="cl-del-btn" onclick="deleteChecklistItem(\'' + doc.id + '\')">🗑️</button>';
-                  itemsEl.appendChild(row);
-                });
-              }
-              /* build completions */
-              compEl.innerHTML = '';
-              if (compSnap.empty) {
-                compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">אין אישורים עדיין למשמרת זו</div>';
-              } else {
-                compSnap.forEach(function(doc) {
-                  var d = doc.data();
-                  var row = document.createElement('div');
-                  row.className = 'cl-item done';
-                  var itemText = itemMap[d.itemId] || d.itemId || '';
-                  row.innerHTML = '<div style="flex:1"><div class="cl-item-text">' + itemText + '</div><div class="cl-mgr-emp">✅ ' + d.empName + '</div></div>' +
-                    (d.photoBase64 ? '<img class="cl-thumb" src="' + d.photoBase64 + '" onclick="viewClPhoto(this.src)">' : '<div class="cl-camera-btn done">✅</div>');
-                  compEl.appendChild(row);
-                });
-              }
-              /* fade in after DOM is ready */
-              requestAnimationFrame(function() {
-                compEl.style.opacity = '1';
-                itemsEl.style.opacity = '1';
-              });
-            });
-        })
-        .catch(function() {
-          if (token !== _clMgrRenderToken) return;
-          compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">שגיאה בטעינה</div>';
-          compEl.style.opacity = '1';
-          itemsEl.style.opacity = '1';
+      if (!itemsEl || !compEl) return;
+      var itemMap = {};
+      _clMgrItemsData.forEach(function(item) { itemMap[item.id] = item.text; });
+      itemsEl.innerHTML = '';
+      if (!_clMgrItemsData.length) {
+        itemsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:8px">אין פריטים</div>';
+      } else {
+        _clMgrItemsData.forEach(function(item) {
+          var safeText = item.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          var row = document.createElement('div');
+          row.id = 'cl-mgr-row-' + item.id;
+          row.className = 'cl-mgr-item-row';
+          row.innerHTML = '<div class="cl-mgr-item-text">' + item.text + '</div>' +
+            '<button class="cl-edit-btn" onclick="editChecklistItem(\'' + item.id + '\',\'' + safeText + '\')">✏️</button>' +
+            '<button class="cl-del-btn" onclick="deleteChecklistItem(\'' + item.id + '\')">🗑️</button>';
+          itemsEl.appendChild(row);
         });
+      }
+      compEl.innerHTML = '';
+      if (!_clMgrCompData.length) {
+        compEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;text-align:center">אין אישורים עדיין למשמרת זו</div>';
+      } else {
+        _clMgrCompData.forEach(function(d) {
+          var row = document.createElement('div');
+          row.className = 'cl-item done';
+          var itemText = itemMap[d.itemId] || d.itemId || '';
+          row.innerHTML = '<div style="flex:1"><div class="cl-item-text">' + itemText + '</div><div class="cl-mgr-emp">✅ ' + d.empName + '</div></div>' +
+            (d.photoBase64 ? '<img class="cl-thumb" src="' + d.photoBase64 + '" onclick="viewClPhoto(this.src)">' : '<div class="cl-camera-btn done">✅</div>');
+          compEl.appendChild(row);
+        });
+      }
+      itemsEl.style.opacity = '1';
+      compEl.style.opacity = '1';
     }
 
     function addChecklistItem() {
@@ -3122,13 +3159,12 @@
           var maxOrder = snap.size;
           return db.collection('checklist_items').add({ text: text, shifts: [_clMgrTab], order: maxOrder, createdAt: new Date().toISOString() });
         })
-        .then(function() { inp.value = ''; renderClMgrTab(); })
+        .then(function() { inp.value = ''; })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן להוסיף פריט.',null); });
     }
 
     function deleteChecklistItem(id) {
       db.collection('checklist_items').doc(id).delete()
-        .then(function() { renderClMgrTab(); })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן למחוק.',null); });
     }
 
@@ -3149,7 +3185,6 @@
       var text = inp.value.trim();
       if (!text) return;
       db.collection('checklist_items').doc(id).update({ text: text })
-        .then(function() { renderClMgrTab(); })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
     }
 
@@ -3555,12 +3590,14 @@
       if (sendBtn) sendBtn.disabled = false;
       document.getElementById('comp-mgr-active-section').style.display = 'none';
       document.getElementById('comp-mgr-form-section').style.display   = 'flex';
-      db.collection('competitions').where('status', '==', 'active').get()
-        .then(function(snap) {
+      var box = document.getElementById('comp-mgr-box');
+      if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
+      modal.classList.add('open');
+      if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
+      _compMgrUnsub = db.collection('competitions').where('status', '==', 'active')
+        .onSnapshot(function(snap) {
           var active = null;
           snap.forEach(function(doc) { if (!active) active = Object.assign({ id: doc.id }, doc.data()); });
-          var box = document.getElementById('comp-mgr-box');
-          if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
           if (active) {
             _compMgrCurrentId = active.id;
             var ad = document.getElementById('comp-mgr-active-desc');
@@ -3570,14 +3607,13 @@
             document.getElementById('comp-mgr-form-section').style.display   = 'none';
             document.getElementById('comp-mgr-active-section').style.display = 'flex';
             _startEditorCountdown(active.endsAt, 'comp-active-countdown');
+          } else {
+            _compMgrCurrentId = null;
+            document.getElementById('comp-mgr-active-section').style.display = 'none';
+            document.getElementById('comp-mgr-form-section').style.display   = 'flex';
+            _clearCompTimers();
           }
-          modal.classList.add('open');
-        })
-        .catch(function() {
-          var box = document.getElementById('comp-mgr-box');
-          if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
-          modal.classList.add('open');
-        });
+        }, function() {});
     }
 
     function closeCompMgr() {
@@ -3585,6 +3621,7 @@
       if (el) el.classList.remove('open');
       _clearCompTimers();
       _compMgrCurrentId = null;
+      if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
     }
 
     function _onCompEndsChange() {
