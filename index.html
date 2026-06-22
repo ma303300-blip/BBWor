@@ -220,6 +220,7 @@
     /* CONSTRAINT BADGES */
     .constraint-badge-green { position: absolute; top: 7px; right: 8px; background: #2ecc71; color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; z-index: 2; }
     .constraint-badge-green.show { display: flex; }
+    .constraint-badge-green.pending { background: #e09535; }
     .constraint-badge-red { position: absolute; top: 7px; right: 8px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; z-index: 2; }
     .constraint-badge-red.show { display: flex; }
 
@@ -896,6 +897,12 @@
     var currentConstraintDocId = null;
     var currentConstraintPendingDocId = null;
     var _constraintSel = { 1: { day: null, shift: null, startTime: null }, 2: { day: null, shift: null, startTime: null }, daysOff: [] };
+    var _constraintMgrUnsub1 = null;
+    var _constraintMgrUnsub2 = null;
+    var _constraintMgrPendingSnap = null;
+    var _constraintMgrApprovedSnap = null;
+    var _constraintPhotoCache = {};
+    var _constraintMgrRenderTok = 0;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -929,6 +936,7 @@
     }
 
     function _closeAllOverlays() {
+      _stopConstraintMgrListeners();
       var modals = document.querySelectorAll('.modal-overlay');
       for (var i = 0; i < modals.length; i++) { modals[i].classList.remove('open'); }
       var ids = ['pending-overlay','pending-drawer',
@@ -1626,7 +1634,7 @@
           currentConstraintDocId = null;
           currentConstraintPendingDocId = null;
           var badge = document.getElementById('emp-constraint-badge');
-          if (badge) badge.classList.remove('show');
+          if (badge) { badge.classList.remove('show'); badge.classList.remove('pending'); }
           openConstraintForm();
         })
         .catch(function(err) { showModal('⚠️', 'שגיאה', 'לא ניתן לאפס.\n' + (err && err.code ? err.code : ''), null); });
@@ -1775,8 +1783,18 @@
             if (d.status === 'approved') { currentConstraintData = d; currentConstraintDocId = doc.id; }
             else if (d.status === 'pending') { currentConstraintPendingDocId = doc.id; }
           });
-          badge.textContent = '✓';
-          badge.classList.toggle('show', !!currentConstraintData);
+          if (currentConstraintData) {
+            badge.textContent = '✓';
+            badge.classList.remove('pending');
+            badge.classList.add('show');
+          } else if (currentConstraintPendingDocId) {
+            badge.textContent = '⏳';
+            badge.classList.add('pending');
+            badge.classList.add('show');
+          } else {
+            badge.classList.remove('pending');
+            badge.classList.remove('show');
+          }
         }, function(err) {
           console.error('constraint listener error', err);
         });
@@ -1833,44 +1851,58 @@
         });
     }
 
+    function _stopConstraintMgrListeners() {
+      if (_constraintMgrUnsub1) { _constraintMgrUnsub1(); _constraintMgrUnsub1 = null; }
+      if (_constraintMgrUnsub2) { _constraintMgrUnsub2(); _constraintMgrUnsub2 = null; }
+      _constraintMgrPendingSnap = null;
+      _constraintMgrApprovedSnap = null;
+    }
+
     function openConstraintDrawer() {
+      _stopConstraintMgrListeners();
       var body = document.getElementById('constraint-drawer-body');
       body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('constraint-overlay').classList.add('open');
       document.getElementById('constraint-drawer').classList.add('open');
-      Promise.all([
-        db.collection('constraints').where('status', '==', 'pending').get(),
-        db.collection('constraints').where('status', '==', 'approved').get()
-      ]).then(function(results) {
-        var pendingSnap  = results[0];
-        var approvedSnap = results[1];
-        var empIds = [];
-        var currentWeek = getWeekId();
-        function filterWeek(snap) {
-          var arr = [];
-          snap.forEach(function(doc) { if (doc.data().week === currentWeek) arr.push(doc); });
-          return arr;
-        }
-        var pendingDocs  = filterWeek(pendingSnap);
-        var approvedDocs = filterWeek(approvedSnap);
-        function collectIds(docs) {
-          docs.forEach(function(doc) {
-            var eid = doc.data().empId;
-            if (eid && empIds.indexOf(eid) === -1) empIds.push(eid);
-          });
-        }
-        collectIds(pendingDocs); collectIds(approvedDocs);
-        var fetches = empIds.map(function(id) { return db.collection('employees').doc(id).get(); });
-        return Promise.all(fetches).then(function(empDocs) {
-          var photoMap = {};
-          empDocs.forEach(function(ed) { if (ed.exists) photoMap[ed.id] = ed.data().photo || null; });
+      _constraintMgrUnsub1 = db.collection('constraints').where('status', '==', 'pending')
+        .onSnapshot(function(snap) { _constraintMgrPendingSnap = snap; _renderConstraintMgr(); }, function() {});
+      _constraintMgrUnsub2 = db.collection('constraints').where('status', '==', 'approved')
+        .onSnapshot(function(snap) { _constraintMgrApprovedSnap = snap; _renderConstraintMgr(); }, function() {});
+    }
+
+    function _renderConstraintMgr() {
+      if (!_constraintMgrPendingSnap || !_constraintMgrApprovedSnap) return;
+      var token = ++_constraintMgrRenderTok;
+      var body = document.getElementById('constraint-drawer-body');
+      if (!body) return;
+      var currentWeek = getWeekId();
+      function filterWeek(snap) {
+        var arr = [];
+        snap.forEach(function(doc) { if (doc.data().week === currentWeek) arr.push(doc); });
+        return arr;
+      }
+      var pendingDocs  = filterWeek(_constraintMgrPendingSnap);
+      var approvedDocs = filterWeek(_constraintMgrApprovedSnap);
+      var empIds = [];
+      function collectIds(docs) {
+        docs.forEach(function(doc) {
+          var eid = doc.data().empId;
+          if (eid && empIds.indexOf(eid) === -1) empIds.push(eid);
+        });
+      }
+      collectIds(pendingDocs); collectIds(approvedDocs);
+      var missing = empIds.filter(function(id) { return !_constraintPhotoCache.hasOwnProperty(id); });
+      Promise.all(missing.map(function(id) { return db.collection('employees').doc(id).get(); }))
+        .then(function(empDocs) {
+          if (token !== _constraintMgrRenderTok) return;
+          empDocs.forEach(function(ed) { if (ed.exists) _constraintPhotoCache[ed.id] = ed.data().photo || null; });
           body.innerHTML = '';
           function buildItem(d, docId, showAssign) {
             var c1 = d.constraint1, c2 = d.constraint2;
             var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') : '';
             var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') : '';
             var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text" style="color:rgba(255,150,150,0.8)">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
-            var photo = photoMap[d.empId] || null;
+            var photo = _constraintPhotoCache[d.empId] || null;
             var avatarHtml = photo
               ? '<img class="constraint-item-avatar" src="' + photo + '">'
               : '<div class="constraint-item-avatar-ph">' + (d.empName || '?').charAt(0) + '</div>';
@@ -1898,10 +1930,6 @@
                   e.stopPropagation();
                   showConfirm('🗑️', 'מחיקת אילוץ', 'למחוק את האילוץ של ' + (empName || 'עובד') + '?\nהפעולה תמחק גם מפרופיל העובד.', function() {
                     db.collection('constraints').doc(id).delete()
-                      .then(function() {
-                        var card = document.getElementById('citem-' + id);
-                        if (card) card.remove();
-                      })
                       .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
                   });
                 };
@@ -1975,18 +2003,21 @@
           if (!pendingDocs.length && !approvedDocs.length) {
             body.innerHTML = '<div class="drawer-empty">אין אילוצים 🎉</div>';
           }
+        })
+        .catch(function() {
+          if (token !== _constraintMgrRenderTok) return;
+          body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>';
         });
-      }).catch(function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
     }
 
     function closeConstraintDrawer() {
+      _stopConstraintMgrListeners();
       document.getElementById('constraint-overlay').classList.remove('open');
       document.getElementById('constraint-drawer').classList.remove('open');
     }
 
     function approveConstraint(docId) {
       db.collection('constraints').doc(docId).update({ status: 'approved', approvedAt: new Date().toISOString() })
-        .then(function() { openConstraintDrawer(); })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר. נסי שוב.', null); });
     }
 
@@ -2862,20 +2893,15 @@
     }
     /* ── Weekly constraint reset (every Sunday) ── */
     function _weeklyConstraintReset() {
-      var now = new Date();
-      if (now.getDay() !== 0) return; /* not Sunday */
-      var todayStr = now.getFullYear() + '-' +
-                     String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                     String(now.getDate()).padStart(2, '0');
+      var currentWeek = getWeekId();
       var markerRef = db.collection('constraint_resets').doc('weekly');
       markerRef.get()
         .then(function(doc) {
-          if (doc.exists && doc.data().lastReset === todayStr) return; /* already done today */
+          if (doc.exists && doc.data().lastResetWeek === currentWeek) return;
           return db.collection('constraints').get().then(function(snap) {
             var batches = [];
             var batch = db.batch();
             var n = 0;
-            var currentWeek = getWeekId();
             snap.forEach(function(d) {
               var data = d.data();
               if (!data.week || data.week !== currentWeek) {
@@ -2886,7 +2912,7 @@
             });
             if (n % 490 !== 0) batches.push(batch.commit());
             return Promise.all(batches).then(function() {
-              return markerRef.set({ lastReset: todayStr, deletedCount: n });
+              return markerRef.set({ lastResetWeek: currentWeek, deletedCount: n });
             });
           });
         })
