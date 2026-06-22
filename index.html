@@ -1123,6 +1123,7 @@
     var _constraintMgrRenderTok = 0;
     var _constraintSchUnsubs = [];
     var _constraintSchCells = {};
+    var _constraintMgrRenderTimer = null;
     var _compAnnounceUnsub = null;
     var _compCountdownTimer = null;
     var _compEditorCountdownTimer = null;
@@ -2239,6 +2240,7 @@
       _constraintSchUnsubs.forEach(function(u) { u(); });
       _constraintSchUnsubs = [];
       _constraintSchCells = {};
+      if (_constraintMgrRenderTimer) { clearTimeout(_constraintMgrRenderTimer); _constraintMgrRenderTimer = null; }
     }
 
     function openConstraintDrawer() {
@@ -2264,6 +2266,13 @@
     }
 
     function _renderConstraintMgr() {
+      if (!_constraintMgrPendingSnap || !_constraintMgrApprovedSnap) return;
+      if (_constraintMgrRenderTimer) clearTimeout(_constraintMgrRenderTimer);
+      _constraintMgrRenderTimer = setTimeout(_doRenderConstraintMgr, 60);
+    }
+
+    function _doRenderConstraintMgr() {
+      _constraintMgrRenderTimer = null;
       if (!_constraintMgrPendingSnap || !_constraintMgrApprovedSnap) return;
       var token = ++_constraintMgrRenderTok;
       var body = document.getElementById('constraint-drawer-body');
@@ -3008,6 +3017,7 @@
       if (!val) { closeSchTimeEditor(); return; }
       _schStartTimes[_schTimeEditorKey] = val;
       _schSaveImmediate();
+      _schRenderTable();
       closeSchTimeEditor();
     }
 
@@ -3015,6 +3025,7 @@
       if (!_schTimeEditorKey) return;
       delete _schStartTimes[_schTimeEditorKey];
       _schSaveImmediate();
+      _schRenderTable();
       closeSchTimeEditor();
     }
 
