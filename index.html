@@ -2993,6 +2993,16 @@
     function openSchTimeEditor(di, shift, empId, firstName) {
       _schTimeEditorKey = di + '_' + shift + '_' + empId;
       var existing = _schStartTimes[_schTimeEditorKey] || '';
+      if (!existing) {
+        var con = _schConstraintMap[empId];
+        if (con) {
+          [con.constraint1, con.constraint2].forEach(function(cp) {
+            if (!cp || !cp.day || !cp.startTime) return;
+            var shiftMatch = (shift === 'morning') ? cp.shift === 'בוקר' : cp.shift === 'ערב';
+            if (_constraintDayToIdx(cp.day) === di && shiftMatch) existing = cp.startTime;
+          });
+        }
+      }
       document.getElementById('sch-time-heading').textContent = 'שעת כניסה — ' + firstName;
       document.getElementById('sch-time-input').value = existing;
       document.getElementById('sch-time-clear-btn').style.display = existing ? '' : 'none';
