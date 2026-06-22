@@ -1107,9 +1107,11 @@
     var _clInboxSubsUnsub = null;
     var _clInboxApprovalsUnsub = null;
     var _clInboxItemsUnsub = null;
+    var _clInboxCompsUnsub = null;
     var _clInboxSubsData = [];
     var _clInboxApprovalsData = [];
     var _clInboxCachedItems = [];
+    var _clInboxCompsData = [];
     var _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
 
     var DEFAULT_CONTENT = {
@@ -3153,15 +3155,24 @@
           _clInboxCachedItems.sort(function(a,b) { return (a.order||0)-(b.order||0); });
           _renderClInboxDrawer();
         }, function() {});
+      _clInboxCompsUnsub = db.collection('checklist_completions')
+        .where('sessionId', '==', sessionId)
+        .onSnapshot(function(snap) {
+          _clInboxCompsData = [];
+          snap.forEach(function(doc) { _clInboxCompsData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _renderClInboxDrawer();
+        }, function() {});
     }
 
     function _stopClMgrInboxListeners() {
       if (_clInboxSubsUnsub)      { _clInboxSubsUnsub();      _clInboxSubsUnsub = null; }
       if (_clInboxApprovalsUnsub) { _clInboxApprovalsUnsub(); _clInboxApprovalsUnsub = null; }
       if (_clInboxItemsUnsub)     { _clInboxItemsUnsub();     _clInboxItemsUnsub = null; }
+      if (_clInboxCompsUnsub)     { _clInboxCompsUnsub();     _clInboxCompsUnsub = null; }
       _clInboxSubsData = [];
       _clInboxApprovalsData = [];
       _clInboxCachedItems = [];
+      _clInboxCompsData = [];
     }
 
     function _renderClInboxBadge() {
@@ -3246,9 +3257,24 @@
         var isApproved = !!approvedBranches[branch];
         var branchName = BRANCH_NAME[branch] || branch;
         var names      = subs.map(function(s) { return s.empName; }).join(', ');
-        var itemsHtml  = '<ul class="cl-inbox-items">';
+        var compMap = {};
+        _clInboxCompsData.forEach(function(c) {
+          if (c.branch === branch) compMap[c.itemId] = c;
+        });
+        var itemsHtml = '<ul class="cl-inbox-items">';
         if (_clInboxCachedItems.length) {
-          _clInboxCachedItems.forEach(function(item) { itemsHtml += '<li>• ' + item.text + '</li>'; });
+          _clInboxCachedItems.forEach(function(item) {
+            var comp = compMap[item.id];
+            var statusHtml = '';
+            if (comp && comp.photoBase64) {
+              statusHtml = '<img src="' + comp.photoBase64 + '" style="width:100%;border-radius:8px;margin-top:6px;display:block;cursor:pointer" onclick="viewClPhoto(this.src)">';
+            } else if (comp) {
+              statusHtml = ' <span style="color:#2ecc71;font-size:15px">✅</span>';
+            } else {
+              statusHtml = ' <span style="color:rgba(255,255,255,0.3);font-size:13px">—</span>';
+            }
+            itemsHtml += '<li style="display:flex;flex-direction:column;gap:2px"><div>• ' + item.text + statusHtml + '</div></li>';
+          });
         } else {
           itemsHtml += '<li style="color:var(--text-dim)">טוען פריטים...</li>';
         }
