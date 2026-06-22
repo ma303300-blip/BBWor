@@ -224,6 +224,16 @@
     .constraint-badge-red { position: absolute; top: 7px; right: 8px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; z-index: 2; }
     .constraint-badge-red.show { display: flex; }
 
+    /* CHECKLIST STATUS BADGE */
+    @keyframes cl-btn-pulse {
+      0%,100% { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 0 rgba(224,53,53,0.55); border-color: rgba(224,53,53,0.8); }
+      50%     { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 10px rgba(224,53,53,0); border-color: rgba(224,53,53,0.3); }
+    }
+    .cl-status-badge { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; line-height: 1; border: 2px solid #0e0d0c; z-index: 2; background: #e03535; color: #fff; }
+    #emp-cl-btn.cl-btn-pending { border-color: rgba(224,53,53,0.75) !important; animation: cl-btn-pulse 1.4s ease-in-out infinite; }
+    #emp-cl-btn.cl-btn-done { border-color: rgba(46,213,115,0.65) !important; animation: none !important; box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important; }
+    #emp-cl-btn.cl-btn-done .cl-status-badge { background: #2ed573; color: #0e0d0c; }
+
     /* MODAL ZOOM ANIMATION */
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
     .modal-box.zoom-anim { animation: modal-zoom-out 1.2s ease-out forwards; }
@@ -1116,6 +1126,7 @@
       _stopCompListener();
       _stopCompBadge();
       _clearCompTimers();
+      _stopClStatusListener();
       show('home');
     }
 
@@ -1408,6 +1419,7 @@
       checkEmpConstraintStatus(emp.id);
       _startCompListener();
       _startCompBadge();
+      _startClStatusListener();
     }
 
     function logout() { goHome(); }
@@ -1429,10 +1441,14 @@
           el.id = 'emp-goal-btn';
           el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
           el.onclick = openEmpGoalModal;
+        } else if (key === 'btn1') {
+          el.id = 'emp-cl-btn';
+          el.className = 'action-btn cl-btn-pending';
+          el.innerHTML = '<span class="cl-status-badge" id="emp-cl-status">✕</span><span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          el.onclick = openChecklist;
         } else {
           el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
-          if (key === 'btn1') { el.onclick = openChecklist; }
-          else { (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label); }
+          (function(lbl){ el.onclick = function() { alert(lbl + ' — בקרוב'); }; })(item.label);
         }
         grid.appendChild(el);
       });
@@ -2207,6 +2223,7 @@
     var _currentClItemId = null;
     var _clUnsub = null;
     var _clItemsUnsub = null;
+    var _clStatusUnsub = null;
     var _clMgrTab = 'morning';
 
     function getCurrentShift() {
@@ -2392,6 +2409,32 @@
           if (n) return batch.commit();
         })
         .catch(function() {});
+    }
+
+    function _startClStatusListener() {
+      _stopClStatusListener();
+      if (!currentEmployee) return;
+      var shift = getCurrentShift();
+      var sessionId = getShiftSessionId(shift);
+      _clStatusUnsub = db.collection('shift_submissions')
+        .where('sessionId', '==', sessionId)
+        .where('empId', '==', currentEmployee.id)
+        .onSnapshot(function(snap) {
+          var btn   = document.getElementById('emp-cl-btn');
+          var badge = document.getElementById('emp-cl-status');
+          if (!btn || !badge) return;
+          if (!snap.empty) {
+            btn.className = 'action-btn cl-btn-done';
+            badge.textContent = '✓';
+          } else {
+            btn.className = 'action-btn cl-btn-pending';
+            badge.textContent = '✕';
+          }
+        }, function() {});
+    }
+
+    function _stopClStatusListener() {
+      if (_clStatusUnsub) { _clStatusUnsub(); _clStatusUnsub = null; }
     }
 
     function viewClPhoto(src) {
