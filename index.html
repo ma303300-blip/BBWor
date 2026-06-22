@@ -1120,10 +1120,8 @@
     var _constraintMgrPendingSnap = null;
     var _constraintMgrApprovedSnap = null;
     var _constraintPhotoCache = {};
-    var _constraintMgrRenderTok = 0;
     var _constraintSchUnsubs = [];
     var _constraintSchCells = {};
-    var _constraintMgrRenderTimer = null;
     var _compAnnounceUnsub = null;
     var _compCountdownTimer = null;
     var _compEditorCountdownTimer = null;
@@ -2240,7 +2238,6 @@
       _constraintSchUnsubs.forEach(function(u) { u(); });
       _constraintSchUnsubs = [];
       _constraintSchCells = {};
-      if (_constraintMgrRenderTimer) { clearTimeout(_constraintMgrRenderTimer); _constraintMgrRenderTimer = null; }
     }
 
     function openConstraintDrawer() {
@@ -2267,14 +2264,6 @@
 
     function _renderConstraintMgr() {
       if (!_constraintMgrPendingSnap || !_constraintMgrApprovedSnap) return;
-      if (_constraintMgrRenderTimer) clearTimeout(_constraintMgrRenderTimer);
-      _constraintMgrRenderTimer = setTimeout(_doRenderConstraintMgr, 60);
-    }
-
-    function _doRenderConstraintMgr() {
-      _constraintMgrRenderTimer = null;
-      if (!_constraintMgrPendingSnap || !_constraintMgrApprovedSnap) return;
-      var token = ++_constraintMgrRenderTok;
       var body = document.getElementById('constraint-drawer-body');
       if (!body) return;
       var currentWeek = getWeekId();
@@ -2296,7 +2285,6 @@
       var missing = empIds.filter(function(id) { return !_constraintPhotoCache.hasOwnProperty(id); });
       Promise.all(missing.map(function(id) { return db.collection('employees').doc(id).get(); }))
         .then(function(empDocs) {
-          if (token !== _constraintMgrRenderTok) return;
           empDocs.forEach(function(ed) { if (ed.exists) _constraintPhotoCache[ed.id] = ed.data().photo || null; });
           body.innerHTML = '';
           function buildItem(d, docId, showAssign) {
@@ -2421,7 +2409,6 @@
           }
         })
         .catch(function() {
-          if (token !== _constraintMgrRenderTok) return;
           body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>';
         });
     }
