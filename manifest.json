@@ -1,7 +1,7 @@
 {
-  "name": "BBWor",
-  "short_name": "BBWor",
-  "description": "BBWor - ניהול סניפים",
+  "name": "BBWoa",
+  "short_name": "BBWoa",
+  "description": "BBWoa - ניהול סניפים",
   "start_url": "/BBWor/",
   "scope": "/BBWor/",
   "display": "standalone",
