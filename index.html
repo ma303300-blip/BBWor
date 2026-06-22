@@ -301,6 +301,15 @@
     .sch-slot-mine { border: 2px solid #3b82f6 !important; background: rgba(59,130,246,0.10) !important; animation: sch-mine-pulse 1.6s ease-in-out infinite; }
     .sch-slot-mine .sch-slot-name { color: #1d4ed8; font-weight: 800; }
     .sch-slot-mine .sch-slot-photo, .sch-slot-mine .sch-slot-ph { border-color: #3b82f6; }
+    .sch-late-badge { position: absolute; top: 1px; right: 1px; width: 14px; height: 14px; background: #e03535; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: #fff; cursor: pointer; z-index: 2; line-height: 1; }
+    .goal-split-row { display: flex; gap: 6px; width: 100%; }
+    .goal-split-col { flex: 1; display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 7px 6px; }
+    .goal-split-label { font-size: 10px; color: var(--text-dim); text-align: center; }
+    .goal-split-pct { font-size: 12px; font-weight: 700; color: var(--gold); text-align: center; }
+    .goal-split-total { font-size: 11px; font-weight: 700; color: #fff; text-align: center; }
+    .goal-branch-btn { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(201,168,76,0.35); border-radius: 14px; padding: 18px 24px; font-size: 16px; font-weight: 700; font-family: inherit; color: #fff; cursor: pointer; text-align: center; width: 100%; -webkit-tap-highlight-color: transparent; }
+    .goal-branch-btn:active { background: rgba(201,168,76,0.12); }
+    .emplist-section { font-size: 12px; font-weight: 700; color: var(--gold); padding: 10px 4px 4px; opacity: 0.7; }
     .sch-shift-sep { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 6px 3px; }
     .sch-sep-line { flex: 1; height: 1.5px; background: rgba(0,0,0,0.2); }
     .sch-sep-label { font-size: 11px; font-weight: 800; color: #333; white-space: nowrap; }
@@ -915,9 +924,21 @@
   <div id="sch-float-wrap"></div>
 
   <!-- MONTHLY GOAL MODAL (Manager) -->
+  <!-- GOAL BRANCH PICKER -->
+  <div class="modal-overlay" id="goal-branch-modal" onclick="if(event.target===this)closeGoalBranchModal()">
+    <div class="modal-box" id="goal-branch-box" style="gap:14px;align-items:stretch;max-width:300px;padding:24px 20px">
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">🎯 יעד חודשי</div>
+      <div style="text-align:center;font-size:13px;color:var(--text-dim)">בחרי סניף לעריכה</div>
+      <button class="goal-branch-btn" onclick="selectGoalBranch('hadera')">🏢 סניף חדרה</button>
+      <button class="goal-branch-btn" onclick="selectGoalBranch('raanana')">🏢 סניף רעננה</button>
+      <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeGoalBranchModal()">סגור</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="goal-modal" onclick="if(event.target===this)closeGoalModal()">
     <div class="modal-box" id="goal-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px">
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">🎯 יעד חודשי</div>
+      <div style="text-align:center;font-size:13px;font-weight:700;color:rgba(201,168,76,0.8)" id="goal-branch-label"></div>
       <div style="text-align:center;font-size:12px;color:var(--text-dim)" id="goal-month-label"></div>
       <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1095,6 +1116,7 @@
     var _shiftCheckTimer = null;
     var _lastKnownShift = null;
     var _goalRefreshTimer = null;
+    var _goalEditBranch = null;
     var _clMgrRefreshTimer = null;
     var _pendingDrawerUnsub = null;
     var _empListDrawerUnsub = null;
@@ -1571,7 +1593,7 @@
             '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
             '<span class="a-icon">' + item.icon + '</span>' +
             '<span class="a-label">' + item.label + '</span>';
-          el.onclick = openGoalModal;
+          el.onclick = openGoalBranchPicker;
         } else {
           el.innerHTML =
             '<button class="mgr-edit-btn" onclick="openEditModal(\'' + key + '\');event.stopPropagation()">✏️</button>' +
@@ -1771,18 +1793,36 @@
     /* ═══════════════════════════════════
        EMPLOYEE LIST (MANAGER)
     ═══════════════════════════════════ */
+    var _empListDataMap = {};
+
     function openEmployeeListDrawer() {
       var body = document.getElementById('emplist-drawer-body');
       body.innerHTML = '<div class="drawer-empty">טוען...</div>';
       document.getElementById('emplist-overlay').classList.add('open');
       document.getElementById('emplist-drawer').classList.add('open');
       if (_empListDrawerUnsub) { _empListDrawerUnsub(); _empListDrawerUnsub = null; }
+      _empListDataMap = {};
       _empListDrawerUnsub = db.collection('employees')
         .onSnapshot(function(snap) {
           body.innerHTML = '';
+          _empListDataMap = {};
           if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין עובדים רשומים</div>'; return; }
-          snap.forEach(function(doc) {
-            var emp = doc.data();
+          var allEmps = [];
+          snap.forEach(function(doc) { allEmps.push(Object.assign({ id: doc.id }, doc.data())); });
+          allEmps.sort(function(a, b) {
+            if (a.branch === b.branch) return 0;
+            return a.branch === 'hadera' ? -1 : 1;
+          });
+          var currentBranch = null;
+          allEmps.forEach(function(emp) {
+            _empListDataMap[emp.id] = emp;
+            if (emp.branch !== currentBranch) {
+              currentBranch = emp.branch;
+              var hdr = document.createElement('div');
+              hdr.className = 'emplist-section';
+              hdr.textContent = BRANCH_NAME[currentBranch] || currentBranch;
+              body.appendChild(hdr);
+            }
             var avatarHtml = emp.photo
               ? '<img src="' + emp.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block" alt="">'
               : (emp.firstName ? emp.firstName[0].toUpperCase() : '?');
@@ -1790,6 +1830,7 @@
             var card = document.createElement('div');
             card.className = 'req-card';
             card.id = 'emplist-' + emp.id;
+            card.style.cursor = 'pointer';
             card.innerHTML =
               '<div class="emp-avatar">' + avatarHtml + '</div>' +
               '<div class="emp-info">' +
@@ -1798,11 +1839,28 @@
                 '<div class="emp-phone-txt">' + statusTxt + '</div>' +
               '</div>' +
               '<div class="emp-actions">' +
-                '<button class="btn-reject" onclick="confirmDeleteEmployee(\'' + emp.id + '\',\'' + emp.firstName + ' ' + emp.lastName + '\')">🗑️</button>' +
+                '<button class="btn-reject" onclick="event.stopPropagation();confirmDeleteEmployee(\'' + emp.id + '\',\'' + emp.firstName + ' ' + emp.lastName + '\')">🗑️</button>' +
               '</div>';
+            (function(id) { card.onclick = function() { openEmpDetailModal(id); }; })(emp.id);
             body.appendChild(card);
           });
         }, function() { body.innerHTML = '<div class="drawer-empty">שגיאת חיבור. נסי שוב.</div>'; });
+    }
+
+    function openEmpDetailModal(empId) {
+      var emp = _empListDataMap[empId];
+      if (!emp) return;
+      var fullName = emp.firstName + ' ' + emp.lastName;
+      showModal('👤', fullName, '', null);
+      setTimeout(function() {
+        var box = document.getElementById('modal-text');
+        var phone = emp.phone || '';
+        box.innerHTML =
+          (emp.photo ? '<img src="' + emp.photo + '" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px;">' : '') +
+          '<div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">' + (BRANCH_NAME[emp.branch] || emp.branch) + '</div>' +
+          '<div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:4px">' + (emp.status === 'approved' ? '✓ פעיל' : '⏳ ממתין לאישור') + '</div>' +
+          (phone ? '<a href="tel:' + phone + '" style="display:block;font-size:17px;font-weight:700;color:var(--gold);text-decoration:none;margin-top:10px;direction:ltr">' + phone + '</a>' : '');
+      }, 30);
     }
 
     function closeEmployeeListDrawer() {
@@ -2089,7 +2147,7 @@
 
     function _doAssignConstraint(con, btn, allConstraints) {
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
-      var weekStart = _nextSchWeekStart();
+      var weekStart = _schGetWeekStart();
       var weekId = weekStart.getFullYear() + '-' +
                    String(weekStart.getMonth()+1).padStart(2,'0') + '-' +
                    String(weekStart.getDate()).padStart(2,'0');
@@ -2245,7 +2303,7 @@
               allBtn.disabled = true; allBtn.textContent = '...';
               var byBranch = {};
               allCons.forEach(function(c) { if (!byBranch[c.branch]) byBranch[c.branch] = []; byBranch[c.branch].push(c); });
-              var ws = _nextSchWeekStart();
+              var ws = _schGetWeekStart();
               var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
               Promise.all(Object.keys(byBranch).map(function(branch) {
                 var docId = branch + '_' + wid;
@@ -2553,12 +2611,13 @@
        SCHEDULE
     ═══════════════════════════════════ */
     var _schWeekStart  = null;
-    var _schBranch     = 'raanana';
-    var _schEditable   = false;
-    var _schCells      = {};
-    var _schAllEmps    = [];
-    var _schEmpMap     = {};
-    var _schUnsub      = null;
+    var _schBranch        = 'raanana';
+    var _schEditable      = false;
+    var _schCells         = {};
+    var _schAllEmps       = [];
+    var _schEmpMap        = {};
+    var _schConstraintMap = {};
+    var _schUnsub         = null;
     var _schPickerDay  = null;
     var _schPickerShift= null;
     var _schPickerSel  = [];
@@ -2668,14 +2727,25 @@
       if (_schUnsub) { _schUnsub(); _schUnsub = null; }
       var tbl = document.getElementById('sch-table');
       tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">טוען...</div>';
-      _schAllEmps = []; _schEmpMap = {};
+      _schAllEmps = []; _schEmpMap = {}; _schConstraintMap = {};
       /* single-field query avoids needing a composite index */
-      db.collection('employees').where('branch', '==', _schBranch).get()
-        .then(function(snap) {
-          snap.forEach(function(d) {
+      Promise.all([
+        db.collection('employees').where('branch', '==', _schBranch).get(),
+        db.collection('constraints').where('branch', '==', _schBranch).get()
+      ]).then(function(results) {
+          var empSnap = results[0], conSnap = results[1];
+          empSnap.forEach(function(d) {
             var e = Object.assign({ id: d.id }, d.data());
             if (e.status === 'approved') { _schAllEmps.push(e); _schEmpMap[e.id] = e; }
           });
+          conSnap.forEach(function(d) { _schConstraintMap[d.data().empId] = d.data(); });
+          /* manager virtual card */
+          var mp = _getMgrProfile();
+          if (mp) {
+            var nameParts = mp.name.split(' ');
+            var mgrVirtual = { id: '__mgr__', firstName: nameParts[0] || mp.name, lastName: nameParts.slice(1).join(' '), photo: null, phone: '' };
+            _schAllEmps.push(mgrVirtual); _schEmpMap['__mgr__'] = mgrVirtual;
+          }
           /* live listener on the schedule document */
           _schUnsub = db.collection('schedules').doc(_schDocId())
             .onSnapshot(function(doc) {
@@ -2744,10 +2814,20 @@
       if (empId && emp) {
         var isMine = !_schEditable && currentEmployee && empId === currentEmployee.id;
         cell.className = 'sch-slot sch-slot-filled' + (isMine ? ' sch-slot-mine' : '');
+        var lateTime = null;
+        var con = _schConstraintMap[empId];
+        if (con) {
+          [con.constraint1, con.constraint2].forEach(function(cp) {
+            if (!cp || !cp.day || !cp.startTime) return;
+            var shiftMatch = (shift === 'morning') ? cp.shift === 'בוקר' : cp.shift === 'ערב';
+            if (_constraintDayToIdx(cp.day) === di && shiftMatch) lateTime = cp.startTime;
+          });
+        }
         cell.innerHTML =
           (emp.photo ? '<img class="sch-slot-photo" src="' + emp.photo + '">'
                      : '<div class="sch-slot-ph">' + emp.firstName.charAt(0) + '</div>') +
-          '<span class="sch-slot-name">' + emp.firstName + '</span>';
+          '<span class="sch-slot-name">' + emp.firstName + '</span>' +
+          (lateTime ? '<div class="sch-late-badge" onclick="event.stopPropagation();showLateStartInfo(\'' + lateTime + '\',\'' + emp.firstName + '\')">!</div>' : '');
         if (_schEditable) {
           var rm = document.createElement('button');
           rm.className = 'sch-slot-rm';
@@ -2767,6 +2847,10 @@
         cell.className = 'sch-slot';
       }
       return cell;
+    }
+
+    function showLateStartInfo(time, name) {
+      showModal('⏰', (name || 'עובד') + ' — שעת כניסה', 'המשמרת של ' + (name || 'העובד/ת') + ' מתחילה בשעה ' + time + '.', null);
     }
 
     function _schRemoveEmp(di, shift, empId) {
@@ -2933,9 +3017,27 @@
       if (_goalMgrSalesUnsub) { _goalMgrSalesUnsub(); _goalMgrSalesUnsub = null; }
     }
 
+    function openGoalBranchPicker() {
+      var box = document.getElementById('goal-branch-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('goal-branch-modal').classList.add('open');
+    }
+
+    function closeGoalBranchModal() {
+      document.getElementById('goal-branch-modal').classList.remove('open');
+    }
+
+    function selectGoalBranch(branch) {
+      _goalEditBranch = branch;
+      closeGoalBranchModal();
+      openGoalModal();
+    }
+
     function openGoalModal() {
+      var branch = _goalEditBranch || 'raanana';
       var box = document.getElementById('goal-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('goal-branch-label').textContent = branch === 'raanana' ? '🏢 סניף רעננה' : '🏢 סניף חדרה';
       document.getElementById('goal-modal').classList.add('open');
       var MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
       var d = new Date();
@@ -2946,19 +3048,21 @@
       document.getElementById('daily-input').value = '';
       _goalState = { goal: 0, total: 0, todayAmt: 0 };
       _stopGoalMgrListeners();
-      var monthId = getMonthId(), todayId = getTodayId();
-      _goalMgrMonthlyUnsub = db.collection('monthly_goals').doc(monthId)
+      var monthId = getMonthId();
+      var branchMonthKey = branch + '_' + monthId;
+      var branchTodayKey = branch + '_' + tid;
+      _goalMgrMonthlyUnsub = db.collection('monthly_goals').doc(branchMonthKey)
         .onSnapshot(function(doc) {
           _goalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
           document.getElementById('goal-input').value = _goalState.goal || '';
           _refreshGoalUI(false);
         }, function() {});
-      _goalMgrSalesUnsub = db.collection('daily_sales').where('month', '==', monthId)
+      _goalMgrSalesUnsub = db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
         .onSnapshot(function(snap) {
           _goalState.total = 0; _goalState.todayAmt = 0;
           snap.forEach(function(d) {
             _goalState.total += d.data().amount || 0;
-            if (d.id === todayId) _goalState.todayAmt = d.data().amount || 0;
+            if (d.id === branchTodayKey) _goalState.todayAmt = d.data().amount || 0;
           });
           if (_goalState.todayAmt) document.getElementById('daily-input').value = _goalState.todayAmt;
           _refreshGoalUI(false);
@@ -2973,7 +3077,9 @@
     function saveMonthlyGoal() {
       var val = parseFloat(document.getElementById('goal-input').value);
       if (!val || val <= 0) return;
-      db.collection('monthly_goals').doc(getMonthId()).set({ goal: val, month: getMonthId(), updatedAt: new Date().toISOString() })
+      var branch = _goalEditBranch || 'raanana';
+      var monthId = getMonthId();
+      db.collection('monthly_goals').doc(branch + '_' + monthId).set({ goal: val, month: monthId, branch: branch, updatedAt: new Date().toISOString() })
         .then(function() { _goalState.goal = val; _refreshGoalUI(false); showModal('✅', 'נשמר!', 'היעד החודשי עודכן ל-' + fmtMoney(val), null); })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור.', null); });
     }
@@ -2981,8 +3087,10 @@
     function saveDailySales() {
       var val = parseFloat(document.getElementById('daily-input').value);
       if (!val || val <= 0) return;
+      var branch = _goalEditBranch || 'raanana';
+      var monthId = getMonthId(), todayId = getTodayId();
       var prevTotal = _goalState.total - (_goalState.todayAmt || 0);
-      db.collection('daily_sales').doc(getTodayId()).set({ amount: val, month: getMonthId(), date: getTodayId(), updatedAt: new Date().toISOString() })
+      db.collection('daily_sales').doc(branch + '_' + todayId).set({ amount: val, month: monthId, date: todayId, branch: branch, monthBranch: monthId + '_' + branch, updatedAt: new Date().toISOString() })
         .then(function() {
           _goalState.todayAmt = val;
           _goalState.total = prevTotal + val;
@@ -3036,13 +3144,14 @@
       el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       _stopGoalEmpListeners();
       _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
+      var branch = activeBranch || 'raanana';
       var monthId = getMonthId(), todayId = getTodayId();
-      _goalEmpMonthlyUnsub = db.collection('monthly_goals').doc(monthId)
+      _goalEmpMonthlyUnsub = db.collection('monthly_goals').doc(branch + '_' + monthId)
         .onSnapshot(function(doc) {
           _empGoalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
           _renderEmpGoalDisplay();
         }, function() {});
-      _goalEmpSalesUnsub = db.collection('daily_sales').where('month', '==', monthId)
+      _goalEmpSalesUnsub = db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
         .onSnapshot(function(snap) {
           _empGoalState.total = 0; _empGoalState.todayAmt = 0;
           snap.forEach(function(d) {
@@ -3060,11 +3169,48 @@
 
     function _fillGoalBtn(btn, silent) {
       var monthId = getMonthId();
+      if (btn.id === 'mgr-goal-btn') {
+        var BRANCHES = ['raanana', 'hadera'];
+        var BN = { raanana: 'רעננה', hadera: 'חדרה' };
+        var res = { raanana: {goal:0,total:0}, hadera: {goal:0,total:0} };
+        Promise.all(BRANCHES.map(function(b) {
+          return db.collection('monthly_goals').doc(b + '_' + monthId).get()
+            .then(function(doc) {
+              if (doc.exists) res[b].goal = doc.data().goal || 0;
+              return db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + b).get();
+            }).then(function(snap) {
+              snap.forEach(function(d) { res[b].total += d.data().amount || 0; });
+            });
+        })).then(function() {
+          var editBtn = btn.querySelector('.mgr-edit-btn');
+          var editHtml = editBtn ? editBtn.outerHTML : '';
+          var cols = BRANCHES.map(function(b) {
+            var pct = res[b].goal > 0 ? Math.min(Math.round(res[b].total / res[b].goal * 100), 100) : 0;
+            return '<div class="goal-split-col">' +
+              '<div class="goal-split-label">' + BN[b] + '</div>' +
+              '<div class="goal-split-pct">' + pct + '%</div>' +
+              '<div class="goal-split-total">' + fmtMoney(res[b].total) + '</div>' +
+              '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+            '</div>';
+          }).join('');
+          btn.innerHTML = editHtml +
+            '<div style="width:100%">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                '<span style="font-size:16px">🎯</span>' +
+                '<span style="font-size:10px;color:var(--text-dim)">יעד חודשי</span>' +
+              '</div>' +
+              '<div class="goal-split-row">' + cols + '</div>' +
+            '</div>';
+        }).catch(function() {});
+        return;
+      }
+      /* Employee path — scoped to activeBranch */
+      var branch = activeBranch || 'raanana';
       var goal = 0, total = 0;
-      db.collection('monthly_goals').doc(monthId).get()
+      db.collection('monthly_goals').doc(branch + '_' + monthId).get()
         .then(function(doc) {
           if (doc.exists) goal = doc.data().goal || 0;
-          return db.collection('daily_sales').where('month','==',monthId).get();
+          return db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch).get();
         })
         .then(function(snap) {
           snap.forEach(function(d) { total += d.data().amount || 0; });
@@ -3495,6 +3641,7 @@
         { id: 'mgr-reg-modal',         fn: closeMgrRegModal },
         { id: 'mgr-pin-overlay',       fn: closeManagerPin },
         { id: 'constraint-form-modal', fn: closeConstraintForm },
+        { id: 'goal-branch-modal',      fn: closeGoalBranchModal },
         { id: 'cl-mgr-modal',          fn: closeClMgr },
         { id: 'cl-drawer',             fn: closeChecklist },
         { id: 'pending-drawer',        fn: closePendingDrawer },
