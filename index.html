@@ -2565,9 +2565,49 @@
       if (_clStatusUnsub) { _clStatusUnsub(); _clStatusUnsub = null; }
     }
 
+    var _cleanedSessions = {};
+
+    function _cleanExpiredSession(sessionId) {
+      if (_cleanedSessions[sessionId]) return;
+      _cleanedSessions[sessionId] = true;
+      var COLS = ['checklist_completions', 'shift_submissions', 'shift_approvals'];
+      COLS.forEach(function(col) {
+        db.collection(col).where('sessionId', '==', sessionId).get()
+          .then(function(snap) {
+            if (snap.empty) return;
+            var batch = db.batch();
+            snap.forEach(function(doc) { batch.delete(doc.ref); });
+            return batch.commit();
+          }).catch(function() {});
+      });
+    }
+
+    function _checkAndCleanExpiredSessions() {
+      var now  = new Date();
+      var mins = now.getHours() * 60 + now.getMinutes();
+      var pad  = function(n) { return String(n).padStart(2,'0'); };
+      var todayId = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+      /* morning expired: after 16:00 */
+      if (mins >= SHIFT_HOURS.morning.end) {
+        _cleanExpiredSession(todayId + '-morning');
+      }
+      /* evening expired: after 22:30 */
+      if (mins >= SHIFT_HOURS.evening.end) {
+        _cleanExpiredSession(todayId + '-evening');
+      }
+      /* early morning (before 09:00): yesterday's evening is also expired */
+      if (mins < SHIFT_HOURS.morning.start) {
+        var yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        var yId  = yest.getFullYear() + '-' + pad(yest.getMonth()+1) + '-' + pad(yest.getDate());
+        _cleanExpiredSession(yId + '-evening');
+        _cleanExpiredSession(yId + '-morning');
+      }
+    }
+
     function _startAutoRefresh() {
       _stopAutoRefresh();
       _lastKnownShift = getCurrentShift();
+      _checkAndCleanExpiredSessions();
       _goalRefreshTimer = setInterval(function() {
         var shift = getCurrentShift();
         if (shift !== _lastKnownShift) {
@@ -2577,6 +2617,7 @@
                        document.getElementById('screen-manager').classList.contains('active');
           if (mgrNow) { _stopClMgrInboxListeners(); _startClMgrInboxListeners(); }
         }
+        _checkAndCleanExpiredSessions();
         var empActive = document.getElementById('screen-employee') &&
                         document.getElementById('screen-employee').classList.contains('active');
         var mgrActive = document.getElementById('screen-manager') &&
