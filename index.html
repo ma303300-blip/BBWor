@@ -1053,9 +1053,13 @@
     var _compEditorCountdownTimer = null;
     var _compBadgeTimer = null;
     var _compBadgeComp = null;
+    var _compBadgeUnsub = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
-    /* no longer needed as in-memory fallback — use storage helpers below */
+    var _shiftCheckTimer = null;
+    var _lastKnownShift = null;
+    var _goalRefreshTimer = null;
+    var _clMgrRefreshTimer = null;
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1127,6 +1131,8 @@
       _stopCompBadge();
       _clearCompTimers();
       _stopClStatusListener();
+      _stopAutoRefresh();
+      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
       show('home');
     }
 
@@ -1289,6 +1295,7 @@
       show('manager');
       showGreeting('אוריה');
       _startCompBadge();
+      _startAutoRefresh();
     }
 
     function enterBranch(branch) {
@@ -1420,6 +1427,7 @@
       _startCompListener();
       _startCompBadge();
       _startClStatusListener();
+      _startAutoRefresh();
     }
 
     function logout() { goHome(); }
@@ -2437,6 +2445,35 @@
       if (_clStatusUnsub) { _clStatusUnsub(); _clStatusUnsub = null; }
     }
 
+    function _startAutoRefresh() {
+      _stopAutoRefresh();
+      _lastKnownShift = getCurrentShift();
+      _goalRefreshTimer = setInterval(function() {
+        var shift = getCurrentShift();
+        if (shift !== _lastKnownShift) {
+          _lastKnownShift = shift;
+          if (currentEmployee) { _startClStatusListener(); }
+        }
+        var empActive = document.getElementById('screen-employee') &&
+                        document.getElementById('screen-employee').classList.contains('active');
+        var mgrActive = document.getElementById('screen-manager') &&
+                        document.getElementById('screen-manager').classList.contains('active');
+        if (empActive) {
+          var empGoalBtn = document.getElementById('emp-goal-btn');
+          if (empGoalBtn) _fillGoalBtn(empGoalBtn, true);
+        }
+        if (mgrActive) {
+          var mgrGoalBtn = document.getElementById('mgr-goal-btn');
+          if (mgrGoalBtn) _fillGoalBtn(mgrGoalBtn, true);
+        }
+      }, 4000);
+    }
+
+    function _stopAutoRefresh() {
+      if (_goalRefreshTimer) { clearInterval(_goalRefreshTimer); _goalRefreshTimer = null; }
+      _lastKnownShift = null;
+    }
+
     function viewClPhoto(src) {
       showModal('🖼️', 'תמונת אישור', '', null);
       setTimeout(function() {
@@ -2933,9 +2970,9 @@
 
     function closeEmpGoalModal() { document.getElementById('emp-goal-modal').classList.remove('open'); }
 
-    function _fillGoalBtn(btn) {
-      var monthId = getMonthId(), todayId = getTodayId();
-      var goal = 0, total = 0, todayAmt = 0;
+    function _fillGoalBtn(btn, silent) {
+      var monthId = getMonthId();
+      var goal = 0, total = 0;
       db.collection('monthly_goals').doc(monthId).get()
         .then(function(doc) {
           if (doc.exists) goal = doc.data().goal || 0;
@@ -2943,11 +2980,16 @@
         })
         .then(function(snap) {
           snap.forEach(function(d) { total += d.data().amount || 0; });
-          return db.collection('daily_sales').doc(todayId).get();
-        })
-        .then(function(td) {
-          todayAmt = td.exists ? (td.data().amount || 0) : 0;
           var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+          if (silent && btn.querySelector('.goal-pct-label')) {
+            var totalEl = document.getElementById(btn.id + '-total');
+            var pctEl   = btn.querySelector('.goal-pct-label');
+            var barEl   = btn.querySelector('.goal-bar-fill');
+            if (totalEl) totalEl.textContent = fmtMoney(total);
+            if (pctEl)   pctEl.textContent   = pct + '%';
+            if (barEl)   barEl.style.width   = pct + '%';
+            return;
+          }
           var editBtn = btn.querySelector('.mgr-edit-btn');
           var editHtml = editBtn ? editBtn.outerHTML : '';
           btn.innerHTML =
@@ -2955,7 +2997,7 @@
             '<div style="width:100%;display:flex;flex-direction:column;gap:5px;padding:2px 0">' +
               '<div style="display:flex;justify-content:space-between;align-items:center">' +
                 '<span style="font-size:18px">🎯</span>' +
-                '<span style="font-size:13px;font-weight:700;color:var(--gold)">' + pct + '%</span>' +
+                '<span class="goal-pct-label" style="font-size:13px;font-weight:700;color:var(--gold)">' + pct + '%</span>' +
               '</div>' +
               '<div style="font-size:15px;font-weight:700;color:#fff;text-align:right" id="' + btn.id + '-total">' + fmtMoney(total) + '</div>' +
               '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
@@ -2988,10 +3030,13 @@
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
       renderClMgrTab();
+      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
+      _clMgrRefreshTimer = setInterval(function() { renderClMgrTab(true); }, 4000);
     }
 
     function closeClMgr() {
       document.getElementById('cl-mgr-modal').classList.remove('open');
+      if (_clMgrRefreshTimer) { clearInterval(_clMgrRefreshTimer); _clMgrRefreshTimer = null; }
     }
 
     function switchClMgrTab(tab) {
@@ -3002,14 +3047,16 @@
     }
 
     var _clMgrRenderToken = 0;
-    function renderClMgrTab() {
+    function renderClMgrTab(silent) {
       var token = ++_clMgrRenderToken;
       var session = getShiftSessionId(_clMgrTab);
       var itemsEl = document.getElementById('cl-mgr-items');
       var compEl  = document.getElementById('cl-mgr-completions');
-      /* fade out WITHOUT clearing — keeps height stable, no jump */
-      compEl.style.opacity = '0';
-      itemsEl.style.opacity = '0';
+      if (!silent) {
+        /* fade out WITHOUT clearing — keeps height stable, no jump */
+        compEl.style.opacity = '0';
+        itemsEl.style.opacity = '0';
+      }
       db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
         .then(function(itemsSnap) {
           if (token !== _clMgrRenderToken) return;
@@ -3262,22 +3309,22 @@
     }
 
     function _startCompBadge() {
-      if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
-      _compBadgeComp = null;
-      db.collection('competitions').where('status', '==', 'active').get()
-        .then(function(snap) {
+      _stopCompBadge();
+      _compBadgeUnsub = db.collection('competitions').where('status', '==', 'active')
+        .onSnapshot(function(snap) {
           var comp = null;
           snap.forEach(function(doc) { if (!comp) comp = Object.assign({ id: doc.id }, doc.data()); });
           _compBadgeComp = comp;
+          if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
           _renderCompBadge();
           if (comp && new Date(comp.endsAt) > new Date()) {
             _compBadgeTimer = setInterval(_renderCompBadge, 1000);
           }
-        })
-        .catch(function() {});
+        }, function() {});
     }
 
     function _stopCompBadge() {
+      if (_compBadgeUnsub) { _compBadgeUnsub(); _compBadgeUnsub = null; }
       if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
       _compBadgeComp = null;
     }
