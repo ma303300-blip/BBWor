@@ -928,6 +928,18 @@
   <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490;background:transparent"></div>
   <div id="sch-float-wrap"></div>
 
+  <!-- SCHEDULE SLOT START-TIME EDITOR (Manager only) -->
+  <div class="modal-overlay" id="sch-time-modal" onclick="if(event.target===this)closeSchTimeEditor()">
+    <div class="modal-box" id="sch-time-box" style="gap:14px;align-items:stretch;max-width:290px">
+      <div class="modal-big-icon">⏰</div>
+      <div class="modal-heading" id="sch-time-heading" style="font-size:16px;text-align:center"></div>
+      <input type="time" id="sch-time-input" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:22px;font-weight:700;color:#fff;text-align:center;width:100%;font-family:inherit;direction:ltr;box-sizing:border-box;-webkit-appearance:none">
+      <button class="modal-ok-btn" onclick="saveSchTimeEditor()" style="margin-top:0">אישור</button>
+      <button id="sch-time-clear-btn" class="constraint-back-btn" style="width:100%" onclick="clearSchTimeEditor()">נקה שעה</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeSchTimeEditor()">ביטול</button>
+    </div>
+  </div>
+
   <!-- MONTHLY GOAL MODAL (Manager) -->
   <!-- GOAL BRANCH PICKER -->
   <div class="modal-overlay" id="goal-branch-modal" onclick="if(event.target===this)closeGoalBranchModal()">
@@ -2729,8 +2741,10 @@
     var _schCells         = {};
     var _schAllEmps       = [];
     var _schEmpMap        = {};
-    var _schConstraintMap = {};
-    var _schUnsub         = null;
+    var _schConstraintMap  = {};
+    var _schStartTimes     = {};
+    var _schTimeEditorKey  = null;
+    var _schUnsub          = null;
     var _schPickerDay  = null;
     var _schPickerShift= null;
     var _schPickerSel  = [];
@@ -2863,6 +2877,7 @@
           _schUnsub = db.collection('schedules').doc(_schDocId())
             .onSnapshot(function(doc) {
               _schCells = doc.exists ? (doc.data().cells || {}) : {};
+              _schStartTimes = doc.exists ? (doc.data().startTimes || {}) : {};
               _schRenderTable();
             }, function() {
               tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
@@ -2936,6 +2951,8 @@
             if (_constraintDayToIdx(cp.day) === di && shiftMatch) lateTime = cp.startTime;
           });
         }
+        var manualTime = _schStartTimes[key + '_' + empId] || null;
+        if (manualTime) lateTime = manualTime;
         cell.innerHTML =
           (emp.photo ? '<img class="sch-slot-photo" src="' + emp.photo + '">'
                      : '<div class="sch-slot-ph">' + emp.firstName.charAt(0) + '</div>') +
@@ -2949,6 +2966,9 @@
             rm.onclick = function(e) { e.stopPropagation(); _schRemoveEmp(d, s, id); };
           })(di, shift, empId);
           cell.appendChild(rm);
+          (function(d, s, id, fname) {
+            cell.onclick = function(e) { if (e.target === rm || rm.contains(e.target)) return; openSchTimeEditor(d, s, id, fname); };
+          })(di, shift, empId, emp.firstName);
         }
       } else if (_schEditable) {
         cell.className = 'sch-slot sch-slot-empty';
@@ -2964,6 +2984,38 @@
 
     function showLateStartInfo(time, name) {
       showModal('⏰', (name || 'עובד') + ' — שעת כניסה', 'המשמרת של ' + (name || 'העובד/ת') + ' מתחילה בשעה ' + time + '.', null);
+    }
+
+    function openSchTimeEditor(di, shift, empId, firstName) {
+      _schTimeEditorKey = di + '_' + shift + '_' + empId;
+      var existing = _schStartTimes[_schTimeEditorKey] || '';
+      document.getElementById('sch-time-heading').textContent = 'שעת כניסה — ' + firstName;
+      document.getElementById('sch-time-input').value = existing;
+      document.getElementById('sch-time-clear-btn').style.display = existing ? '' : 'none';
+      var box = document.getElementById('sch-time-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('sch-time-modal').classList.add('open');
+    }
+
+    function closeSchTimeEditor() {
+      document.getElementById('sch-time-modal').classList.remove('open');
+      _schTimeEditorKey = null;
+    }
+
+    function saveSchTimeEditor() {
+      if (!_schTimeEditorKey) return;
+      var val = document.getElementById('sch-time-input').value;
+      if (!val) { closeSchTimeEditor(); return; }
+      _schStartTimes[_schTimeEditorKey] = val;
+      _schSaveImmediate();
+      closeSchTimeEditor();
+    }
+
+    function clearSchTimeEditor() {
+      if (!_schTimeEditorKey) return;
+      delete _schStartTimes[_schTimeEditorKey];
+      _schSaveImmediate();
+      closeSchTimeEditor();
     }
 
     function _schRemoveEmp(di, shift, empId) {
@@ -3083,7 +3135,7 @@
 
     function _schSaveImmediate() {
       db.collection('schedules').doc(_schDocId()).set(
-        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, updatedAt: new Date().toISOString() },
+        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, updatedAt: new Date().toISOString() },
         { merge: true }
       ).catch(function() {});
     }
@@ -3760,7 +3812,8 @@
         { id: 'pending-drawer',        fn: closePendingDrawer },
         { id: 'constraint-drawer',     fn: closeConstraintDrawer },
         { id: 'emplist-drawer',        fn: closeEmployeeListDrawer },
-        { id: 'cl-inbox-drawer',       fn: closeClInbox }
+        { id: 'cl-inbox-drawer',       fn: closeClInbox },
+        { id: 'sch-time-modal',        fn: closeSchTimeEditor }
       ];
       for (var i = 0; i < layers.length; i++) {
         var el = document.getElementById(layers[i].id);
