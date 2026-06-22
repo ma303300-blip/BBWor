@@ -840,6 +840,16 @@
     </div>
   </div>
 
+  <!-- COMPETITION ENDED (employee) -->
+  <div class="modal-overlay" id="comp-ended-modal" onclick="if(event.target===this)closeCompEnded()">
+    <div class="modal-box" id="comp-ended-box" style="gap:18px">
+      <div class="modal-big-icon">🏆</div>
+      <div class="modal-heading" style="font-size:18px">התחרות הסתיימה!</div>
+      <div style="font-size:14px;color:var(--text-dim);text-align:center;line-height:1.8">בקרוב תקבלו את התוצאות<br>ואת הזוכה בתחרות</div>
+      <button class="modal-ok-btn" onclick="closeCompEnded()">הבנתי</button>
+    </div>
+  </div>
+
   <!-- COMPETITION DETAILS (employee) -->
   <div class="modal-overlay" id="comp-detail-modal" onclick="if(event.target===this)closeCompDetail()">
     <div class="modal-box" id="comp-detail-box" style="gap:12px;align-items:stretch;max-width:340px;padding:26px 20px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch">
@@ -862,12 +872,14 @@
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">תחרות בין העובדים</div>
       <!-- Active section -->
       <div id="comp-mgr-active-section" style="display:none;flex-direction:column;gap:10px">
-        <div class="comp-active-badge">✅ תחרות פעילה כרגע</div>
+        <div class="comp-active-badge" id="comp-mgr-active-badge">✅ תחרות פעילה כרגע</div>
+        <div class="comp-active-badge" id="comp-mgr-ended-badge" style="display:none;background:rgba(224,53,53,0.1);border-color:rgba(224,53,53,0.35);color:#ff8080">⏰ התחרות הסתיימה</div>
         <div class="comp-detail-desc" id="comp-mgr-active-desc"></div>
         <div class="comp-detail-prize" id="comp-mgr-active-prize"></div>
         <div class="comp-countdown-live" id="comp-active-countdown">--:--:--</div>
-        <div class="comp-detail-countdown-label">נותר עד סיום</div>
-        <button class="comp-stop-btn" onclick="stopCompetition()">⏹ עצור תחרות</button>
+        <div class="comp-detail-countdown-label" id="comp-active-countdown-label">נותר עד סיום</div>
+        <button class="comp-stop-btn" id="comp-stop-btn" onclick="stopCompetition()">⏹ עצור תחרות</button>
+        <button class="comp-stop-btn" id="comp-delete-btn" style="display:none" onclick="deleteCompetition()">🗑 מחק תחרות</button>
       </div>
       <!-- New form section -->
       <div id="comp-mgr-form-section" style="display:flex;flex-direction:column;gap:12px">
@@ -1128,6 +1140,7 @@
     var _compBadgeTimer = null;
     var _compBadgeComp = null;
     var _compBadgeUnsub = null;
+    var _compAutoEndedId = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
     var _compMgrUnsub = null;
@@ -3884,6 +3897,7 @@
         { id: 'comp-mgr-modal',        fn: closeCompMgr },
         { id: 'comp-detail-modal',     fn: closeCompDetail },
         { id: 'comp-nocomp-modal',     fn: closeNoComp },
+        { id: 'comp-ended-modal',      fn: closeCompEnded },
         { id: 'modal',                 fn: closeModal },
         { id: 'mgr-only-modal',        fn: closeMgrOnly },
         { id: 'mgr-reg-modal',         fn: closeMgrRegModal },
@@ -3928,6 +3942,11 @@
         if (empBadge) empBadge.style.display = 'none';
         if (mgrBadge) mgrBadge.style.display = 'none';
         if (_compBadgeTimer) { clearInterval(_compBadgeTimer); _compBadgeTimer = null; }
+        if (comp && comp.status === 'active' && _compAutoEndedId !== comp.id) {
+          _compAutoEndedId = comp.id;
+          db.collection('competitions').doc(comp.id).update({ status: 'ended', endedAt: new Date().toISOString() })
+            .catch(function() {});
+        }
         return;
       }
       var timeStr = _formatCountdown(new Date(comp.endsAt) - new Date());
@@ -4063,9 +4082,17 @@
             } else {
               _showCompAnnounce(comp);
             }
-          } else {
-            _showNoComp();
+            return;
           }
+          return db.collection('competitions')
+            .where('branch', 'in', [activeBranch, 'all'])
+            .where('status', '==', 'ended')
+            .get()
+            .then(function(endedSnap) {
+              var ended = null;
+              endedSnap.forEach(function(doc) { if (!ended) ended = Object.assign({ id: doc.id }, doc.data()); });
+              if (ended) { _showCompEnded(); } else { _showNoComp(); }
+            });
         })
         .catch(function() { _showNoComp(); });
     }
@@ -4080,6 +4107,17 @@
 
     function closeNoComp() {
       var el = document.getElementById('comp-nocomp-modal');
+      if (el) el.classList.remove('open');
+    }
+
+    function _showCompEnded() {
+      var box = document.getElementById('comp-ended-box');
+      if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
+      document.getElementById('comp-ended-modal').classList.add('open');
+    }
+
+    function closeCompEnded() {
+      var el = document.getElementById('comp-ended-modal');
       if (el) el.classList.remove('open');
     }
 
@@ -4188,19 +4226,38 @@
       if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
       modal.classList.add('open');
       if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
-      _compMgrUnsub = db.collection('competitions').where('status', '==', 'active')
+      _compMgrUnsub = db.collection('competitions').where('status', 'in', ['active', 'ended'])
         .onSnapshot(function(snap) {
-          var active = null;
-          snap.forEach(function(doc) { if (!active) active = Object.assign({ id: doc.id }, doc.data()); });
-          if (active) {
-            _compMgrCurrentId = active.id;
+          var active = null, ended = null;
+          snap.forEach(function(doc) {
+            var d = Object.assign({ id: doc.id }, doc.data());
+            if (d.status === 'active' && !active) active = d;
+            if (d.status === 'ended' && !ended) ended = d;
+          });
+          var current = active || ended;
+          var isEnded = !active && !!ended;
+          if (current) {
+            _compMgrCurrentId = current.id;
             var ad = document.getElementById('comp-mgr-active-desc');
             var ap = document.getElementById('comp-mgr-active-prize');
-            if (ad) ad.textContent = active.description || '';
-            if (ap) ap.textContent = '🏅 ' + (active.prize || '');
+            if (ad) ad.textContent = current.description || '';
+            if (ap) ap.textContent = '🏅 ' + (current.prize || '');
+            var activeBadge  = document.getElementById('comp-mgr-active-badge');
+            var endedBadge   = document.getElementById('comp-mgr-ended-badge');
+            var stopBtn      = document.getElementById('comp-stop-btn');
+            var deleteBtn    = document.getElementById('comp-delete-btn');
+            var cdLabel      = document.getElementById('comp-active-countdown-label');
+            var cd           = document.getElementById('comp-active-countdown');
+            if (activeBadge) activeBadge.style.display = isEnded ? 'none' : '';
+            if (endedBadge)  endedBadge.style.display  = isEnded ? '' : 'none';
+            if (stopBtn)     stopBtn.style.display      = isEnded ? 'none' : '';
+            if (deleteBtn)   deleteBtn.style.display    = isEnded ? '' : 'none';
+            if (cdLabel)     cdLabel.style.display      = isEnded ? 'none' : '';
+            if (cd && isEnded) cd.textContent = '⏰ הסתיים';
             document.getElementById('comp-mgr-form-section').style.display   = 'none';
             document.getElementById('comp-mgr-active-section').style.display = 'flex';
-            _startEditorCountdown(active.endsAt, 'comp-active-countdown');
+            if (!isEnded) { _startEditorCountdown(current.endsAt, 'comp-active-countdown'); }
+            else { _clearCompTimers(); }
           } else {
             _compMgrCurrentId = null;
             document.getElementById('comp-mgr-active-section').style.display = 'none';
@@ -4264,6 +4321,16 @@
           .then(function() { closeCompMgr(); showModal('✅', 'בוצע', 'התחרות נסגרה.', null); })
           .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לסגור. נסי שוב.', null); });
       }, '⏹ עצור תחרות');
+    }
+
+    function deleteCompetition() {
+      if (!_compMgrCurrentId) return;
+      var id = _compMgrCurrentId;
+      showConfirm('🗑', 'מחיקת תחרות', 'האם למחוק את התחרות? הפעולה תאפס את המצב לכל העובדים.', function() {
+        db.collection('competitions').doc(id).delete()
+          .then(function() { closeCompMgr(); showModal('✅', 'בוצע', 'התחרות נמחקה. המצב אופס.', null); })
+          .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
+      }, '🗑 מחק');
     }
 
     /* iOS scroll-through prevention: block touchmove on overlay background,
