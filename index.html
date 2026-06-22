@@ -458,6 +458,11 @@
     .comp-btn-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: #2ecc71; animation: comp-dot-pulse 1.4s ease-in-out infinite; }
     .comp-btn-badge-label { font-size: 10px; color: #2ecc71; font-weight: 700; letter-spacing: 0.3px; }
     .comp-btn-badge-timer { font-size: 12px; color: var(--gold); font-weight: 900; letter-spacing: 0.5px; }
+    #privacy-link { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 14px; font-size: 10px; color: rgba(255,255,255,0.55); cursor: pointer; z-index: 54; -webkit-tap-highlight-color: transparent; text-decoration: underline; text-underline-offset: 2px; letter-spacing: 0.3px; user-select: none; -webkit-user-select: none; }
+    .priv-section { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .priv-section:last-of-type { border-bottom: none; }
+    .priv-heading { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+    .priv-body { font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.85; white-space: pre-line; }
   </style>
 </head>
 <body>
@@ -3925,6 +3930,7 @@
       history.pushState({ bbwor: 1 }, '');
       var layers = [
         { id: 'confirm-modal',         fn: closeConfirm },
+        { id: 'privacy-modal',         fn: closePrivacy },
         { id: 'comp-winner-modal',     fn: closeCompWinner },
         { id: 'comp-mgr-modal',        fn: closeCompMgr },
         { id: 'comp-detail-modal',     fn: closeCompDetail },
@@ -4445,12 +4451,92 @@
     }, { passive: false });
 
     auth.signInAnonymously().catch(function() {});
+
+    function openPrivacy() {
+      var box = document.getElementById('privacy-box');
+      if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); box.scrollTop = 0; }
+      document.getElementById('privacy-modal').classList.add('open');
+    }
+    function closePrivacy() {
+      document.getElementById('privacy-modal').classList.remove('open');
+    }
   </script>
   <div id="greet-overlay"><div id="greet-text"></div></div>
 
   <div id="sync-bar">
     <span id="sync-dot"></span>
     <span id="sync-label">מתחבר...</span>
+  </div>
+
+  <div id="privacy-link" onclick="openPrivacy()">מדיניות פרטיות</div>
+
+  <!-- PRIVACY POLICY MODAL -->
+  <div class="modal-overlay" id="privacy-modal" onclick="if(event.target===this)closePrivacy()">
+    <div class="modal-box" id="privacy-box" style="gap:0;align-items:stretch;max-width:390px;padding:22px 18px 18px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-align:right">
+      <div style="text-align:center;font-size:28px;margin-bottom:6px">🔒</div>
+      <div style="text-align:center;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:2px">מדיניות פרטיות ותנאי שימוש</div>
+      <div style="text-align:center;font-size:10px;color:var(--text-dim);margin-bottom:14px">BBWor &nbsp;|&nbsp; עדכון אחרון: יוני 2026</div>
+
+      <div class="priv-section">
+        <div class="priv-heading">1. בעלות וקניין רוחני</div>
+        <div class="priv-body">אפליקציה זו, לרבות כל קוד המקור, העיצוב, הממשק, הלוגו והתוכן שבה, הינה רכושו הבלעדי של <strong>מרדכי עמרות לי</strong> (להלן: "המפתח"). כל הזכויות שמורות.
+
+אין לשכפל, להעתיק, להפיץ, לשנות, למכור, להשכיר או לעשות כל שימוש אחר — מסחרי או אחר — בכל חלק מהאפליקציה, ללא אישור מפורש ובכתב מהמפתח.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">2. הצהרת אי-שיוך</div>
+        <div class="priv-body">אפליקציה זו אינה קשורה, שייכת, ממומנת, מאושרת או שותפה בכל דרך שהיא לשום חברה, מותג, רשת שיווק, ארגון, או גורם חיצוני כלשהו.
+
+כל שם, לוגו, או מזהה המופיע באפליקציה משמש לצורכי זיהוי פנימי בלבד ואינו מהווה שיוך, המלצה, או שותפות מכל סוג.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">3. ייעוד האפליקציה</div>
+        <div class="priv-body">האפליקציה BBWor פותחה במיוחד ובאופן בלעדי עבור <strong>אוריה אסתר עמר</strong> לצורכי ניהול עובדים פנימי בסניפי העסק. האפליקציה מיועדת לשימוש עסקי פנימי בלבד ואינה מיועדת לציבור הרחב.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">4. מידע הנאסף</div>
+        <div class="priv-body">במסגרת הרשמה ושימוש באפליקציה, נאסף המידע הבא:
+• שם פרטי ושם משפחה
+• מספר טלפון
+• תמונת פרופיל (אופציונלי, בהסכמה)
+• נתוני משמרות ונוכחות
+• נתוני מכירות לצורך ניהול יעדים</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">5. אחסון ואבטחת מידע</div>
+        <div class="priv-body">המידע נשמר בשירותי Google Firebase (Firestore ו-Authentication). הגישה למידע מוגנת באמצעות כללי אבטחה המגבילים גישה למשתמשים מאומתים בלבד.
+
+המפתח אינו מוכר, מעביר, או חולק מידע אישי של עובדים עם גורמים חיצוניים לעסק.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">6. זכות עיון ומחיקה</div>
+        <div class="priv-body">כל עובד/ת רשאי/ת לבקש עיון במידע הנשמר עליו/ה, תיקונו, או מחיקתו. לפניות יש לפנות להנהלת העסק.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">7. הגבלת אחריות</div>
+        <div class="priv-body">המפתח אינו אחראי לכל נזק ישיר, עקיף, מקרי, מיוחד או תוצאתי הנובע משימוש באפליקציה, אובדן נתונים, הפסקת שירות, או כל כשל טכני אחר. השימוש באפליקציה הינו באחריות המשתמש בלבד.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">8. שינויים במדיניות</div>
+        <div class="priv-body">המפתח שומר לעצמו את הזכות לעדכן מדיניות זו בכל עת. שינויים מהותיים יועברו להנהלת העסק מראש.</div>
+      </div>
+
+      <div class="priv-section">
+        <div class="priv-heading">9. שמירת זכויות</div>
+        <div class="priv-body">כל זכות שאינה מוקנית במפורש במסמך זה שמורה למפתח. שימוש באפליקציה מהווה הסכמה מלאה לכל תנאי מדיניות זו.
+
+© 2026 מרדכי עמרות לי. כל הזכויות שמורות.</div>
+      </div>
+
+      <button class="modal-ok-btn" style="margin-top:14px" onclick="closePrivacy()">סגור</button>
+    </div>
   </div>
 </body>
 </html>
