@@ -229,10 +229,11 @@
       0%,100% { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 0 rgba(224,53,53,0.55); border-color: rgba(224,53,53,0.8); }
       50%     { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 10px rgba(224,53,53,0); border-color: rgba(224,53,53,0.3); }
     }
-    .cl-status-badge { position: absolute; top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; line-height: 1; border: 2px solid #0e0d0c; z-index: 2; background: #e03535; color: #fff; }
+    #emp-cl-btn { position: relative; }
     #emp-cl-btn.cl-btn-pending { border-color: rgba(224,53,53,0.75) !important; animation: cl-btn-pulse 1.4s ease-in-out infinite; }
+    #emp-cl-btn.cl-btn-pending .a-icon { color: #e03535; font-size: 36px; font-weight: 900; line-height: 1; }
     #emp-cl-btn.cl-btn-done { border-color: rgba(46,213,115,0.65) !important; animation: none !important; box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important; }
-    #emp-cl-btn.cl-btn-done .cl-status-badge { background: #2ed573; color: #0e0d0c; }
+    #emp-cl-btn.cl-btn-done .a-icon { color: #2ed573; font-size: 36px; font-weight: 900; line-height: 1; }
 
     /* MODAL ZOOM ANIMATION */
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
@@ -1470,7 +1471,7 @@
         } else if (key === 'btn1') {
           el.id = 'emp-cl-btn';
           el.className = 'action-btn cl-btn-pending';
-          el.innerHTML = '<span class="cl-status-badge" id="emp-cl-status">✕</span><span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
+          el.innerHTML = '<span class="a-icon" id="emp-cl-icon">✕</span><span class="a-label">' + item.label + '</span>';
           el.onclick = openChecklist;
         } else {
           el.innerHTML = '<span class="a-icon">' + item.icon + '</span><span class="a-label">' + item.label + '</span>';
@@ -2448,15 +2449,15 @@
         .where('sessionId', '==', sessionId)
         .where('empId', '==', currentEmployee.id)
         .onSnapshot(function(snap) {
-          var btn   = document.getElementById('emp-cl-btn');
-          var badge = document.getElementById('emp-cl-status');
-          if (!btn || !badge) return;
+          var btn  = document.getElementById('emp-cl-btn');
+          var icon = document.getElementById('emp-cl-icon');
+          if (!btn) return;
           if (!snap.empty) {
             btn.className = 'action-btn cl-btn-done';
-            badge.textContent = '✓';
+            if (icon) icon.textContent = '✓';
           } else {
             btn.className = 'action-btn cl-btn-pending';
-            badge.textContent = '✕';
+            if (icon) icon.textContent = '✕';
           }
         }, function() {});
     }
