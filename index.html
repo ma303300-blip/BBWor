@@ -1135,6 +1135,11 @@
     var _lastKnownShift = null;
     var _goalRefreshTimer = null;
     var _goalEditBranch = null;
+    var _homeGoalUnsub  = null;
+    var _homeSalesUnsub = null;
+    var _homeGoalData   = { goal: 0, total: 0 };
+    var _mgrGoalUnsubs  = [];
+    var _mgrGoalData    = { raanana: { goal: 0, total: 0 }, hadera: { goal: 0, total: 0 } };
     var _clMgrRefreshTimer = null;
     var _pendingDrawerUnsub = null;
     var _empListDrawerUnsub = null;
@@ -1227,6 +1232,8 @@
       if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
       _stopGoalMgrListeners();
       _stopGoalEmpListeners();
+      _stopHomeGoalListeners();
+      _stopMgrGoalListeners();
       _stopCompListener();
       _stopCompBadge();
       _clearCompTimers();
@@ -2698,18 +2705,6 @@
           if (mgrNow) { _stopClMgrInboxListeners(); _startClMgrInboxListeners(); }
         }
         _checkAndCleanExpiredSessions();
-        var empActive = document.getElementById('screen-employee') &&
-                        document.getElementById('screen-employee').classList.contains('active');
-        var mgrActive = document.getElementById('screen-manager') &&
-                        document.getElementById('screen-manager').classList.contains('active');
-        if (empActive) {
-          var empGoalBtn = document.getElementById('emp-goal-btn');
-          if (empGoalBtn) _fillGoalBtn(empGoalBtn, true);
-        }
-        if (mgrActive) {
-          var mgrGoalBtn = document.getElementById('mgr-goal-btn');
-          if (mgrGoalBtn) _fillGoalBtn(mgrGoalBtn, true);
-        }
       }, 4000);
     }
 
@@ -3406,16 +3401,102 @@
         .catch(function() {});
     }
 
-    function loadMgrGoalBanner() {
-      var btn = document.getElementById('mgr-goal-btn');
-      if (!btn) return;
-      _fillGoalBtn(btn);
-    }
+    function loadMgrGoalBanner() { _startMgrGoalListeners(); }
+    function loadGoalBanner()    { _startHomeGoalListeners(); }
 
-    function loadGoalBanner() {
+    function _startHomeGoalListeners() {
+      _stopHomeGoalListeners();
+      var branch = activeBranch || 'raanana';
+      var monthId = getMonthId();
+      _homeGoalData = { goal: 0, total: 0 };
+      _homeGoalUnsub = db.collection('monthly_goals').doc(branch + '_' + monthId)
+        .onSnapshot(function(doc) {
+          _homeGoalData.goal = doc.exists ? (doc.data().goal || 0) : 0;
+          _renderHomeGoalBtn();
+        }, function() {});
+      _homeSalesUnsub = db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
+        .onSnapshot(function(snap) {
+          _homeGoalData.total = 0;
+          snap.forEach(function(d) { _homeGoalData.total += d.data().amount || 0; });
+          _renderHomeGoalBtn();
+        }, function() {});
+    }
+    function _stopHomeGoalListeners() {
+      if (_homeGoalUnsub)  { _homeGoalUnsub();  _homeGoalUnsub  = null; }
+      if (_homeSalesUnsub) { _homeSalesUnsub(); _homeSalesUnsub = null; }
+    }
+    function _renderHomeGoalBtn() {
       var btn = document.getElementById('emp-goal-btn');
       if (!btn) return;
-      _fillGoalBtn(btn);
+      var goal = _homeGoalData.goal, total = _homeGoalData.total;
+      var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+      var editBtn = btn.querySelector('.mgr-edit-btn');
+      var editHtml = editBtn ? editBtn.outerHTML : '';
+      btn.innerHTML =
+        editHtml +
+        '<div style="width:100%;display:flex;flex-direction:column;gap:5px;padding:2px 0">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:18px">🎯</span>' +
+            '<span class="goal-pct-label" style="font-size:13px;font-weight:700;color:var(--gold)">' + pct + '%</span>' +
+          '</div>' +
+          '<div style="font-size:15px;font-weight:700;color:#fff;text-align:right" id="emp-goal-btn-total">' + fmtMoney(total) + '</div>' +
+          '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '<div style="font-size:10px;color:var(--text-dim);text-align:right">יעד חודשי</div>' +
+        '</div>';
+    }
+
+    function _startMgrGoalListeners() {
+      _stopMgrGoalListeners();
+      var BRANCHES = ['raanana', 'hadera'];
+      var monthId = getMonthId();
+      _mgrGoalData = { raanana: { goal: 0, total: 0 }, hadera: { goal: 0, total: 0 } };
+      BRANCHES.forEach(function(b) {
+        _mgrGoalUnsubs.push(
+          db.collection('monthly_goals').doc(b + '_' + monthId)
+            .onSnapshot(function(doc) {
+              _mgrGoalData[b].goal = doc.exists ? (doc.data().goal || 0) : 0;
+              _renderMgrGoalBtn();
+            }, function() {})
+        );
+        _mgrGoalUnsubs.push(
+          db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + b)
+            .onSnapshot(function(snap) {
+              _mgrGoalData[b].total = 0;
+              snap.forEach(function(d) { _mgrGoalData[b].total += d.data().amount || 0; });
+              _renderMgrGoalBtn();
+            }, function() {})
+        );
+      });
+    }
+    function _stopMgrGoalListeners() {
+      _mgrGoalUnsubs.forEach(function(u) { u(); });
+      _mgrGoalUnsubs = [];
+    }
+    function _renderMgrGoalBtn() {
+      var btn = document.getElementById('mgr-goal-btn');
+      if (!btn) return;
+      var BRANCHES = ['raanana', 'hadera'];
+      var BN = { raanana: 'רעננה', hadera: 'חדרה' };
+      var editBtn = btn.querySelector('.mgr-edit-btn');
+      var editHtml = editBtn ? editBtn.outerHTML : '';
+      var cols = BRANCHES.map(function(b) {
+        var goal = _mgrGoalData[b].goal, total = _mgrGoalData[b].total;
+        var pct = goal > 0 ? Math.min(Math.round(total / goal * 100), 100) : 0;
+        return '<div class="goal-split-col">' +
+          '<div class="goal-split-label">' + BN[b] + '</div>' +
+          '<div class="goal-split-pct">' + pct + '%</div>' +
+          '<div class="goal-split-total">' + fmtMoney(total) + '</div>' +
+          '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>';
+      }).join('');
+      btn.innerHTML = editHtml +
+        '<div style="width:100%">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+            '<span style="font-size:16px">🎯</span>' +
+            '<span style="font-size:10px;color:var(--text-dim)">יעד חודשי</span>' +
+          '</div>' +
+          '<div class="goal-split-row">' + cols + '</div>' +
+        '</div>';
     }
 
     /* Manager checklist */
@@ -3427,11 +3508,13 @@
       box.scrollTop = 0;
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
       _subscribeClMgrTab();
     }
 
     function closeClMgr() {
       document.getElementById('cl-mgr-modal').classList.remove('open');
+      document.body.style.overflow = '';
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
     }
 
