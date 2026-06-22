@@ -2284,6 +2284,12 @@
       document.getElementById('sch-picker-overlay').classList.remove('open');
       var _fw = document.getElementById('sch-float-wrap');
       if (_fw) { _fw.style.display = 'none'; _fw.innerHTML = ''; }
+      if (_schEditable) {
+        var _fm = document.getElementById('fab-mail');
+        var _fp = document.getElementById('fab-people');
+        if (_fm) _fm.classList.add('visible');
+        if (_fp) _fp.classList.add('visible');
+      }
       show(_schEditable ? 'manager' : 'employee');
     }
 
