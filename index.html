@@ -756,7 +756,7 @@
       <div class="comp-announce-prize-row" id="comp-announce-prize">טוען...</div>
       <div class="comp-announce-btns">
         <button class="comp-details-btn" onclick="showCompDetails()">הצג פרטים ›</button>
-        <button class="comp-dismiss-btn" onclick="closeCompAnnounce()">אולי מאוחר יותר</button>
+        <button class="comp-dismiss-btn" onclick="dismissCompAnnounce()">אולי מאוחר יותר</button>
       </div>
     </div>
   </div>
@@ -1038,7 +1038,7 @@
     var _compEditorCountdownTimer = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
-    var _compSeenIds = {};
+    /* no longer needed as in-memory fallback — use storage helpers below */
 
     var DEFAULT_CONTENT = {
       btn1:   { icon: '✅', label: 'צ\'ק ליסט' },
@@ -1107,7 +1107,6 @@
       if (_pendingApprovalUnsub) { _pendingApprovalUnsub(); _pendingApprovalUnsub = null; }
       if (_constraintEmpUnsub) { _constraintEmpUnsub(); _constraintEmpUnsub = null; }
       _stopCompListener();
-      _compSeenIds = {};
       _clearCompTimers();
       show('home');
     }
@@ -3181,6 +3180,20 @@
       if (_compAnnounceUnsub) { _compAnnounceUnsub(); _compAnnounceUnsub = null; }
     }
 
+    function _isCompSeen(compId) {
+      return localStorage.getItem('bbwor_comp_' + compId) === '1' ||
+             sessionStorage.getItem('bbwor_comp_s_' + compId) === '1';
+    }
+    function _isCompSeenPermanent(compId) {
+      return localStorage.getItem('bbwor_comp_' + compId) === '1';
+    }
+    function _markCompSeenPermanent(compId) {
+      localStorage.setItem('bbwor_comp_' + compId, '1');
+    }
+    function _markCompSeenSession(compId) {
+      sessionStorage.setItem('bbwor_comp_s_' + compId, '1');
+    }
+
     function _startCompListener() {
       _stopCompListener();
       _compAnnounceUnsub = db.collection('competitions')
@@ -3193,8 +3206,7 @@
               comp = Object.assign({ id: doc.id }, d);
             }
           });
-          if (comp && !_compSeenIds[comp.id]) {
-            _compSeenIds[comp.id] = true;
+          if (comp && !_isCompSeen(comp.id)) {
             _currentCompDoc = comp;
             _showCompAnnounce(comp);
           }
@@ -3262,8 +3274,16 @@
         .then(function(snap) {
           var comp = null;
           snap.forEach(function(doc) { if (!comp) comp = Object.assign({ id: doc.id }, doc.data()); });
-          if (comp) { _currentCompDoc = comp; _showCompAnnounce(comp); }
-          else { _showNoComp(); }
+          if (comp) {
+            _currentCompDoc = comp;
+            if (_isCompSeenPermanent(comp.id)) {
+              showCompDetails();
+            } else {
+              _showCompAnnounce(comp);
+            }
+          } else {
+            _showNoComp();
+          }
         })
         .catch(function() { _showNoComp(); });
     }
@@ -3297,7 +3317,13 @@
       if (overlay) overlay.classList.remove('open');
     }
 
+    function dismissCompAnnounce() {
+      if (_currentCompDoc) _markCompSeenSession(_currentCompDoc.id);
+      closeCompAnnounce();
+    }
+
     function showCompDetails() {
+      if (_currentCompDoc) _markCompSeenPermanent(_currentCompDoc.id);
       closeCompAnnounce();
       if (!_currentCompDoc) return;
       var comp = _currentCompDoc;
