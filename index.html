@@ -3684,7 +3684,7 @@
         '<button class="cl-add-btn" style="padding:8px 14px;flex-shrink:0" onclick="saveChecklistItem(\'' + id + '\')">✓</button>' +
         '<button class="cl-del-btn" onclick="renderClMgrTab()">✕</button>';
       var inp = document.getElementById('cl-edit-' + id);
-      if (inp) { inp.focus(); inp.select(); }
+      if (inp) { inp.focus({ preventScroll: true }); inp.select(); }
     }
 
     function saveChecklistItem(id) {
