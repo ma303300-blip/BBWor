@@ -333,7 +333,8 @@
     .cl-tab-row { display: flex; gap: 8px; margin-bottom: 14px; }
     .cl-tab { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.2s; }
     .cl-tab.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
-    #cl-mgr-completions, #cl-mgr-items { transition: opacity 0.15s ease; min-height: 4px; }
+    #cl-mgr-completions, #cl-mgr-items { min-height: 0; }
+    #cl-mgr-box > *, #constraint-form-box > *, #comp-detail-box > *, #comp-mgr-box > * { flex-shrink: 0; }
     .cl-mgr-emp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
     .cl-photo-preview { width: 100%; border-radius: 10px; margin-top: 6px; object-fit: cover; max-height: 180px; display: none; }
     .cl-mgr-item-row { display: flex; align-items: center; gap: 6px; background: rgba(245,235,210,0.5); border: 1px solid rgba(245,235,210,0.25); border-radius: 11px; padding: 10px 12px; }
@@ -3147,8 +3148,6 @@
           compEl.appendChild(row);
         });
       }
-      itemsEl.style.opacity = '1';
-      compEl.style.opacity = '1';
     }
 
     function addChecklistItem() {
@@ -3672,6 +3671,19 @@
           .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לסגור. נסי שוב.', null); });
       }, '⏹ עצור תחרות');
     }
+
+    /* iOS scroll-through prevention: block touchmove on overlay background,
+       allow it inside scrollable children */
+    document.addEventListener('touchmove', function(e) {
+      if (!document.querySelector('.modal-overlay.open')) return;
+      var el = e.target;
+      while (el && el !== document.body) {
+        var ov = window.getComputedStyle(el).overflowY;
+        if ((ov === 'scroll' || ov === 'auto') && el.scrollHeight > el.clientHeight) return;
+        el = el.parentElement;
+      }
+      e.preventDefault();
+    }, { passive: false });
 
     auth.signInAnonymously().catch(function() {});
   </script>
