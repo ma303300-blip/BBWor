@@ -1989,12 +1989,37 @@
         .onSnapshot(function(snap) {
           body.innerHTML = '';
           _empListDataMap = {};
-          if (snap.empty) { body.innerHTML = '<div class="drawer-empty">אין עובדים רשומים</div>'; return; }
+
+          /* manager banner */
+          var mp = _getMgrProfile();
+          if (mp) {
+            var mgrBanner = document.createElement('div');
+            mgrBanner.style.cssText = 'display:flex;align-items:center;gap:12px;background:rgba(201,168,76,0.09);border:1.5px solid rgba(201,168,76,0.28);border-radius:14px;padding:12px 14px;margin-bottom:10px';
+            var mgrPhotoHtml = mp.photo
+              ? '<img src="' + mp.photo + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2.5px solid var(--gold);flex-shrink:0">'
+              : '<div style="width:52px;height:52px;border-radius:50%;background:rgba(201,168,76,0.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">👑</div>';
+            mgrBanner.innerHTML = mgrPhotoHtml +
+              '<div>' +
+                '<div style="font-size:15px;font-weight:700;color:#fff">' + mp.name + '</div>' +
+                '<div style="font-size:12px;color:var(--gold);margin-top:3px;font-weight:600">מנהל/ת הסניפים</div>' +
+              '</div>';
+            body.appendChild(mgrBanner);
+          }
+
+          if (snap.empty) {
+            var emptyEl = document.createElement('div');
+            emptyEl.className = 'drawer-empty';
+            emptyEl.textContent = 'אין עובדים רשומים';
+            body.appendChild(emptyEl);
+            return;
+          }
           var allEmps = [];
           snap.forEach(function(doc) { allEmps.push(Object.assign({ id: doc.id }, doc.data())); });
           allEmps.sort(function(a, b) {
-            if (a.branch === b.branch) return 0;
-            return a.branch === 'hadera' ? -1 : 1;
+            if (a.branch !== b.branch) return a.branch === 'raanana' ? -1 : 1;
+            var na = (a.firstName + ' ' + a.lastName).toLowerCase();
+            var nb = (b.firstName + ' ' + b.lastName).toLowerCase();
+            return na < nb ? -1 : na > nb ? 1 : 0;
           });
           var currentBranch = null;
           allEmps.forEach(function(emp) {
