@@ -3019,7 +3019,7 @@
           var mp = _getMgrProfile();
           if (mp) {
             var nameParts = mp.name.split(' ');
-            var mgrVirtual = { id: '__mgr__', firstName: nameParts[0] || mp.name, lastName: nameParts.slice(1).join(' '), photo: null, phone: '' };
+            var mgrVirtual = { id: '__mgr__', firstName: nameParts[0] || mp.name, lastName: nameParts.slice(1).join(' '), photo: mp.photo || null, phone: '' };
             _schAllEmps.push(mgrVirtual); _schEmpMap['__mgr__'] = mgrVirtual;
           }
           /* live listener on the schedule document */
