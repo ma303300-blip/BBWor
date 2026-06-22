@@ -394,6 +394,9 @@
     .constraint-assign-btn { background: rgba(22,163,74,0.15); border: 1.5px solid rgba(22,163,74,0.5); border-radius: 9px; padding: 7px 11px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; color: #4ade80; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: all 0.15s; white-space: nowrap; }
     .constraint-assign-btn:active { background: rgba(22,163,74,0.32); }
     .constraint-assign-btn.done { background: rgba(22,163,74,0.07); color: rgba(74,222,128,0.45); border-color: rgba(22,163,74,0.18); cursor: default; pointer-events: none; }
+    .constraint-assigned-lbl { font-size: 11px; font-weight: 700; color: #4ade80; flex-shrink: 0; opacity: 0.75; white-space: nowrap; }
+    .constraint-unassign-btn { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.28); border-radius: 8px; padding: 5px 8px; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; color: #ff8080; flex-shrink: 0; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
+    .constraint-unassign-btn:active { background: rgba(220,38,38,0.25); }
     .constraint-assign-all-btn { width: 100%; padding: 14px; background: rgba(22,163,74,0.13); border: 1.5px solid rgba(22,163,74,0.42); border-radius: 13px; color: #4ade80; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 6px; -webkit-tap-highlight-color: transparent; transition: all 0.2s; }
     .constraint-assign-all-btn:active { background: rgba(22,163,74,0.28); }
     .constraint-assign-all-btn.done { background: rgba(22,163,74,0.08); color: rgba(74,222,128,0.4); border-color: rgba(22,163,74,0.15); cursor: default; pointer-events: none; }
@@ -1106,6 +1109,8 @@
     var _constraintMgrApprovedSnap = null;
     var _constraintPhotoCache = {};
     var _constraintMgrRenderTok = 0;
+    var _constraintSchUnsubs = [];
+    var _constraintSchCells = {};
     var _compAnnounceUnsub = null;
     var _compCountdownTimer = null;
     var _compEditorCountdownTimer = null;
@@ -2147,6 +2152,44 @@
       assignOne(con.constraint2);
     }
 
+    function _isConstraintAssigned(con) {
+      var cells = _constraintSchCells[con.branch] || {};
+      function checkOne(c) {
+        if (!c || !c.day) return false;
+        var di = _constraintDayToIdx(c.day);
+        if (di < 0) return false;
+        var key = di + '_' + ((c.shift === 'בוקר') ? 'morning' : 'evening');
+        return (cells[key] || []).indexOf(con.empId) !== -1;
+      }
+      return checkOne(con.constraint1) || checkOne(con.constraint2);
+    }
+
+    function _cancelConstraintAssign(con) {
+      var ws = _schGetWeekStart();
+      var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
+      var docId = con.branch + '_' + wid;
+      db.collection('schedules').doc(docId).get().then(function(doc) {
+        if (!doc.exists) return;
+        var cells = doc.data().cells || {};
+        function removeOne(c) {
+          if (!c || !c.day) return;
+          var di = _constraintDayToIdx(c.day);
+          if (di < 0) return;
+          var key = di + '_' + ((c.shift === 'בוקר') ? 'morning' : 'evening');
+          var arr = (cells[key] || []).slice();
+          var idx = arr.indexOf(con.empId);
+          if (idx !== -1) arr.splice(idx, 1);
+          cells[key] = arr;
+        }
+        removeOne(con.constraint1);
+        removeOne(con.constraint2);
+        return db.collection('schedules').doc(docId).set(
+          { weekId: wid, branch: con.branch, cells: cells, updatedAt: new Date().toISOString() },
+          { merge: true }
+        );
+      }).catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לבטל את השיבוץ. נסי שוב.', null); });
+    }
+
     function _doAssignConstraint(con, btn, allConstraints) {
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
       var weekStart = _schGetWeekStart();
@@ -2181,6 +2224,9 @@
       if (_constraintMgrUnsub2) { _constraintMgrUnsub2(); _constraintMgrUnsub2 = null; }
       _constraintMgrPendingSnap = null;
       _constraintMgrApprovedSnap = null;
+      _constraintSchUnsubs.forEach(function(u) { u(); });
+      _constraintSchUnsubs = [];
+      _constraintSchCells = {};
     }
 
     function openConstraintDrawer() {
@@ -2193,6 +2239,16 @@
         .onSnapshot(function(snap) { _constraintMgrPendingSnap = snap; _renderConstraintMgr(); }, function() {});
       _constraintMgrUnsub2 = db.collection('constraints').where('status', '==', 'approved')
         .onSnapshot(function(snap) { _constraintMgrApprovedSnap = snap; _renderConstraintMgr(); }, function() {});
+      var ws = _schGetWeekStart();
+      var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
+      ['raanana', 'hadera'].forEach(function(branch) {
+        _constraintSchUnsubs.push(
+          db.collection('schedules').doc(branch + '_' + wid).onSnapshot(function(doc) {
+            _constraintSchCells[branch] = doc.exists ? (doc.data().cells || {}) : {};
+            _renderConstraintMgr();
+          }, function() {})
+        );
+      });
     }
 
     function _renderConstraintMgr() {
@@ -2235,8 +2291,11 @@
             item.className = 'constraint-item';
             if (showAssign) item.style.borderColor = 'rgba(22,163,74,0.3)';
             if (docId) item.id = 'citem-' + docId;
+            var isAssigned = showAssign && _isConstraintAssigned(d);
             var actionBtn = showAssign
-              ? '<button class="constraint-assign-btn">שבץ בסידור</button>'
+              ? (isAssigned
+                  ? '<span class="constraint-assigned-lbl">✓ משובץ</span><button class="constraint-unassign-btn">ביטול</button>'
+                  : '<button class="constraint-assign-btn">שבץ בסידור</button>')
               : '<button class="constraint-approve-btn" onclick="approveConstraint(\'' + docId + '\')">✓ אשר</button>';
             item.innerHTML =
               '<div class="constraint-item-header">' + avatarHtml +
@@ -2292,6 +2351,17 @@
               if (btn) {
                 btnRefs.push(btn);
                 (function(con, b) { b.onclick = function() { _doAssignConstraint(con, b, null); }; })(d, btn);
+              }
+              var ubtn = item.querySelector('.constraint-unassign-btn');
+              if (ubtn) {
+                (function(con) {
+                  ubtn.onclick = function(e) {
+                    e.stopPropagation();
+                    showConfirm('↩️', 'ביטול שיבוץ', 'לבטל את שיבוץ ' + (con.empName || 'העובד/ת') + ' מהסידור?', function() {
+                      _cancelConstraintAssign(con);
+                    });
+                  };
+                })(d);
               }
               body.appendChild(item);
             });
