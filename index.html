@@ -929,6 +929,11 @@
         var fabPeople = document.getElementById('fab-people');
         if (fabMail) fabMail.classList.remove('visible');
         if (fabPeople) fabPeople.classList.remove('visible');
+      } else {
+        var fabMail = document.getElementById('fab-mail');
+        var fabPeople = document.getElementById('fab-people');
+        if (fabMail) fabMail.classList.add('visible');
+        if (fabPeople) fabPeople.classList.add('visible');
       }
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
