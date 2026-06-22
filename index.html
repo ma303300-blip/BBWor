@@ -3216,9 +3216,20 @@
       var branchTodayKey = branch + '_' + tid;
       _goalMgrMonthlyUnsub = db.collection('monthly_goals').doc(branchMonthKey)
         .onSnapshot(function(doc) {
-          _goalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
-          document.getElementById('goal-input').value = _goalState.goal || '';
-          _refreshGoalUI(false);
+          if (doc.exists) {
+            _goalState.goal = doc.data().goal || 0;
+            document.getElementById('goal-input').value = _goalState.goal || '';
+            _refreshGoalUI(false);
+          } else {
+            db.collection('monthly_goals').doc(monthId).get().then(function(old) {
+              _goalState.goal = old.exists ? (old.data().goal || 0) : 0;
+              document.getElementById('goal-input').value = _goalState.goal || '';
+              if (_goalState.goal > 0) {
+                db.collection('monthly_goals').doc(branchMonthKey).set({ goal: _goalState.goal, month: monthId, branch: branch, updatedAt: new Date().toISOString() }).catch(function(){});
+              }
+              _refreshGoalUI(false);
+            }).catch(function() { _goalState.goal = 0; _refreshGoalUI(false); });
+          }
         }, function() {});
       _goalMgrSalesUnsub = db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
         .onSnapshot(function(snap) {
@@ -3311,8 +3322,15 @@
       var monthId = getMonthId(), todayId = getTodayId();
       _goalEmpMonthlyUnsub = db.collection('monthly_goals').doc(branch + '_' + monthId)
         .onSnapshot(function(doc) {
-          _empGoalState.goal = doc.exists ? (doc.data().goal || 0) : 0;
-          _renderEmpGoalDisplay();
+          if (doc.exists) {
+            _empGoalState.goal = doc.data().goal || 0;
+            _renderEmpGoalDisplay();
+          } else {
+            db.collection('monthly_goals').doc(monthId).get().then(function(old) {
+              _empGoalState.goal = old.exists ? (old.data().goal || 0) : 0;
+              _renderEmpGoalDisplay();
+            }).catch(function() { _renderEmpGoalDisplay(); });
+          }
         }, function() {});
       _goalEmpSalesUnsub = db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
         .onSnapshot(function(snap) {
@@ -3339,7 +3357,10 @@
         Promise.all(BRANCHES.map(function(b) {
           return db.collection('monthly_goals').doc(b + '_' + monthId).get()
             .then(function(doc) {
-              if (doc.exists) res[b].goal = doc.data().goal || 0;
+              if (doc.exists) { res[b].goal = doc.data().goal || 0; return null; }
+              return db.collection('monthly_goals').doc(monthId).get();
+            }).then(function(old) {
+              if (old && old.exists) res[b].goal = old.data().goal || 0;
               return db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + b).get();
             }).then(function(snap) {
               snap.forEach(function(d) { res[b].total += d.data().amount || 0; });
@@ -3372,7 +3393,10 @@
       var goal = 0, total = 0;
       db.collection('monthly_goals').doc(branch + '_' + monthId).get()
         .then(function(doc) {
-          if (doc.exists) goal = doc.data().goal || 0;
+          if (doc.exists) { goal = doc.data().goal || 0; return null; }
+          return db.collection('monthly_goals').doc(monthId).get();
+        }).then(function(old) {
+          if (old && old.exists) goal = old.data().goal || 0;
           return db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch).get();
         })
         .then(function(snap) {
