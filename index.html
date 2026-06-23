@@ -246,7 +246,7 @@
     .cl-inbox-items li { font-size: 13px; color: rgba(255,255,255,0.55); text-align: right; padding: 2px 0; }
     .cl-inbox-approve-btn { background: var(--gold); border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
     .cl-inbox-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; flex: 1; }
-    .cl-inbox-delete-btn { background: none; border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; color: #dc2626; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .cl-inbox-delete-btn { background: rgba(245,245,220,0.5); border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; color: #dc2626; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
     .cl-inbox-delete-btn:active { background: rgba(220,38,38,0.12); }
 
     /* CHECKLIST APPROVAL BANNERS (inline in manager screen) */
@@ -3024,9 +3024,12 @@
     function viewClPhoto(src) {
       showModal('🖼️', 'תמונת אישור', '', null);
       setTimeout(function() {
-        var img = document.createElement('img');
-        img.src = src; img.style.cssText = 'width:100%;border-radius:10px;margin-top:8px';
         var box = document.getElementById('modal-text');
+        var existing = box.parentNode.querySelector('.cl-photo-view-img');
+        if (existing) existing.parentNode.removeChild(existing);
+        var img = document.createElement('img');
+        img.className = 'cl-photo-view-img';
+        img.src = src; img.style.cssText = 'width:100%;border-radius:10px;margin-top:8px';
         box.parentNode.insertBefore(img, box.nextSibling);
       }, 50);
     }
