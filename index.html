@@ -3997,26 +3997,28 @@
     }
     /* ── Weekly constraint reset (every Sunday) ── */
     function _weeklyConstraintReset() {
-      var currentWeek = getWeekId();
+      var ws  = _schGetWeekStart();
+      var pad = function(n) { return String(n).padStart(2,'0'); };
+      var currentSunday = ws.getFullYear() + '-' + pad(ws.getMonth()+1) + '-' + pad(ws.getDate());
       var markerRef = db.collection('constraint_resets').doc('weekly');
       markerRef.get()
         .then(function(doc) {
-          if (doc.exists && doc.data().lastResetWeek === currentWeek) return;
+          if (doc.exists && doc.data().lastResetSunday === currentSunday) return;
           return db.collection('constraints').get().then(function(snap) {
+            if (snap.empty) {
+              return markerRef.set({ lastResetSunday: currentSunday, deletedCount: 0, resetAt: new Date().toISOString() });
+            }
             var batches = [];
             var batch = db.batch();
             var n = 0;
             snap.forEach(function(d) {
-              var data = d.data();
-              if (!data.week || data.week !== currentWeek) {
-                batch.delete(d.ref);
-                n++;
-                if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); }
-              }
+              batch.delete(d.ref);
+              n++;
+              if (n % 490 === 0) { batches.push(batch.commit()); batch = db.batch(); n = 0; }
             });
-            if (n % 490 !== 0) batches.push(batch.commit());
+            if (n > 0) batches.push(batch.commit());
             return Promise.all(batches).then(function() {
-              return markerRef.set({ lastResetWeek: currentWeek, deletedCount: n });
+              return markerRef.set({ lastResetSunday: currentSunday, deletedCount: n, resetAt: new Date().toISOString() });
             });
           });
         })
