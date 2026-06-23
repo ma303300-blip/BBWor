@@ -388,6 +388,16 @@
     .cl-tab { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.2s; }
     .cl-tab.active { background: rgba(201,168,76,0.15); border-color: var(--gold); color: var(--gold); }
     #cl-mgr-items { min-height: 0; }
+
+    /* Checklist manager — green bg overrides */
+    #cl-mgr-box .cl-tab { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.15); color: #111; }
+    #cl-mgr-box .cl-tab.active { background: #c0392b; border-color: #c0392b; color: #fff; }
+    #cl-mgr-box .cl-item { background: rgba(255,255,255,0.65); border-color: rgba(0,0,0,0.1); }
+    #cl-mgr-box .cl-item-text { color: #111; }
+    #cl-mgr-box .cl-item.done .cl-item-text { color: rgba(0,0,0,0.38); }
+    #cl-mgr-box .cl-add-input { background: rgba(255,255,255,0.7); border-color: rgba(0,0,0,0.18); color: #111; }
+    #cl-mgr-box .cl-add-input::placeholder { color: rgba(0,0,0,0.35); }
+    #cl-mgr-box .constraint-back-btn { background: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.15); color: #111; }
     #cl-mgr-box > *, #constraint-form-box > *, #comp-detail-box > *, #comp-mgr-box > * { flex-shrink: 0; }
     .cl-mgr-emp { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
     .cl-photo-preview { width: 100%; border-radius: 10px; margin-top: 6px; object-fit: cover; max-height: 180px; display: none; }
@@ -777,13 +787,13 @@
   <!-- CHECKLIST MANAGER MODAL -->
   <div class="modal-overlay" id="cl-mgr-modal" onclick="if(event.target===this)closeClMgr()">
     <div class="modal-box" id="cl-mgr-box" style="gap:12px;align-items:stretch;height:88vh;overflow-y:scroll;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-width:380px;padding:20px 16px;background:rgba(144,238,144,0.8)">
-      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">צ'ק ליסט — מנהלת</div>
+      <div style="text-align:center;font-size:17px;font-weight:700;color:#111">צ'ק ליסט — מנהלת</div>
       <div class="cl-tab-row">
         <button class="cl-tab active" id="cl-mgr-tab-morning" onclick="switchClMgrTab('morning')">☀️ משמרת בוקר</button>
         <button class="cl-tab" id="cl-mgr-tab-evening" onclick="switchClMgrTab('evening')">🌙 משמרת ערב</button>
       </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;margin-top:4px">
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;text-align:right">עריכת פריטים</div>
+      <div style="border-top:1px solid rgba(0,0,0,0.15);padding-top:10px;margin-top:4px">
+        <div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:8px;text-align:right">עריכת פריטים</div>
         <div id="cl-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addChecklistItem()">+ הוסף</button>
