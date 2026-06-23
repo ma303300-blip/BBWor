@@ -45,6 +45,7 @@
     }
     .screen { display: none; min-height: 100vh; min-height: 100dvh; }
     .screen.active { display: flex; }
+    html.has-session #screen-home { display: none !important; }
 
     /* HOME */
     #screen-home { align-items: center; justify-content: center; padding: 0 16px 80px; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
@@ -499,6 +500,7 @@
     .priv-heading { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
     .priv-body { font-size: 12px; color: rgba(255,255,255,0.72); line-height: 1.85; white-space: pre-line; }
   </style>
+  <script>try{if(localStorage.getItem('bbwor_manager')||localStorage.getItem('bbwor_session_raanana')||localStorage.getItem('bbwor_session_hadera')){document.documentElement.classList.add('has-session');}}catch(e){}</script>
 </head>
 <body>
 
@@ -1159,16 +1161,6 @@
       }
     })();
 
-    /* Hide home screen immediately if session exists — prevents flash on app open */
-    (function() {
-      var _hasSession = localStorage.getItem('bbwor_manager') ||
-                        localStorage.getItem('bbwor_session_raanana') ||
-                        localStorage.getItem('bbwor_session_hadera');
-      if (_hasSession) {
-        document.getElementById('screen-home').classList.remove('active');
-      }
-    })();
-
     /* ═══════════════════════════════════
        SERVICE WORKER
     ═══════════════════════════════════ */
@@ -1323,6 +1315,9 @@
     function setContent(c) { localStorage.setItem('bbwor_content', JSON.stringify(c)); }
 
     function show(name) {
+      if (name === 'home') {
+        document.documentElement.classList.remove('has-session');
+      }
       if (name === 'employee' || name === 'manager') {
         if (!sessionStorage.getItem('bbwor_scroll_reset')) {
           sessionStorage.setItem('bbwor_scroll_reset', '1');
