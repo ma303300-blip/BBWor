@@ -250,6 +250,13 @@
     .cl-inbox-delete-btn:active { background: rgba(220,38,38,0.12); }
     .cl-inbox-delete-btn .del-icon { display:inline-block; filter: sepia(1) saturate(20) hue-rotate(320deg); }
 
+    /* FAB SECURITY */
+    .fab-security { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
+    .fab-security.visible { display: flex; }
+    .fab-security:active { transform: scale(0.92); }
+    .sec-proc-item { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 14px; color: rgba(255,255,255,0.88); text-align: right; line-height: 1.5; }
+    .sec-proc-item:last-child { border-bottom: none; }
+
     /* CHECKLIST APPROVAL BANNERS (inline in manager screen) */
     #cl-approval-banners { display: none; flex-direction: column; gap: 10px; }
     .cl-approval-banner { background: rgba(46,204,113,0.07); border: 1.5px solid rgba(46,204,113,0.38); border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
@@ -597,6 +604,17 @@
       <div id="emp-banner-wrap"></div>
       <div class="action-grid" id="emp-action-grid-2"></div>
     </div>
+    <!-- FAB SECURITY -->
+    <div class="fab-security" id="fab-security" onclick="openSecProcs()">🛡️</div>
+    <!-- Security procedures overlay + drawer -->
+    <div class="pending-overlay" id="sec-overlay" onclick="closeSecProcs()"></div>
+    <div class="pending-drawer" id="sec-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">🛡️ נהלי קב"ט</span>
+        <button class="drawer-close-btn" onclick="closeSecProcs()">✕</button>
+      </div>
+      <div class="drawer-body" id="sec-drawer-body"></div>
+    </div>
   </div>
 
   <!-- MANAGER -->
@@ -809,6 +827,14 @@
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addChecklistItem()">+ הוסף</button>
           <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה...">
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(0,0,0,0.15);padding-top:10px;margin-top:4px">
+        <div style="font-size:12px;font-weight:700;color:#c0392b;margin-bottom:8px;text-align:right">נהלי קב"ט</div>
+        <div id="sec-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+        <div class="cl-add-row">
+          <button class="cl-add-btn" onclick="addSecProc()">+ הוסף</button>
+          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל...">
         </div>
       </div>
       <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeClMgr()">סגור</button>
@@ -1303,6 +1329,8 @@
     var _clInboxApprovalsData = [];
     var _clInboxCachedItems = [];
     var _clInboxCompsData = [];
+    var _secProcsData = [];
+    var _secProcsUnsub = null;
     var _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
 
     var DEFAULT_CONTENT = {
@@ -1336,6 +1364,12 @@
       if (!target) return;
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       target.classList.add('active');
+      var fabSec = document.getElementById('fab-security');
+      if (name === 'employee') {
+        if (fabSec) fabSec.classList.add('visible');
+      } else {
+        if (fabSec) fabSec.classList.remove('visible');
+      }
       if (name !== 'manager') {
         var fabMail = document.getElementById('fab-mail');
         var fabPeople = document.getElementById('fab-people');
@@ -1363,6 +1397,7 @@
                  'constraint-overlay','constraint-drawer',
                  'emplist-overlay','emplist-drawer',
                  'cl-overlay','cl-drawer',
+                 'sec-overlay','sec-drawer',
                  'sch-picker-overlay'];
       for (var i = 0; i < ids.length; i++) {
         var el = document.getElementById(ids[i]);
@@ -1397,6 +1432,7 @@
       _stopClStatusListener();
       if (_badgeUnsub) { _badgeUnsub(); _badgeUnsub = null; }
       if (_constraintBadgeUnsub) { _constraintBadgeUnsub(); _constraintBadgeUnsub = null; }
+      if (_secProcsUnsub) { _secProcsUnsub(); _secProcsUnsub = null; }
       _stopAutoRefresh();
       show('home');
     }
@@ -1670,6 +1706,7 @@
       var _mgrP = _getMgrProfile(); showGreeting(_mgrP ? _mgrP.name.split(' ')[0] : '');
       _startCompBadge();
       _startAutoRefresh();
+      _subscribeSecProcs();
     }
 
     function enterBranch(branch) {
@@ -1802,6 +1839,7 @@
       _startCompBadge();
       _startClStatusListener();
       _startAutoRefresh();
+      _subscribeSecProcs();
     }
 
     function logout() { goHome(); }
@@ -3856,6 +3894,7 @@
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
       _subscribeClMgrTab();
+      _renderSecMgrItems();
     }
 
     function closeClMgr() {
@@ -4039,6 +4078,82 @@
           itemsHtml + actionHtml;
         body.appendChild(card);
       });
+    }
+
+    /* ═══════════════════════════════════
+       SECURITY PROCEDURES
+    ═══════════════════════════════════ */
+    function _subscribeSecProcs() {
+      if (_secProcsUnsub) return;
+      _secProcsUnsub = db.collection('security_procedures')
+        .orderBy('order')
+        .onSnapshot(function(snap) {
+          _secProcsData = [];
+          snap.forEach(function(doc) { _secProcsData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _renderSecProcs();
+          _renderSecMgrItems();
+        }, function() {});
+    }
+
+    function openSecProcs() {
+      document.getElementById('sec-overlay').classList.add('open');
+      document.getElementById('sec-drawer').classList.add('open');
+      _renderSecProcs();
+    }
+
+    function closeSecProcs() {
+      document.getElementById('sec-overlay').classList.remove('open');
+      document.getElementById('sec-drawer').classList.remove('open');
+    }
+
+    function _renderSecProcs() {
+      var body = document.getElementById('sec-drawer-body');
+      if (!body) return;
+      if (!_secProcsData.length) {
+        body.innerHTML = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px">אין נהלים עדיין</div>';
+        return;
+      }
+      body.innerHTML = '';
+      _secProcsData.forEach(function(p, i) {
+        var el = document.createElement('div');
+        el.className = 'sec-proc-item';
+        el.textContent = (i + 1) + '. ' + p.text;
+        body.appendChild(el);
+      });
+    }
+
+    function _renderSecMgrItems() {
+      var el = document.getElementById('sec-mgr-items');
+      if (!el) return;
+      el.innerHTML = '';
+      if (!_secProcsData.length) {
+        el.innerHTML = '<div style="color:rgba(0,0,0,0.4);font-size:12px;text-align:center;padding:8px">אין נהלים</div>';
+        return;
+      }
+      _secProcsData.forEach(function(p) {
+        var row = document.createElement('div');
+        row.className = 'cl-mgr-item-row';
+        row.innerHTML = '<div class="cl-mgr-item-text">' + p.text + '</div>' +
+          '<button class="cl-del-btn" onclick="deleteSecProc(\'' + p.id + '\')">🗑️</button>';
+        el.appendChild(row);
+      });
+    }
+
+    function addSecProc() {
+      var inp = document.getElementById('sec-new-item-input');
+      var text = inp.value.trim();
+      if (!text) return;
+      db.collection('security_procedures').get()
+        .then(function(snap) {
+          return db.collection('security_procedures').add({ text: text, order: snap.size, createdAt: new Date().toISOString() });
+        })
+        .then(function() { inp.value = ''; })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן להוסיף נוהל.', null); });
+    }
+
+    function deleteSecProc(id) {
+      db.collection('security_procedures').doc(id).delete()
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק.', null); });
     }
 
     function resetClBranch(branch) {
