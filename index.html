@@ -1411,6 +1411,32 @@
       if (document.getElementById('screen-home').classList.contains('active')) e.preventDefault();
     }, { passive: false });
 
+    /* Keyboard-aware modal: scroll focused input above keyboard on iOS + Android */
+    (function() {
+      var modal = document.getElementById('cl-mgr-modal');
+      modal.addEventListener('focusin', function(e) {
+        if (e.target.tagName !== 'INPUT') return;
+        setTimeout(function() {
+          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 400);
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+          if (!modal.classList.contains('open')) return;
+          var box = document.getElementById('cl-mgr-box');
+          if (!box) return;
+          var newH = Math.floor(window.visualViewport.height * 0.88);
+          box.style.height = newH + 'px';
+          var active = document.activeElement;
+          if (active && active.tagName === 'INPUT' && modal.contains(active)) {
+            setTimeout(function() {
+              active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+          }
+        });
+      }
+    }());
+
     function goHome() {
       activeBranch = null;
       pendingPhoto = null;
@@ -3900,6 +3926,8 @@
     function closeClMgr() {
       document.getElementById('cl-mgr-modal').classList.remove('open');
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
+      var box = document.getElementById('cl-mgr-box');
+      if (box) box.style.height = '88vh';
     }
 
     /* ─── Checklist inbox (manager) ─── */
