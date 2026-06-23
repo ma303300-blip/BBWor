@@ -2875,10 +2875,26 @@
       }
     }
 
+    function _checkAndCleanConstraints() {
+      var now = new Date();
+      if (now.getDay() !== 6 || now.getHours() < 23) return;
+      var pad = function(n) { return String(n).padStart(2,'0'); };
+      var satKey = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+      if (localStorage.getItem('bbwor_constraint_clean') === satKey) return;
+      localStorage.setItem('bbwor_constraint_clean', satKey);
+      db.collection('constraints').get().then(function(snap) {
+        if (snap.empty) return;
+        var batch = db.batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        return batch.commit();
+      }).catch(function() { localStorage.removeItem('bbwor_constraint_clean'); });
+    }
+
     function _startAutoRefresh() {
       _stopAutoRefresh();
       _lastKnownShift = getCurrentShift();
       _checkAndCleanExpiredSessions();
+      _checkAndCleanConstraints();
       _goalRefreshTimer = setInterval(function() {
         var shift = getCurrentShift();
         if (shift !== _lastKnownShift) {
@@ -2889,6 +2905,7 @@
           if (mgrNow) { _stopClMgrInboxListeners(); _startClMgrInboxListeners(); }
         }
         _checkAndCleanExpiredSessions();
+        _checkAndCleanConstraints();
       }, 4000);
     }
 
