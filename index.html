@@ -245,7 +245,9 @@
     .cl-inbox-items { margin: 0; padding: 8px 0 0; list-style: none; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(255,255,255,0.08); }
     .cl-inbox-items li { font-size: 13px; color: rgba(255,255,255,0.55); text-align: right; padding: 2px 0; }
     .cl-inbox-approve-btn { background: var(--gold); border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
-    .cl-inbox-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; }
+    .cl-inbox-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; flex: 1; }
+    .cl-inbox-delete-btn { background: none; border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; color: #dc2626; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .cl-inbox-delete-btn:active { background: rgba(220,38,38,0.12); }
 
     /* CHECKLIST APPROVAL BANNERS (inline in manager screen) */
     #cl-approval-banners { display: none; flex-direction: column; gap: 10px; }
@@ -4016,9 +4018,14 @@
           itemsHtml += '<li style="color:var(--text-dim)">טוען פריטים...</li>';
         }
         itemsHtml += '</ul>';
+        var _delBtn = '<button class="cl-inbox-delete-btn" onclick="event.stopPropagation();resetClBranch(\'' + branch + '\')">🗑️</button>';
         var actionHtml = isApproved
-          ? '<div class="cl-inbox-approved-tag">✅ אושר</div>'
-          : '<button class="cl-inbox-approve-btn" onclick="approveClBranch(\'' + branch + '\')">אשר משמרת</button>';
+          ? '<div style="display:flex;gap:8px;align-items:center">' +
+              '<div class="cl-inbox-approved-tag">✅ אושר</div>' + _delBtn +
+            '</div>'
+          : '<div style="display:flex;gap:8px">' +
+              '<button class="cl-inbox-approve-btn" style="flex:1" onclick="approveClBranch(\'' + branch + '\')">אשר משמרת</button>' + _delBtn +
+            '</div>';
         var card = document.createElement('div');
         card.className = 'cl-inbox-card' + (isApproved ? ' approved' : '');
         card.innerHTML =
@@ -4028,6 +4035,22 @@
           itemsHtml + actionHtml;
         body.appendChild(card);
       });
+    }
+
+    function resetClBranch(branch) {
+      showConfirm('🗑️', 'איפוס צ\'קליסט', 'זה ימחק את ההגשה ויאפס את הצ\'קליסט לעובד. הפעולה אינה הפיכה.', function() {
+        var batch = db.batch();
+        _clInboxSubsData.forEach(function(s) {
+          if (s.branch === branch) batch.delete(db.collection('shift_submissions').doc(s.id));
+        });
+        _clInboxApprovalsData.forEach(function(a) {
+          if (a.branch === branch) batch.delete(db.collection('shift_approvals').doc(a.id));
+        });
+        _clInboxCompsData.forEach(function(c) {
+          if (c.branch === branch) batch.delete(db.collection('checklist_completions').doc(c.id));
+        });
+        batch.commit().catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאפס.', null); });
+      }, 'אפס 🗑️');
     }
 
     function approveClBranch(branch) {
