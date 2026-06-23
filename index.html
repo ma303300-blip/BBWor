@@ -1421,13 +1421,14 @@
       var origParent = row.parentNode;
       var origNext   = row.nextSibling;
 
-      /* Lock modal: freeze size + disable interaction while input is floating */
+      /* Lock modal: freeze size + scroll + disable interaction while input is floating */
       var box = document.getElementById('cl-mgr-box');
+      var origScrollTop   = box.scrollTop;
       var origBoxHeight   = box.style.height;
       var origOverflow    = box.style.overflow;
       var origPointerEvts = box.style.pointerEvents;
-      box.style.height       = box.getBoundingClientRect().height + 'px';
-      box.style.overflow     = 'hidden';
+      box.style.height        = box.getBoundingClientRect().height + 'px';
+      box.style.overflow      = 'hidden';
       box.style.pointerEvents = 'none';
 
       /* Move row to body BEFORE focus fires — avoids iOS disrupting keyboard open */
@@ -1441,12 +1442,15 @@
       row.style.boxShadow    = '0 8px 32px rgba(0,0,0,0.55)';
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
+      /* Prevent scroll-position jump caused by removed content */
+      box.scrollTop = origScrollTop;
 
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
       _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top,
-                     box: box, origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
+                     box: box, origScrollTop: origScrollTop,
+                     origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
       _prevKbdH = 0;
 
       /* Fixed target: 22% of physical screen height — always above any keyboard */
@@ -1523,6 +1527,7 @@
         d.box.style.height       = d.origBoxHeight;
         d.box.style.overflow     = d.origOverflow;
         d.box.style.pointerEvents = d.origPointerEvts;
+        d.box.scrollTop          = d.origScrollTop;
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else {
