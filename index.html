@@ -3834,17 +3834,12 @@
       box.scrollTop = 0;
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('cl-mgr-modal').classList.add('open');
-      document.body.style.overflow = 'hidden';
       _subscribeClMgrTab();
     }
 
     function closeClMgr() {
       document.getElementById('cl-mgr-modal').classList.remove('open');
-      document.body.style.overflow = '';
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
-      sessionStorage.setItem('bbwor_scroll_reset', '1');
-      sessionStorage.setItem('bbwor_screen', 'manager');
-      location.reload();
     }
 
     /* ─── Checklist inbox (manager) ─── */
