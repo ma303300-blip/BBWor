@@ -246,8 +246,9 @@
     .cl-inbox-items li { font-size: 13px; color: rgba(255,255,255,0.55); text-align: right; padding: 2px 0; }
     .cl-inbox-approve-btn { background: var(--gold); border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
     .cl-inbox-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; flex: 1; }
-    .cl-inbox-delete-btn { background: rgba(245,245,220,0.5); border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; color: #dc2626; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .cl-inbox-delete-btn { background: rgba(245,245,220,0.5); border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
     .cl-inbox-delete-btn:active { background: rgba(220,38,38,0.12); }
+    .cl-inbox-delete-btn .del-icon { display:inline-block; filter: sepia(1) saturate(20) hue-rotate(320deg); }
 
     /* CHECKLIST APPROVAL BANNERS (inline in manager screen) */
     #cl-approval-banners { display: none; flex-direction: column; gap: 10px; }
@@ -4021,7 +4022,7 @@
           itemsHtml += '<li style="color:var(--text-dim)">טוען פריטים...</li>';
         }
         itemsHtml += '</ul>';
-        var _delBtn = '<button class="cl-inbox-delete-btn" onclick="event.stopPropagation();resetClBranch(\'' + branch + '\')">🗑️</button>';
+        var _delBtn = '<button class="cl-inbox-delete-btn" onclick="event.stopPropagation();resetClBranch(\'' + branch + '\')"><span class="del-icon">🗑️</span></button>';
         var actionHtml = isApproved
           ? '<div style="display:flex;gap:8px;align-items:center">' +
               '<div class="cl-inbox-approved-tag">✅ אושר</div>' + _delBtn +
