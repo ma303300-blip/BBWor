@@ -1413,39 +1413,23 @@
 
     /* Floating input — lifts from its position in the modal to center screen, no wrapper */
     var _clKbdData = null;
-    var _clKbdPreRect = null;
     var _prevKbdH = 0;
     var _kbdDismissTimer = null;
 
-    document.getElementById('cl-mgr-modal').addEventListener('pointerdown', function(e) {
-      var inp = e.target;
-      if (inp.tagName !== 'INPUT') return;
-      var row = inp.parentNode;
-      if (!row || !row.classList.contains('cl-add-row')) return;
-      _clKbdPreRect = row.getBoundingClientRect();
-    }, { passive: true });
-
-    document.getElementById('cl-mgr-modal').addEventListener('focusin', function(e) {
-      var inp = e.target;
-      if (inp.tagName !== 'INPUT') return;
-      var row = inp.parentNode;
-      if (!row || !row.classList.contains('cl-add-row')) return;
+    function _startFloatAnim(row, inp, rect) {
       if (_clKbdData) return;
-
-      var rect = _clKbdPreRect || row.getBoundingClientRect();
-      _clKbdPreRect = null;
-
       var origParent = row.parentNode;
       var origNext   = row.nextSibling;
 
-      row.style.position   = 'fixed';
-      row.style.top        = rect.top + 'px';
-      row.style.left       = rect.left + 'px';
-      row.style.width      = rect.width + 'px';
-      row.style.zIndex     = '9999';
-      row.style.margin     = '0';
-      row.style.transition = 'none';
-      row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+      /* Move to body BEFORE focus fires so iOS does not disrupt keyboard open */
+      row.style.position    = 'fixed';
+      row.style.top         = rect.top + 'px';
+      row.style.left        = rect.left + 'px';
+      row.style.width       = rect.width + 'px';
+      row.style.zIndex      = '9999';
+      row.style.margin      = '0';
+      row.style.transition  = 'none';
+      row.style.boxShadow   = '0 8px 32px rgba(0,0,0,0.55)';
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
 
@@ -1455,15 +1439,14 @@
       _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top };
       _prevKbdH = 0;
 
-      /* Single smooth rise — starts immediately, keyboard opens in the middle */
-      setTimeout(function() {
-        /* Estimate visible area above keyboard (~55% of screen height on most phones) */
-        var estVvH = Math.floor(window.innerHeight * 0.55);
+      /* Start animation immediately — focus + keyboard open mid-animation (~300ms in) */
+      requestAnimationFrame(function() {
+        var estVvH   = Math.floor(window.innerHeight * 0.55);
         var targetTop = Math.floor((estVvH - rect.height) / 2);
         row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
         row.style.top        = targetTop + 'px';
         row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
-      }, 50);
+      });
 
       if (!window.visualViewport) {
         inp.addEventListener('blur', function onBlur() {
@@ -1471,6 +1454,25 @@
           setTimeout(_hideClKbdBar, 150);
         });
       }
+    }
+
+    /* Touch: start animation on pointerdown — before focus, before keyboard */
+    document.getElementById('cl-mgr-modal').addEventListener('pointerdown', function(e) {
+      var inp = e.target;
+      if (inp.tagName !== 'INPUT') return;
+      var row = inp.parentNode;
+      if (!row || !row.classList.contains('cl-add-row')) return;
+      _startFloatAnim(row, inp, row.getBoundingClientRect());
+    }, { passive: true });
+
+    /* Fallback: non-touch focus (tab / accessibility) */
+    document.getElementById('cl-mgr-modal').addEventListener('focusin', function(e) {
+      var inp = e.target;
+      if (inp.tagName !== 'INPUT') return;
+      if (_clKbdData) return;
+      var row = inp.parentNode;
+      if (!row || !row.classList.contains('cl-add-row')) return;
+      _startFloatAnim(row, inp, row.getBoundingClientRect());
     });
 
     if (window.visualViewport) {
