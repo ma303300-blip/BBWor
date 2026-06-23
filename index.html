@@ -1212,7 +1212,6 @@
     var _compMgrCurrentId = null;
     var _compWinnerId     = null;
     var _compMgrUnsub = null;
-    var _shiftCheckTimer = null;
     var _lastKnownShift = null;
     var _goalRefreshTimer = null;
     var _goalEditBranch = null;
@@ -1221,7 +1220,6 @@
     var _homeGoalData   = { goal: 0, total: 0 };
     var _mgrGoalUnsubs  = [];
     var _mgrGoalData    = { raanana: { goal: 0, total: 0 }, hadera: { goal: 0, total: 0 } };
-    var _clMgrRefreshTimer = null;
     var _pendingDrawerUnsub = null;
     var _empListDrawerUnsub = null;
     var _goalMgrMonthlyUnsub = null;
@@ -1319,6 +1317,8 @@
       _stopCompBadge();
       _clearCompTimers();
       _stopClStatusListener();
+      if (_badgeUnsub) { _badgeUnsub(); _badgeUnsub = null; }
+      if (_constraintBadgeUnsub) { _constraintBadgeUnsub(); _constraintBadgeUnsub = null; }
       _stopAutoRefresh();
       show('home');
     }
@@ -2327,9 +2327,7 @@
             badge.classList.remove('pending');
             badge.classList.remove('show');
           }
-        }, function(err) {
-          console.error('constraint listener error', err);
-        });
+        }, function() {});
     }
 
     function _constraintDayToIdx(day) {
@@ -2612,6 +2610,7 @@
 
     function approveConstraint(docId) {
       db.collection('constraints').doc(docId).update({ status: 'approved', approvedAt: new Date().toISOString() })
+        .then(function() { showModal('✅', 'אושר!', 'האילוץ אושר בהצלחה.', null); })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר. נסי שוב.', null); });
     }
 
@@ -3450,6 +3449,7 @@
     function closeGoalModal() {
       document.getElementById('goal-modal').classList.remove('open');
       _stopGoalMgrListeners();
+      _goalEditBranch = null;
     }
 
     function saveMonthlyGoal() {
@@ -3996,6 +3996,7 @@
       var text = inp.value.trim();
       if (!text) return;
       db.collection('checklist_items').doc(id).update({ text: text })
+        .then(function() { showModal('✅', 'נשמר!', 'הפריט עודכן בהצלחה.', null); })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
     }
 
