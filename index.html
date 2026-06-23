@@ -42,6 +42,7 @@
       font-family: 'Heebo', sans-serif;
       background: #252320 url('bg.png') center top / cover fixed;
       color: var(--text);
+      overflow: hidden;
     }
     .screen { display: none; min-height: 100vh; min-height: 100dvh; }
     .screen.active { display: flex; }
@@ -102,7 +103,7 @@
     .bsd-text { font-size: 14px; color: rgba(255,255,255,0.45); letter-spacing: 1px; }
     .exit-btn { background: rgba(14,13,12,0.4); border: 1px solid rgba(255,255,255,0.13); border-radius: 8px; padding: 7px 14px; color: rgba(255,255,255,0.7); font-size: 13px; font-family: inherit; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
     .exit-btn:active { background: rgba(255,255,255,0.14); }
-    .emp-body { flex: 1; padding: 22px 16px 32px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+    .emp-body { flex: 1; padding: 22px 16px 32px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     .emp-greeting { text-align: center; padding: 4px 0 8px; }
     .emp-greeting .emp-name-txt { font-size: 21px; font-weight: 700; color: var(--gold); }
     .emp-greeting .emp-branch-txt { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
@@ -1295,9 +1296,6 @@
       if (fw) { fw.style.display = 'none'; }
     }
 
-    document.getElementById('screen-home').addEventListener('touchmove', function(e) {
-      if (document.getElementById('screen-home').classList.contains('active')) e.preventDefault();
-    }, { passive: false });
 
     function goHome() {
       activeBranch = null;
