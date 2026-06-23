@@ -1421,33 +1421,37 @@
       var origParent = row.parentNode;
       var origNext   = row.nextSibling;
 
-      /* Lock modal box height in px so keyboard-open viewport shrink doesn't collapse it */
+      /* Lock modal: freeze size + disable interaction while input is floating */
       var box = document.getElementById('cl-mgr-box');
-      var origBoxHeight = box.style.height;
-      box.style.height = box.getBoundingClientRect().height + 'px';
+      var origBoxHeight   = box.style.height;
+      var origOverflow    = box.style.overflow;
+      var origPointerEvts = box.style.pointerEvents;
+      box.style.height       = box.getBoundingClientRect().height + 'px';
+      box.style.overflow     = 'hidden';
+      box.style.pointerEvents = 'none';
 
-      /* Move to body BEFORE focus fires so iOS does not disrupt keyboard open */
-      row.style.position    = 'fixed';
-      row.style.top         = rect.top + 'px';
-      row.style.left        = rect.left + 'px';
-      row.style.width       = rect.width + 'px';
-      row.style.zIndex      = '9999';
-      row.style.margin      = '0';
-      row.style.transition  = 'none';
-      row.style.boxShadow   = '0 8px 32px rgba(0,0,0,0.55)';
+      /* Move row to body BEFORE focus fires — avoids iOS disrupting keyboard open */
+      row.style.position     = 'fixed';
+      row.style.top          = rect.top + 'px';
+      row.style.left         = rect.left + 'px';
+      row.style.width        = rect.width + 'px';
+      row.style.zIndex       = '9999';
+      row.style.margin       = '0';
+      row.style.transition   = 'none';
+      row.style.boxShadow    = '0 8px 32px rgba(0,0,0,0.55)';
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
 
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
-      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top, box: box, origBoxHeight: origBoxHeight };
+      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top,
+                     box: box, origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
       _prevKbdH = 0;
 
-      /* Start animation immediately — focus + keyboard open mid-animation (~300ms in) */
+      /* Fixed target: 22% of physical screen height — always above any keyboard */
+      var targetTop = Math.round(window.screen.height * 0.22);
       requestAnimationFrame(function() {
-        var estVvH   = Math.floor(window.innerHeight * 0.55);
-        var targetTop = Math.floor((estVvH - rect.height) / 2);
         row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
         row.style.top        = targetTop + 'px';
         row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
@@ -1504,18 +1508,21 @@
       _clKbdData = null;
       if (_kbdDismissTimer) { clearTimeout(_kbdDismissTimer); _kbdDismissTimer = null; }
       function restore() {
-        d.row.style.position   = '';
-        d.row.style.top        = '';
-        d.row.style.left       = '';
-        d.row.style.width      = '';
-        d.row.style.zIndex     = '';
-        d.row.style.margin     = '';
-        d.row.style.transition = '';
-        d.row.style.boxShadow  = '';
+        d.row.style.position     = '';
+        d.row.style.top          = '';
+        d.row.style.left         = '';
+        d.row.style.width        = '';
+        d.row.style.zIndex       = '';
+        d.row.style.margin       = '';
+        d.row.style.transition   = '';
+        d.row.style.boxShadow    = '';
         d.row.style.borderRadius = '';
-        d.inp.style.background = '';
-        d.inp.style.color      = '';
-        d.box.style.height     = d.origBoxHeight;
+        d.inp.style.background   = '';
+        d.inp.style.color        = '';
+        /* Unlock modal */
+        d.box.style.height       = d.origBoxHeight;
+        d.box.style.overflow     = d.origOverflow;
+        d.box.style.pointerEvents = d.origPointerEvts;
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else {
