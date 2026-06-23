@@ -2704,7 +2704,7 @@
       checkSubmission();
       if (_clItemsUnsub) { _clItemsUnsub(); _clItemsUnsub = null; }
       _clItemsUnsub = db.collection('checklist_items')
-        .where('shifts', 'array-contains', shift)
+        .where('shift', '==', shift)
         .onSnapshot(function(snap) {
           items = [];
           snap.forEach(function(doc) { items.push(Object.assign({ id: doc.id }, doc.data())); });
@@ -3761,7 +3761,7 @@
           _renderClApprovalBanners();
         }, function() {});
       _clInboxItemsUnsub = db.collection('checklist_items')
-        .where('shifts', 'array-contains', shift)
+        .where('shift', '==', shift)
         .onSnapshot(function(snap) {
           _clInboxCachedItems = [];
           snap.forEach(function(doc) { _clInboxCachedItems.push(Object.assign({ id: doc.id }, doc.data())); });
@@ -3930,7 +3930,7 @@
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
       _clMgrItemsData = [];
       _clMgrItemsUnsub = db.collection('checklist_items')
-        .where('shifts', 'array-contains', _clMgrTab)
+        .where('shift', '==', _clMgrTab)
         .onSnapshot(function(snap) {
           _clMgrItemsData = [];
           snap.forEach(function(doc) { _clMgrItemsData.push(Object.assign({ id: doc.id }, doc.data())); });
@@ -3965,10 +3965,10 @@
       var inp = document.getElementById('cl-new-item-input');
       var text = inp.value.trim();
       if (!text) return;
-      db.collection('checklist_items').where('shifts','array-contains',_clMgrTab).get()
+      db.collection('checklist_items').where('shift','==',_clMgrTab).get()
         .then(function(snap) {
           var maxOrder = snap.size;
-          return db.collection('checklist_items').add({ text: text, shifts: [_clMgrTab], order: maxOrder, createdAt: new Date().toISOString() });
+          return db.collection('checklist_items').add({ text: text, shift: _clMgrTab, order: maxOrder, createdAt: new Date().toISOString() });
         })
         .then(function() { inp.value = ''; })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן להוסיף פריט.',null); });
@@ -4001,15 +4001,17 @@
     }
 
     function seedChecklistItems() {
-      db.collection('checklist_items').limit(1).get().then(function(snap) {
+      db.collection('checklist_items').where('shift','==','morning').limit(1).get().then(function(snap) {
         if (!snap.empty) return;
-        var items = [
-          { text: 'בדיקת זמזם בכניסה לחנות', shifts: ['morning','evening'], order: 0 },
-          { text: 'פתיחת קופה / איפוס',        shifts: ['morning','evening'], order: 1 },
-          { text: 'בדיקת חוסרים על המדפים',    shifts: ['morning','evening'], order: 2 }
+        var baseItems = [
+          { text: 'בדיקת זמזם בכניסה לחנות', order: 0 },
+          { text: 'פתיחת קופה / איפוס',        order: 1 },
+          { text: 'בדיקת חוסרים על המדפים',    order: 2 }
         ];
-        items.forEach(function(item) {
-          db.collection('checklist_items').add(Object.assign({ createdAt: new Date().toISOString() }, item));
+        ['morning','evening'].forEach(function(shift) {
+          baseItems.forEach(function(item) {
+            db.collection('checklist_items').add(Object.assign({ shift: shift, createdAt: new Date().toISOString() }, item));
+          });
         });
       });
     }
