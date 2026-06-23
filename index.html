@@ -952,14 +952,15 @@
 
   <!-- COMPETITION EDITOR (manager) -->
   <!-- COMP BRANCH PICKER -->
-  <div class="modal-overlay" id="comp-branch-modal" onclick="if(event.target===this)document.getElementById('comp-branch-modal').classList.remove('open')">
-    <div class="modal-box" style="max-width:300px;gap:14px;align-items:stretch">
+  <div class="modal-overlay" id="comp-branch-modal" onclick="if(event.target===this){document.getElementById('comp-branch-modal').classList.remove('open');_stopConfetti();}">
+    <canvas id="comp-confetti" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+    <div class="modal-box" style="max-width:300px;gap:14px;align-items:stretch;position:relative;z-index:1">
       <div style="text-align:center;font-size:36px">🏆</div>
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">לאיזה סניף?</div>
       <button class="gold-btn" style="width:100%;padding:14px;font-size:15px" onclick="_pickCompBranch('raanana')">✦ סניף רעננה</button>
       <button class="gold-btn" style="width:100%;padding:14px;font-size:15px" onclick="_pickCompBranch('hadera')">✦ סניף חדרה</button>
       <button class="gold-btn" style="width:100%;padding:14px;font-size:15px;background:rgba(201,168,76,0.18);color:var(--gold)" onclick="_pickCompBranch('all')">🤝 תחרות משותפת</button>
-      <button class="constraint-back-btn" style="width:100%" onclick="document.getElementById('comp-branch-modal').classList.remove('open')">ביטול</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="document.getElementById('comp-branch-modal').classList.remove('open');_stopConfetti()">ביטול</button>
     </div>
   </div>
 
@@ -4186,7 +4187,7 @@
         { id: 'confirm-modal',         fn: closeConfirm },
         { id: 'privacy-modal',         fn: closePrivacy },
         { id: 'comp-winner-modal',     fn: closeCompWinner },
-        { id: 'comp-branch-modal',     fn: function() { document.getElementById('comp-branch-modal').classList.remove('open'); } },
+        { id: 'comp-branch-modal',     fn: function() { document.getElementById('comp-branch-modal').classList.remove('open'); _stopConfetti(); } },
         { id: 'comp-mgr-modal',        fn: closeCompMgr },
         { id: 'comp-detail-modal',     fn: closeCompDetail },
         { id: 'comp-nocomp-modal',     fn: closeNoComp },
@@ -4557,7 +4558,45 @@
       });
     }
 
+    var _confettiRaf = null;
+    function _startConfetti() {
+      var canvas = document.getElementById('comp-confetti');
+      if (!canvas) return;
+      canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+      var ctx = canvas.getContext('2d');
+      var colors = ['#c9a84c','#fff','#ffd700','#ff6b6b','#4ecdc4','#ffe066'];
+      var pieces = [];
+      for (var i = 0; i < 55; i++) {
+        pieces.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+          w: Math.random() * 7 + 4, h: Math.random() * 4 + 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speed: Math.random() * 1.5 + 0.8, angle: Math.random() * Math.PI * 2,
+          spin: (Math.random() - 0.5) * 0.08 });
+      }
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < pieces.length; i++) {
+          var p = pieces[i];
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+          ctx.fillStyle = p.color; ctx.globalAlpha = 0.85;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+          p.y += p.speed; p.angle += p.spin;
+          if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width; }
+        }
+        _confettiRaf = requestAnimationFrame(draw);
+      }
+      if (_confettiRaf) cancelAnimationFrame(_confettiRaf);
+      draw();
+    }
+    function _stopConfetti() {
+      if (_confettiRaf) { cancelAnimationFrame(_confettiRaf); _confettiRaf = null; }
+      var canvas = document.getElementById('comp-confetti');
+      if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    }
+
     function _pickCompBranch(branch) {
+      _stopConfetti();
       _compMgrBranch = branch;
       var labels = { raanana: '✦ סניף רעננה', hadera: '✦ סניף חדרה', all: '🤝 תחרות משותפת' };
       document.getElementById('comp-mgr-branch-label').textContent = labels[branch] || '';
@@ -4570,6 +4609,7 @@
       var box = document.getElementById('comp-branch-modal').querySelector('.modal-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('comp-branch-modal').classList.add('open');
+      setTimeout(_startConfetti, 50);
     }
     function _openCompEditorDirect() {
       var modal = document.getElementById('comp-mgr-modal');
