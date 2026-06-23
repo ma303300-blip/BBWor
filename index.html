@@ -3105,7 +3105,7 @@
     });
 
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden) {
+      if (!document.hidden && !sessionStorage.getItem('bbwor_scroll_reset')) {
         sessionStorage.setItem('bbwor_scroll_reset', '1');
         location.reload();
       }
