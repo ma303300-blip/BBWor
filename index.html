@@ -826,7 +826,7 @@
         <div id="cl-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addChecklistItem()">+ הוסף</button>
-          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
+          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה...">
         </div>
       </div>
       <div style="border-top:1px solid rgba(0,0,0,0.15);padding-top:10px;margin-top:4px">
@@ -834,7 +834,7 @@
         <div id="sec-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addSecProc()">+ הוסף</button>
-          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
+          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל...">
         </div>
       </div>
       <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeClMgr()">סגור</button>
@@ -3897,75 +3897,7 @@
       _renderSecMgrItems();
     }
 
-    /* ─── Floating add-row animation (checklist + security procedures) ─── */
-    var _clFloatData  = null;
-    var _clFloatTimer = null;
-
-    function _startClFloat(inp) {
-      if (_clFloatTimer) { clearTimeout(_clFloatTimer); _clFloatTimer = null; }
-      var row = inp.parentNode;
-      if (_clFloatData && _clFloatData.row === row) return;
-      if (_clFloatData) _doEndClFloat(true);
-
-      var rect      = row.getBoundingClientRect();
-      var targetTop = Math.round(window.innerHeight * 0.38);
-      var dy        = targetTop - Math.round(rect.top);
-
-      row.style.position = 'relative';
-      row.style.zIndex   = '9999';
-      row.style.transition = 'none';
-
-      _clFloatData = { row: row };
-
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          row.style.transition   = 'transform 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-          row.style.transform    = 'translateY(' + dy + 'px)';
-          row.style.boxShadow    = '0 16px 48px rgba(0,0,0,0.7)';
-          row.style.borderRadius = '14px';
-        });
-      });
-    }
-
-    function _schedEndClFloat() {
-      if (_clFloatTimer) clearTimeout(_clFloatTimer);
-      _clFloatTimer = setTimeout(function() {
-        _clFloatTimer = null;
-        var active = document.activeElement;
-        if (active && active.classList && active.classList.contains('cl-add-input')) return;
-        _doEndClFloat(false);
-      }, 300);
-    }
-
-    function _doEndClFloat(immediate) {
-      if (!_clFloatData) return;
-      var d = _clFloatData;
-      _clFloatData = null;
-      if (_clFloatTimer) { clearTimeout(_clFloatTimer); _clFloatTimer = null; }
-
-      function restore() {
-        d.row.style.transition   = '';
-        d.row.style.transform    = '';
-        d.row.style.boxShadow    = '';
-        d.row.style.borderRadius = '';
-        d.row.style.position     = '';
-        d.row.style.zIndex       = '';
-      }
-
-      if (immediate) { restore(); return; }
-
-      requestAnimationFrame(function() {
-        d.row.style.transition   = 'transform 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-        d.row.style.transform    = '';
-        d.row.style.boxShadow    = '';
-        d.row.style.borderRadius = '';
-        setTimeout(restore, 1200);
-      });
-    }
-    /* ─────────────────────────────────────────────────────────────────── */
-
     function closeClMgr() {
-      _doEndClFloat(true);
       document.getElementById('cl-mgr-modal').classList.remove('open');
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
     }
