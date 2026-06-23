@@ -1455,8 +1455,8 @@
                      origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
       _prevKbdH = 0;
 
-      /* Fixed target: 40% of physical screen height — centered above any keyboard */
-      var targetTop = Math.round(window.screen.height * 0.40);
+      /* Initial target: 35% of visible height before keyboard opens */
+      var targetTop = Math.round(window.innerHeight * 0.35);
       requestAnimationFrame(function() {
         row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
         row.style.top        = targetTop + 'px';
@@ -1494,12 +1494,17 @@
       window.visualViewport.addEventListener('resize', function() {
         var kbdH = Math.max(0, window.innerHeight - window.visualViewport.height);
         if (_clKbdData) {
-          /* Detect keyboard starting to close: was tall, now shrinking */
           if (_prevKbdH > 150 && kbdH < _prevKbdH - 20 && !_kbdDismissTimer) {
+            /* Keyboard starting to close */
             _kbdDismissTimer = setTimeout(function() {
               _kbdDismissTimer = null;
               _hideClKbdBar();
             }, 150);
+          } else if (kbdH > 50 && !_kbdDismissTimer) {
+            /* Keyboard open — reposition to 35% of visible area above it */
+            var newTop = Math.round((window.visualViewport.offsetTop || 0) + window.visualViewport.height * 0.35);
+            _clKbdData.row.style.transition = 'top 0.3s ease';
+            _clKbdData.row.style.top        = newTop + 'px';
           }
         } else {
           _prevKbdH = 0;
