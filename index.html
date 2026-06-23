@@ -182,6 +182,7 @@
     #ptr-indicator { position: fixed; top: -48px; left: 50%; transform: translateX(-50%); width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #111; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; z-index: 9999; transition: top 0.2s ease; pointer-events: none; }
     #ptr-indicator.visible { top: 12px; }
     @keyframes ptr-spin { to { transform: translateX(-50%) rotate(360deg); } }
+    @keyframes branch-label-pulse { 0%,100% { box-shadow: 0 0 0 2px #3a8fff, 0 0 8px 2px rgba(58,143,255,0.5); } 50% { box-shadow: 0 0 0 3px #3a8fff, 0 0 16px 5px rgba(58,143,255,0.8); } }
     #ptr-indicator.spinning { animation: ptr-spin 0.5s linear infinite; }
 
     /* MANAGER EDIT */
@@ -968,7 +969,7 @@
     <div class="modal-box" id="comp-mgr-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch">
       <div style="text-align:center;font-size:36px">🏆</div>
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">תחרות בין העובדים</div>
-      <div id="comp-mgr-branch-label" style="text-align:center;font-size:13px;font-weight:700;color:#111;background:var(--gold);border-radius:20px;padding:4px 14px;align-self:center"></div>
+      <div id="comp-mgr-branch-label" style="text-align:center;font-size:13px;font-weight:700;color:#111;background:var(--gold);border-radius:20px;padding:4px 14px;align-self:center;animation:branch-label-pulse 1.2s ease-in-out infinite"></div>
       <!-- Active section -->
       <div id="comp-mgr-active-section" style="display:none;flex-direction:column;gap:10px">
         <div class="comp-active-badge" id="comp-mgr-active-badge">✅ תחרות פעילה כרגע</div>
