@@ -1453,8 +1453,8 @@
                      origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
       _prevKbdH = 0;
 
-      /* Fixed target: 22% of physical screen height — always above any keyboard */
-      var targetTop = Math.round(window.screen.height * 0.22);
+      /* Fixed target: 40% of physical screen height — centered above any keyboard */
+      var targetTop = Math.round(window.screen.height * 0.40);
       requestAnimationFrame(function() {
         row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
         row.style.top        = targetTop + 'px';
