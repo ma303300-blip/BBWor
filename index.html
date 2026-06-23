@@ -1424,11 +1424,19 @@
       var box     = document.getElementById('cl-mgr-box');
       var overlay = document.getElementById('cl-mgr-modal');
 
-      var origBoxHeight       = box.style.height;
-      var origBoxMaxWidth     = box.style.maxWidth;
-      var origBoxBorderRadius = box.style.borderRadius;
-      var origScrollTop       = box.scrollTop;
-      var origOverlayPadding  = overlay.style.padding;
+      /* Save original inline style strings for full restore after animation */
+      var origBoxHeightStr       = box.style.height;
+      var origBoxMaxWidthStr     = box.style.maxWidth;
+      var origBoxBorderRadiusStr = box.style.borderRadius;
+      var origScrollTop          = box.scrollTop;
+      var origOverlayPadding     = overlay.style.padding;
+
+      /* Capture px dimensions NOW — before keyboard opens and changes vh */
+      var boxRect    = box.getBoundingClientRect();
+      var startBoxH  = boxRect.height;
+      var startBoxW  = boxRect.width;
+      var targetBoxH = window.innerHeight; /* full screen in px — immune to vh recalc */
+      var targetTop  = Math.round(targetBoxH * 0.35);
 
       var EASE = '1.2s cubic-bezier(0.4,0,0.2,1)';
 
@@ -1437,7 +1445,7 @@
       placeholder.style.cssText = 'height:' + rect.height + 'px;flex-shrink:0';
       origParent.insertBefore(placeholder, row);
 
-      /* 2. Row to body as position:fixed at current position, no transition yet */
+      /* 2. Row to body as position:fixed, lock box to px — no transition yet */
       row.style.position     = 'fixed';
       row.style.top          = rect.top + 'px';
       row.style.left         = rect.left + 'px';
@@ -1450,29 +1458,29 @@
       document.body.appendChild(row);
       overlay.style.padding  = '0';
       box.style.transition   = 'none';
+      box.style.height       = startBoxH + 'px'; /* lock to px before animating */
+      box.style.maxWidth     = startBoxW + 'px';
 
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
       _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext,
                      origTop: rect.top, box: box, overlay: overlay, placeholder: placeholder,
-                     origBoxHeight: origBoxHeight, origBoxMaxWidth: origBoxMaxWidth,
-                     origBoxBorderRadius: origBoxBorderRadius,
+                     origBoxH: startBoxH, origBoxW: startBoxW,
+                     origBoxHeightStr: origBoxHeightStr, origBoxMaxWidthStr: origBoxMaxWidthStr,
+                     origBoxBorderRadiusStr: origBoxBorderRadiusStr,
                      origScrollTop: origScrollTop, origOverlayPadding: origOverlayPadding };
       _prevKbdH = 0;
 
-      /* 3. Both animations start simultaneously at 1.2s */
-      var targetTop = Math.round(window.innerHeight * 0.35);
+      /* 3. Both animations start simultaneously — all px, no vh */
       requestAnimationFrame(function() {
-        /* Modal expand */
         box.style.transition   = 'height ' + EASE + ', max-width ' + EASE + ', border-radius ' + EASE;
-        box.style.height       = '100%';
+        box.style.height       = targetBoxH + 'px';
         box.style.maxWidth     = '100%';
         box.style.borderRadius = '0';
-        /* Row rise */
-        row.style.transition = 'top ' + EASE + ', box-shadow 1.2s ease';
-        row.style.top        = targetTop + 'px';
-        row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
+        row.style.transition   = 'top ' + EASE + ', box-shadow 1.2s ease';
+        row.style.top          = targetTop + 'px';
+        row.style.boxShadow    = '0 16px 48px rgba(0,0,0,0.7)';
       });
 
       if (!window.visualViewport) {
@@ -1526,30 +1534,6 @@
       if (_kbdDismissTimer) { clearTimeout(_kbdDismissTimer); _kbdDismissTimer = null; }
 
       function restore() {
-        d.row.style.position     = '';
-        d.row.style.top          = '';
-        d.row.style.left         = '';
-        d.row.style.width        = '';
-        d.row.style.zIndex       = '';
-        d.row.style.margin       = '';
-        d.row.style.transition   = '';
-        d.row.style.boxShadow    = '';
-        d.row.style.borderRadius = '';
-        d.inp.style.background   = '';
-        d.inp.style.color        = '';
-        if (d.placeholder && d.placeholder.parentNode) {
-          d.placeholder.parentNode.removeChild(d.placeholder);
-        }
-        if (d.origNext && d.origNext.parentNode === d.origParent) {
-          d.origParent.insertBefore(d.row, d.origNext);
-        } else {
-          d.origParent.appendChild(d.row);
-        }
-        d.box.style.transition = '';
-        d.box.scrollTop        = d.origScrollTop;
-      }
-
-      if (immediate) {
         d.row.style.position = ''; d.row.style.top = ''; d.row.style.left = '';
         d.row.style.width = ''; d.row.style.zIndex = ''; d.row.style.margin = '';
         d.row.style.transition = ''; d.row.style.boxShadow = ''; d.row.style.borderRadius = '';
@@ -1558,23 +1542,35 @@
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else { d.origParent.appendChild(d.row); }
-        d.box.style.transition = ''; d.box.style.height = d.origBoxHeight;
-        d.box.style.maxWidth = d.origBoxMaxWidth; d.box.style.borderRadius = d.origBoxBorderRadius;
-        d.overlay.style.padding = d.origOverlayPadding; d.box.scrollTop = d.origScrollTop;
-        return;
+        /* Restore original style strings (88vh etc.) */
+        d.box.style.transition   = '';
+        d.box.style.height       = d.origBoxHeightStr;
+        d.box.style.maxWidth     = d.origBoxMaxWidthStr;
+        d.box.style.borderRadius = d.origBoxBorderRadiusStr;
+        d.overlay.style.padding  = d.origOverlayPadding;
+        d.box.scrollTop          = d.origScrollTop;
       }
 
-      /* Row descends + modal collapses simultaneously at 1.2s */
+      if (immediate) { restore(); return; }
+
+      /* Lock box to current px height before animating back — prevents vh recalc jump */
+      var curH = d.box.getBoundingClientRect().height;
+      d.box.style.transition = 'none';
+      d.box.style.height     = curH + 'px';
+
       var EASE = '1.2s cubic-bezier(0.4,0,0.2,1)';
-      d.row.style.transition = 'top ' + EASE + ', box-shadow 1.2s ease';
-      d.row.style.top        = d.origTop + 'px';
-      d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
-      d.box.style.transition   = 'height ' + EASE + ', max-width ' + EASE + ', border-radius ' + EASE;
-      d.box.style.height       = d.origBoxHeight;
-      d.box.style.maxWidth     = d.origBoxMaxWidth;
-      d.box.style.borderRadius = d.origBoxBorderRadius;
-      d.overlay.style.padding  = d.origOverlayPadding;
-      setTimeout(restore, 1200);
+      requestAnimationFrame(function() {
+        /* Row descends + modal collapses simultaneously — all px */
+        d.row.style.transition = 'top ' + EASE + ', box-shadow 1.2s ease';
+        d.row.style.top        = d.origTop + 'px';
+        d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+        d.box.style.transition   = 'height ' + EASE + ', max-width ' + EASE + ', border-radius ' + EASE;
+        d.box.style.height       = d.origBoxH + 'px';
+        d.box.style.maxWidth     = d.origBoxW + 'px';
+        d.box.style.borderRadius = d.origBoxBorderRadiusStr || '22px';
+        d.overlay.style.padding  = d.origOverlayPadding;
+        setTimeout(restore, 1200);
+      });
     }
 
     function goHome() {
