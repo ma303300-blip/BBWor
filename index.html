@@ -3832,6 +3832,9 @@
       document.getElementById('cl-mgr-modal').classList.remove('open');
       document.body.style.overflow = '';
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
+      sessionStorage.setItem('bbwor_scroll_reset', '1');
+      sessionStorage.setItem('bbwor_screen', 'manager');
+      location.reload();
     }
 
     /* ─── Checklist inbox (manager) ─── */
