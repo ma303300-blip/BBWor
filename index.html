@@ -4185,6 +4185,7 @@
         { id: 'confirm-modal',         fn: closeConfirm },
         { id: 'privacy-modal',         fn: closePrivacy },
         { id: 'comp-winner-modal',     fn: closeCompWinner },
+        { id: 'comp-branch-modal',     fn: function() { document.getElementById('comp-branch-modal').classList.remove('open'); } },
         { id: 'comp-mgr-modal',        fn: closeCompMgr },
         { id: 'comp-detail-modal',     fn: closeCompDetail },
         { id: 'comp-nocomp-modal',     fn: closeNoComp },
@@ -4563,6 +4564,8 @@
 
     /* ── manager side ── */
     function openCompetitionMgr() {
+      var box = document.getElementById('comp-branch-modal').querySelector('.modal-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('comp-branch-modal').classList.add('open');
     }
     function _openCompEditorDirect() {
