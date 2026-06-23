@@ -224,6 +224,7 @@
     .fab-mail:active { transform: scale(0.92); }
     .fab-badge { position: absolute; top: -3px; right: -3px; background: #e03535; color: #fff; font-size: 11px; font-weight: 700; min-width: 19px; height: 19px; border-radius: 10px; display: none; align-items: center; justify-content: center; padding: 0 5px; border: 2px solid #0e0d0c; }
     .fab-badge.show { display: flex; }
+    .fab-badge.approved { background: #2ecc71; color: #111; }
 
     /* FAB PEOPLE */
     .fab-people { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); left: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid #2ecc71; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; transition: transform 0.15s; }
@@ -3912,42 +3913,30 @@
       if (!badge || !fab) return;
       var approvedBranches = {};
       _clInboxApprovalsData.forEach(function(a) { approvedBranches[a.branch] = true; });
-      var pendingCount = 0;
-      _clInboxSubsData.forEach(function(s) {
-        if (!approvedBranches[s.branch]) pendingCount++;
-      });
-      // deduplicate by branch
+      var approvalCount = Object.keys(approvedBranches).length;
       var pendingBranches = {};
       _clInboxSubsData.forEach(function(s) {
         if (!approvedBranches[s.branch]) pendingBranches[s.branch] = true;
       });
-      pendingCount = Object.keys(pendingBranches).length;
-      badge.textContent = pendingCount || '';
-      badge.classList.toggle('show', pendingCount > 0);
+      var pendingCount = Object.keys(pendingBranches).length;
+      if (approvalCount > 0) {
+        badge.textContent = approvalCount;
+        badge.classList.add('show', 'approved');
+      } else if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.classList.remove('approved');
+        badge.classList.add('show');
+      } else {
+        badge.textContent = '';
+        badge.classList.remove('show', 'approved');
+      }
       var hasSubs = _clInboxSubsData.length > 0 || _clInboxApprovalsData.length > 0;
       fab.classList.toggle('visible', hasSubs);
     }
 
     function _renderClApprovalBanners() {
       var container = document.getElementById('cl-approval-banners');
-      if (!container) return;
-      if (!_clInboxApprovalsData.length) {
-        container.style.display = 'none';
-        container.innerHTML = '';
-        return;
-      }
-      container.style.display = 'flex';
-      container.innerHTML = '';
-      _clInboxApprovalsData.forEach(function(a) {
-        var branchName = BRANCH_NAME[a.branch] || a.branch;
-        var shiftName  = a.shift === 'morning' ? '☀️ משמרת בוקר' : '🌙 משמרת ערב';
-        var div = document.createElement('div');
-        div.className = 'cl-approval-banner';
-        div.innerHTML =
-          '<div class="cl-approval-banner-title">✅ צ\'קליסט ' + branchName + ' בוצע</div>' +
-          '<div class="cl-approval-banner-meta">' + shiftName + ' · ' + (a.date || '') + '</div>';
-        container.appendChild(div);
-      });
+      if (container) { container.style.display = 'none'; container.innerHTML = ''; }
     }
 
     function openClInbox() {
@@ -3977,8 +3966,20 @@
       _clInboxApprovalsData.forEach(function(a) { allBranches[a.branch] = true; });
       var keys = Object.keys(allBranches);
       body.innerHTML = '';
+      _clInboxApprovalsData.forEach(function(a) {
+        var branchName = BRANCH_NAME[a.branch] || a.branch;
+        var shiftLabel = a.shift === 'morning' ? '☀️ משמרת בוקר' : '🌙 משמרת ערב';
+        var div = document.createElement('div');
+        div.className = 'cl-approval-banner';
+        div.innerHTML =
+          '<div class="cl-approval-banner-title">✅ צ\'קליסט ' + branchName + ' בוצע</div>' +
+          '<div class="cl-approval-banner-meta">' + shiftLabel + ' · ' + (a.date || '') + '</div>';
+        body.appendChild(div);
+      });
       if (!keys.length) {
-        body.innerHTML = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px">אין צ\'קליסטים שהוגשו עדיין</div>';
+        if (!_clInboxApprovalsData.length) {
+          body.innerHTML = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:20px">אין צ\'קליסטים שהוגשו עדיין</div>';
+        }
         return;
       }
       var shift     = getCurrentShift();
