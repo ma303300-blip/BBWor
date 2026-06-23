@@ -2283,6 +2283,7 @@
         constraint2: { day: s2.day, shift: s2.shift, startTime: s2.startTime || null },
         daysOff: _constraintSel.daysOff.slice(),
         submittedAt: new Date().toISOString(),
+        expiresAt: firebase.firestore.Timestamp.fromDate(_nextSaturdayMidnight()),
         status: 'pending',
         approvedAt: null
       };
@@ -2366,7 +2367,7 @@
     }
 
     function _cancelConstraintAssign(con) {
-      var ws = _schGetWeekStart();
+      var ws = _nextSchWeekStart();
       var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
       var docId = con.branch + '_' + wid;
       db.collection('schedules').doc(docId).get().then(function(doc) {
@@ -2393,7 +2394,7 @@
 
     function _doAssignConstraint(con, btn, allConstraints) {
       if (btn) { btn.disabled = true; btn.textContent = '...'; }
-      var weekStart = _schGetWeekStart();
+      var weekStart = _nextSchWeekStart();
       var weekId = weekStart.getFullYear() + '-' +
                    String(weekStart.getMonth()+1).padStart(2,'0') + '-' +
                    String(weekStart.getDate()).padStart(2,'0');
@@ -2440,7 +2441,7 @@
         .onSnapshot(function(snap) { _constraintMgrPendingSnap = snap; _renderConstraintMgr(); }, function() {});
       _constraintMgrUnsub2 = db.collection('constraints').where('status', '==', 'approved')
         .onSnapshot(function(snap) { _constraintMgrApprovedSnap = snap; _renderConstraintMgr(); }, function() {});
-      var ws = _schGetWeekStart();
+      var ws = _nextSchWeekStart();
       var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
       ['raanana', 'hadera'].forEach(function(branch) {
         _constraintSchUnsubs.push(
@@ -2574,7 +2575,7 @@
               allBtn.disabled = true; allBtn.textContent = '...';
               var byBranch = {};
               allCons.forEach(function(c) { if (!byBranch[c.branch]) byBranch[c.branch] = []; byBranch[c.branch].push(c); });
-              var ws = _schGetWeekStart();
+              var ws = _nextSchWeekStart();
               var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
               Promise.all(Object.keys(byBranch).map(function(branch) {
                 var docId = branch + '_' + wid;
@@ -2937,6 +2938,15 @@
       var d = new Date();
       d.setHours(0,0,0,0);
       d.setDate(d.getDate() + (7 - d.getDay()) % 7);
+      return d;
+    }
+    function _nextSaturdayMidnight() {
+      var d = new Date();
+      d.setHours(0,0,0,0);
+      var daysUntilSat = (6 - d.getDay() + 7) % 7;
+      if (daysUntilSat === 0) daysUntilSat = 7;
+      d.setDate(d.getDate() + daysUntilSat);
+      d.setHours(23, 59, 59, 0);
       return d;
     }
     function _schWeekId() {
