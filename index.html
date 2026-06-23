@@ -1421,6 +1421,11 @@
       var origParent = row.parentNode;
       var origNext   = row.nextSibling;
 
+      /* Lock modal box height in px so keyboard-open viewport shrink doesn't collapse it */
+      var box = document.getElementById('cl-mgr-box');
+      var origBoxHeight = box.style.height;
+      box.style.height = box.getBoundingClientRect().height + 'px';
+
       /* Move to body BEFORE focus fires so iOS does not disrupt keyboard open */
       row.style.position    = 'fixed';
       row.style.top         = rect.top + 'px';
@@ -1436,7 +1441,7 @@
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
-      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top };
+      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top, box: box, origBoxHeight: origBoxHeight };
       _prevKbdH = 0;
 
       /* Start animation immediately — focus + keyboard open mid-animation (~300ms in) */
@@ -1510,6 +1515,7 @@
         d.row.style.borderRadius = '';
         d.inp.style.background = '';
         d.inp.style.color      = '';
+        d.box.style.height     = d.origBoxHeight;
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else {
