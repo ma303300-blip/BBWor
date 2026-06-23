@@ -951,6 +951,18 @@
   </div>
 
   <!-- COMPETITION EDITOR (manager) -->
+  <!-- COMP BRANCH PICKER -->
+  <div class="modal-overlay" id="comp-branch-modal" onclick="if(event.target===this)document.getElementById('comp-branch-modal').classList.remove('open')">
+    <div class="modal-box" style="max-width:300px;gap:14px;align-items:stretch">
+      <div style="text-align:center;font-size:36px">🏆</div>
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">לאיזה סניף?</div>
+      <button class="gold-btn" style="width:100%;padding:14px;font-size:15px" onclick="_pickCompBranch('raanana')">✦ סניף רעננה</button>
+      <button class="gold-btn" style="width:100%;padding:14px;font-size:15px" onclick="_pickCompBranch('hadera')">✦ סניף חדרה</button>
+      <button class="gold-btn" style="width:100%;padding:14px;font-size:15px;background:rgba(201,168,76,0.18);color:var(--gold)" onclick="_pickCompBranch('all')">🤝 תחרות משותפת</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="document.getElementById('comp-branch-modal').classList.remove('open')">ביטול</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="comp-mgr-modal" onclick="if(event.target===this)closeCompMgr()">
     <div class="modal-box" id="comp-mgr-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch">
       <div style="text-align:center;font-size:36px">🏆</div>
@@ -1228,6 +1240,7 @@
     var _compAutoEndedId = null;
     var _currentCompDoc = null;
     var _compMgrCurrentId = null;
+    var _compMgrBranch    = 'all';
     var _compWinnerId     = null;
     var _compMgrUnsub = null;
     var _lastKnownShift = null;
@@ -4542,8 +4555,17 @@
       });
     }
 
+    function _pickCompBranch(branch) {
+      _compMgrBranch = branch;
+      document.getElementById('comp-branch-modal').classList.remove('open');
+      _openCompEditorDirect();
+    }
+
     /* ── manager side ── */
     function openCompetitionMgr() {
+      document.getElementById('comp-branch-modal').classList.add('open');
+    }
+    function _openCompEditorDirect() {
       var modal = document.getElementById('comp-mgr-modal');
       if (!modal) return;
       _clearCompTimers();
@@ -4645,7 +4667,7 @@
         description: desc,
         prize: prize,
         endsAt: endsAt,
-        branch: 'all',
+        branch: _compMgrBranch,
         status: 'active',
         createdAt: new Date().toISOString()
       }).then(function() {
