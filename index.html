@@ -1411,57 +1411,38 @@
       if (document.getElementById('screen-home').classList.contains('active')) e.preventDefault();
     }, { passive: false });
 
-    /* Floating input — lifts from its position in the modal to center screen, no wrapper */
+    /* Full-screen modal expand — on input tap, modal grows to fill screen */
     var _clKbdData = null;
     var _prevKbdH = 0;
     var _kbdDismissTimer = null;
 
-    function _startFloatAnim(row, inp, rect) {
+    function _startFloatAnim(inp) {
       if (_clKbdData) return;
-      var origParent = row.parentNode;
-      var origNext   = row.nextSibling;
+      var box     = document.getElementById('cl-mgr-box');
+      var overlay = document.getElementById('cl-mgr-modal');
 
-      /* Lock modal: freeze size + scroll + disable interaction while input is floating */
-      var box = document.getElementById('cl-mgr-box');
-      var origBoxHeight   = box.style.height;
-      var origOverflow    = box.style.overflow;
-      var origPointerEvts = box.style.pointerEvents;
-      box.style.height        = box.getBoundingClientRect().height + 'px';
-      box.style.overflow      = 'hidden';
-      box.style.pointerEvents = 'none';
+      var origBoxHeight       = box.style.height;
+      var origBoxMaxWidth     = box.style.maxWidth;
+      var origBoxBorderRadius = box.style.borderRadius;
+      var origScrollTop       = box.scrollTop;
+      var origOverlayPadding  = overlay.style.padding;
 
-      /* Placeholder keeps content height unchanged — prevents any scrollTop jump */
-      var placeholder = document.createElement('div');
-      placeholder.style.cssText = 'height:' + rect.height + 'px;flex-shrink:0';
-      origParent.insertBefore(placeholder, row);
+      /* Expand modal to full screen */
+      overlay.style.padding    = '0';
+      box.style.transition     = 'height 0.4s ease, max-width 0.4s ease, border-radius 0.4s ease';
+      box.style.height         = '100%';
+      box.style.maxWidth       = '100%';
+      box.style.borderRadius   = '0';
 
-      /* Move row to body BEFORE focus fires — avoids iOS disrupting keyboard open */
-      row.style.position     = 'fixed';
-      row.style.top          = rect.top + 'px';
-      row.style.left         = rect.left + 'px';
-      row.style.width        = rect.width + 'px';
-      row.style.zIndex       = '9999';
-      row.style.margin       = '0';
-      row.style.transition   = 'none';
-      row.style.boxShadow    = '0 8px 32px rgba(0,0,0,0.55)';
-      row.style.borderRadius = '14px';
-      document.body.appendChild(row);
-
+      /* Highlight the active input */
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
-      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top,
-                     box: box, placeholder: placeholder,
-                     origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
+      _clKbdData = { inp: inp, box: box, overlay: overlay,
+                     origBoxHeight: origBoxHeight, origBoxMaxWidth: origBoxMaxWidth,
+                     origBoxBorderRadius: origBoxBorderRadius,
+                     origScrollTop: origScrollTop, origOverlayPadding: origOverlayPadding };
       _prevKbdH = 0;
-
-      /* Initial target: 35% of visible height before keyboard opens */
-      var targetTop = Math.round(window.innerHeight * 0.35);
-      requestAnimationFrame(function() {
-        row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-        row.style.top        = targetTop + 'px';
-        row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
-      });
 
       if (!window.visualViewport) {
         inp.addEventListener('blur', function onBlur() {
@@ -1471,23 +1452,23 @@
       }
     }
 
-    /* Touch: start animation on pointerdown — before focus, before keyboard */
+    /* Touch: expand on pointerdown */
     document.getElementById('cl-mgr-modal').addEventListener('pointerdown', function(e) {
       var inp = e.target;
       if (inp.tagName !== 'INPUT') return;
       var row = inp.parentNode;
       if (!row || !row.classList.contains('cl-add-row')) return;
-      _startFloatAnim(row, inp, row.getBoundingClientRect());
+      _startFloatAnim(inp);
     }, { passive: true });
 
-    /* Fallback: non-touch focus (tab / accessibility) */
+    /* Fallback: non-touch focus */
     document.getElementById('cl-mgr-modal').addEventListener('focusin', function(e) {
       var inp = e.target;
       if (inp.tagName !== 'INPUT') return;
       if (_clKbdData) return;
       var row = inp.parentNode;
       if (!row || !row.classList.contains('cl-add-row')) return;
-      _startFloatAnim(row, inp, row.getBoundingClientRect());
+      _startFloatAnim(inp);
     });
 
     if (window.visualViewport) {
@@ -1495,16 +1476,10 @@
         var kbdH = Math.max(0, window.innerHeight - window.visualViewport.height);
         if (_clKbdData) {
           if (_prevKbdH > 150 && kbdH < _prevKbdH - 20 && !_kbdDismissTimer) {
-            /* Keyboard starting to close */
             _kbdDismissTimer = setTimeout(function() {
               _kbdDismissTimer = null;
               _hideClKbdBar();
             }, 150);
-          } else if (kbdH > 50 && !_kbdDismissTimer) {
-            /* Keyboard open — reposition to 35% of visible area above it */
-            var newTop = Math.round((window.visualViewport.offsetTop || 0) + window.visualViewport.height * 0.35);
-            _clKbdData.row.style.transition = 'top 0.3s ease';
-            _clKbdData.row.style.top        = newTop + 'px';
           }
         } else {
           _prevKbdH = 0;
@@ -1518,38 +1493,30 @@
       var d = _clKbdData;
       _clKbdData = null;
       if (_kbdDismissTimer) { clearTimeout(_kbdDismissTimer); _kbdDismissTimer = null; }
-      function restore() {
-        d.row.style.position     = '';
-        d.row.style.top          = '';
-        d.row.style.left         = '';
-        d.row.style.width        = '';
-        d.row.style.zIndex       = '';
-        d.row.style.margin       = '';
-        d.row.style.transition   = '';
-        d.row.style.boxShadow    = '';
-        d.row.style.borderRadius = '';
-        d.inp.style.background   = '';
-        d.inp.style.color        = '';
-        /* Unlock modal */
+
+      d.inp.style.background = '';
+      d.inp.style.color      = '';
+
+      if (immediate) {
+        d.box.style.transition   = '';
         d.box.style.height       = d.origBoxHeight;
-        d.box.style.overflow     = d.origOverflow;
-        d.box.style.pointerEvents = d.origPointerEvts;
-        /* Remove placeholder and reinsert row in exact original position */
-        if (d.placeholder && d.placeholder.parentNode) {
-          d.placeholder.parentNode.removeChild(d.placeholder);
-        }
-        if (d.origNext && d.origNext.parentNode === d.origParent) {
-          d.origParent.insertBefore(d.row, d.origNext);
-        } else {
-          d.origParent.appendChild(d.row);
-        }
+        d.box.style.maxWidth     = d.origBoxMaxWidth;
+        d.box.style.borderRadius = d.origBoxBorderRadius;
+        d.overlay.style.padding  = d.origOverlayPadding;
+        d.box.scrollTop          = d.origScrollTop;
+        return;
       }
-      if (immediate) { restore(); return; }
-      /* Single smooth descent back to original position */
-      d.row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-      d.row.style.top        = d.origTop + 'px';
-      d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
-      setTimeout(restore, 1200);
+
+      /* Collapse back to original size */
+      d.box.style.transition   = 'height 0.4s ease, max-width 0.4s ease, border-radius 0.4s ease';
+      d.box.style.height       = d.origBoxHeight;
+      d.box.style.maxWidth     = d.origBoxMaxWidth;
+      d.box.style.borderRadius = d.origBoxBorderRadius;
+      d.overlay.style.padding  = d.origOverlayPadding;
+      setTimeout(function() {
+        d.box.style.transition = '';
+        d.box.scrollTop        = d.origScrollTop;
+      }, 400);
     }
 
     function goHome() {
