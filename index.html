@@ -967,6 +967,7 @@
     <div class="modal-box" id="comp-mgr-box" style="gap:14px;align-items:stretch;max-width:360px;padding:22px 18px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch">
       <div style="text-align:center;font-size:36px">🏆</div>
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">תחרות בין העובדים</div>
+      <div id="comp-mgr-branch-label" style="text-align:center;font-size:13px;font-weight:700;color:#111;background:var(--gold);border-radius:20px;padding:4px 14px;align-self:center"></div>
       <!-- Active section -->
       <div id="comp-mgr-active-section" style="display:none;flex-direction:column;gap:10px">
         <div class="comp-active-badge" id="comp-mgr-active-badge">✅ תחרות פעילה כרגע</div>
@@ -4558,6 +4559,8 @@
 
     function _pickCompBranch(branch) {
       _compMgrBranch = branch;
+      var labels = { raanana: '✦ סניף רעננה', hadera: '✦ סניף חדרה', all: '🤝 תחרות משותפת' };
+      document.getElementById('comp-mgr-branch-label').textContent = labels[branch] || '';
       document.getElementById('comp-branch-modal').classList.remove('open');
       _openCompEditorDirect();
     }
