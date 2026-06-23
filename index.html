@@ -1411,31 +1411,74 @@
       if (document.getElementById('screen-home').classList.contains('active')) e.preventDefault();
     }, { passive: false });
 
-    /* Keyboard-aware modal: scroll focused input above keyboard on iOS + Android */
-    (function() {
-      var modal = document.getElementById('cl-mgr-modal');
-      modal.addEventListener('focusin', function(e) {
-        if (e.target.tagName !== 'INPUT') return;
-        setTimeout(function() {
-          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 400);
-      });
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', function() {
-          if (!modal.classList.contains('open')) return;
-          var box = document.getElementById('cl-mgr-box');
-          if (!box) return;
-          var newH = Math.floor(window.visualViewport.height * 0.88);
-          box.style.height = newH + 'px';
-          var active = document.activeElement;
-          if (active && active.tagName === 'INPUT' && modal.contains(active)) {
-            setTimeout(function() {
-              active.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-          }
+    /* Floating input above keyboard — animates up on focus, back down on keyboard close */
+    var _clKbdData = null;
+
+    document.getElementById('cl-mgr-modal').addEventListener('focusin', function(e) {
+      var inp = e.target;
+      if (inp.tagName !== 'INPUT') return;
+      var row = inp.parentNode;
+      if (!row || !row.classList.contains('cl-add-row')) return;
+      if (_clKbdData) return;
+
+      var origParent = row.parentNode;
+      var origNext   = row.nextSibling;
+
+      var bar = document.createElement('div');
+      bar.id = 'cl-kbd-bar';
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:-80px;padding:10px 16px;' +
+        'background:rgba(20,19,16,0.97);border-top:1.5px solid rgba(201,168,76,0.5);' +
+        'z-index:9999;box-shadow:0 -6px 24px rgba(0,0,0,0.6);display:flex;' +
+        'align-items:center;gap:8px;box-sizing:border-box;' +
+        'transition:bottom 1.2s cubic-bezier(0.4,0,0.2,1)';
+
+      bar.appendChild(row);
+      document.body.appendChild(bar);
+      _clKbdData = { bar: bar, row: row, origParent: origParent, origNext: origNext };
+
+      setTimeout(function() {
+        var kbdH = window.visualViewport
+          ? Math.max(0, window.innerHeight - window.visualViewport.height)
+          : Math.floor(window.innerHeight * 0.42);
+        bar.style.bottom = (kbdH > 50 ? kbdH : Math.floor(window.innerHeight * 0.42)) + 'px';
+      }, 50);
+
+      if (!window.visualViewport) {
+        inp.addEventListener('blur', function onBlur() {
+          inp.removeEventListener('blur', onBlur);
+          _hideClKbdBar();
         });
       }
-    }());
+    });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        if (!_clKbdData) return;
+        var kbdH = Math.max(0, window.innerHeight - window.visualViewport.height);
+        if (kbdH < 50) {
+          _hideClKbdBar();
+        } else {
+          _clKbdData.bar.style.bottom = kbdH + 'px';
+        }
+      });
+    }
+
+    function _hideClKbdBar(immediate) {
+      if (!_clKbdData) return;
+      var d = _clKbdData;
+      _clKbdData = null;
+      function restore() {
+        if (d.origNext && d.origNext.parentNode === d.origParent) {
+          d.origParent.insertBefore(d.row, d.origNext);
+        } else {
+          d.origParent.appendChild(d.row);
+        }
+        if (d.bar.parentNode) d.bar.parentNode.removeChild(d.bar);
+      }
+      if (immediate) { restore(); return; }
+      d.bar.style.bottom = '-80px';
+      setTimeout(restore, 1200);
+    }
 
     function goHome() {
       activeBranch = null;
@@ -3924,10 +3967,9 @@
     }
 
     function closeClMgr() {
+      _hideClKbdBar(true);
       document.getElementById('cl-mgr-modal').classList.remove('open');
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
-      var box = document.getElementById('cl-mgr-box');
-      if (box) box.style.height = '88vh';
     }
 
     /* ─── Checklist inbox (manager) ─── */
