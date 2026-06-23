@@ -1277,6 +1277,7 @@
     function _closeAllOverlays() {
       _stopConstraintMgrListeners();
       _clearCompTimers();
+      document.body.style.overflow = '';
       var announce = document.getElementById('comp-announce-overlay');
       if (announce) announce.classList.remove('open');
       var modals = document.querySelectorAll('.modal-overlay');
