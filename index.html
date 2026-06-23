@@ -1159,6 +1159,16 @@
       }
     })();
 
+    /* Hide home screen immediately if session exists — prevents flash on app open */
+    (function() {
+      var _hasSession = localStorage.getItem('bbwor_manager') ||
+                        localStorage.getItem('bbwor_session_raanana') ||
+                        localStorage.getItem('bbwor_session_hadera');
+      if (_hasSession) {
+        document.getElementById('screen-home').classList.remove('active');
+      }
+    })();
+
     /* ═══════════════════════════════════
        SERVICE WORKER
     ═══════════════════════════════════ */
@@ -1314,6 +1324,11 @@
 
     function show(name) {
       if (name === 'employee' || name === 'manager') {
+        if (!sessionStorage.getItem('bbwor_scroll_reset')) {
+          sessionStorage.setItem('bbwor_scroll_reset', '1');
+          sessionStorage.setItem('bbwor_screen', name);
+          location.reload(); return;
+        }
         sessionStorage.removeItem('bbwor_scroll_reset');
       }
       _closeAllOverlays();
@@ -3089,6 +3104,7 @@
         if (_fm) _fm.classList.add('visible');
         if (_fp) _fp.classList.add('visible');
       }
+      sessionStorage.setItem('bbwor_scroll_reset', '1');
       show(_schEditable ? 'manager' : 'employee');
     }
 
