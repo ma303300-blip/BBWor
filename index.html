@@ -2016,7 +2016,7 @@
           var allEmps = [];
           snap.forEach(function(doc) { allEmps.push(Object.assign({ id: doc.id }, doc.data())); });
           allEmps.sort(function(a, b) {
-            if (a.branch !== b.branch) return a.branch === 'raanana' ? -1 : 1;
+            if (a.branch !== b.branch) return a.branch === 'hadera' ? -1 : 1;
             var na = (a.firstName + ' ' + a.lastName).toLowerCase();
             var nb = (b.firstName + ' ' + b.lastName).toLowerCase();
             return na < nb ? -1 : na > nb ? 1 : 0;
