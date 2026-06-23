@@ -1423,13 +1423,17 @@
 
       /* Lock modal: freeze size + scroll + disable interaction while input is floating */
       var box = document.getElementById('cl-mgr-box');
-      var origScrollTop   = box.scrollTop;
       var origBoxHeight   = box.style.height;
       var origOverflow    = box.style.overflow;
       var origPointerEvts = box.style.pointerEvents;
       box.style.height        = box.getBoundingClientRect().height + 'px';
       box.style.overflow      = 'hidden';
       box.style.pointerEvents = 'none';
+
+      /* Placeholder keeps content height unchanged — prevents any scrollTop jump */
+      var placeholder = document.createElement('div');
+      placeholder.style.cssText = 'height:' + rect.height + 'px;flex-shrink:0';
+      origParent.insertBefore(placeholder, row);
 
       /* Move row to body BEFORE focus fires — avoids iOS disrupting keyboard open */
       row.style.position     = 'fixed';
@@ -1442,14 +1446,12 @@
       row.style.boxShadow    = '0 8px 32px rgba(0,0,0,0.55)';
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
-      /* Prevent scroll-position jump caused by removed content */
-      box.scrollTop = origScrollTop;
 
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
 
       _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top,
-                     box: box, origScrollTop: origScrollTop,
+                     box: box, placeholder: placeholder,
                      origBoxHeight: origBoxHeight, origOverflow: origOverflow, origPointerEvts: origPointerEvts };
       _prevKbdH = 0;
 
@@ -1527,7 +1529,10 @@
         d.box.style.height       = d.origBoxHeight;
         d.box.style.overflow     = d.origOverflow;
         d.box.style.pointerEvents = d.origPointerEvts;
-        d.box.scrollTop          = d.origScrollTop;
+        /* Remove placeholder and reinsert row in exact original position */
+        if (d.placeholder && d.placeholder.parentNode) {
+          d.placeholder.parentNode.removeChild(d.placeholder);
+        }
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else {
