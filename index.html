@@ -3191,6 +3191,10 @@
             .onSnapshot(function(doc) {
               _schCells = doc.exists ? (doc.data().cells || {}) : {};
               _schStartTimes = doc.exists ? (doc.data().startTimes || {}) : {};
+              if (doc.exists && !_schEmpMap['__mgr__']) {
+                var _mc = doc.data().managerCard;
+                if (_mc) { _schEmpMap['__mgr__'] = { id: '__mgr__', firstName: _mc.firstName, lastName: _mc.lastName || '', photo: _mc.photo || null, phone: '' }; }
+              }
               _schRenderTable();
             }, function() {
               tbl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);padding:30px">שגיאת חיבור</div>';
@@ -3460,8 +3464,10 @@
     }
 
     function _schSaveImmediate() {
+      var _mp = _getMgrProfile();
+      var _mc = _mp ? (function() { var n = _mp.name.split(' '); return { firstName: n[0] || _mp.name, lastName: n.slice(1).join(' '), photo: _mp.photo || null }; })() : null;
       db.collection('schedules').doc(_schDocId()).set(
-        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, updatedAt: new Date().toISOString() },
+        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, managerCard: _mc, updatedAt: new Date().toISOString() },
         { merge: true }
       ).catch(function() {});
     }
