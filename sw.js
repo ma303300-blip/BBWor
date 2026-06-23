@@ -1,4 +1,4 @@
-const CACHE = 'bbwor-v108';
+const CACHE = 'bbwor-v109';
 
 self.addEventListener('install', () => self.skipWaiting());
 
