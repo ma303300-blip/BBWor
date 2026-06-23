@@ -4060,7 +4060,7 @@
           function tryBranch() {
             if (i >= branches.length) {
               /* no employee session found — manager-only restore */
-              if (lastScreen === 'manager') {
+              if (lastScreen === 'manager' || _getMgrProfile()) {
                 try { enterManager(); } catch(e) { show('home'); }
               } else if (lastScreen === 'schedule' && lastSchEditable) {
                 try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
