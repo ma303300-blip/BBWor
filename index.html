@@ -826,7 +826,7 @@
         <div id="cl-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addChecklistItem()">+ הוסף</button>
-          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
+          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה..." onpointerdown="_startClFloat(this)" onblur="_schedEndClFloat()">
         </div>
       </div>
       <div style="border-top:1px solid rgba(0,0,0,0.15);padding-top:10px;margin-top:4px">
@@ -834,7 +834,7 @@
         <div id="sec-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addSecProc()">+ הוסף</button>
-          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
+          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל..." onpointerdown="_startClFloat(this)" onblur="_schedEndClFloat()">
         </div>
       </div>
       <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeClMgr()">סגור</button>
