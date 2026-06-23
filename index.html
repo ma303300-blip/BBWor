@@ -2725,7 +2725,7 @@
     /* ═══════════════════════════════════
        CHECKLIST
     ═══════════════════════════════════ */
-    var SHIFT_HOURS = { morning: { start: 9*60, end: 16*60 }, evening: { start: 16*60, end: 22*60+30 } };
+    var SHIFT_HOURS = { morning: { start: 9*60, end: 16*60 }, evening: { start: 16*60, end: 23*60 } };
     var _currentClItemId = null;
     var _clUnsub = null;
     var _clItemsUnsub = null;
@@ -2969,7 +2969,7 @@
       if (mins >= SHIFT_HOURS.morning.end) {
         _cleanExpiredSession(todayId + '-morning');
       }
-      /* evening expired: after 22:30 */
+      /* evening expired: after 23:00 */
       if (mins >= SHIFT_HOURS.evening.end) {
         _cleanExpiredSession(todayId + '-evening');
       }
