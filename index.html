@@ -328,6 +328,7 @@
     .sch-slot-mine .sch-slot-name { color: #1d4ed8; font-weight: 800; }
     .sch-slot-mine .sch-slot-photo, .sch-slot-mine .sch-slot-ph { border-color: #3b82f6; }
     .sch-late-badge { position: absolute; top: 1px; right: 1px; width: 14px; height: 14px; background: #e03535; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; color: #fff; cursor: pointer; z-index: 2; line-height: 1; }
+    .sch-late-time { font-size: 8px; font-weight: 700; color: #e03535; text-align: center; line-height: 1.2; }
     .goal-split-row { display: flex; gap: 6px; width: 100%; }
     .goal-split-col { flex: 1; display: flex; flex-direction: column; gap: 3px; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 7px 6px; }
     .goal-split-label { font-size: 10px; color: #fff; font-weight: 700; text-align: center; }
@@ -3269,6 +3270,7 @@
           (emp.photo ? '<img class="sch-slot-photo" src="' + emp.photo + '">'
                      : '<div class="sch-slot-ph">' + emp.firstName.charAt(0) + '</div>') +
           '<span class="sch-slot-name">' + emp.firstName + '</span>' +
+          (lateTime ? '<span class="sch-late-time">' + lateTime + '</span>' : '') +
           (lateTime ? '<div class="sch-late-badge" onclick="event.stopPropagation();showLateStartInfo(\'' + lateTime + '\',\'' + emp.firstName + '\')">!</div>' : '');
         if (_schEditable) {
           var rm = document.createElement('button');
