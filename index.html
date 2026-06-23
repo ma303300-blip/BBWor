@@ -183,6 +183,10 @@
     #ptr-indicator.visible { top: 12px; }
     @keyframes ptr-spin { to { transform: translateX(-50%) rotate(360deg); } }
     @keyframes branch-label-pulse { 0%,100% { box-shadow: 0 0 0 2px #3a8fff, 0 0 8px 2px rgba(58,143,255,0.5); } 50% { box-shadow: 0 0 0 3px #3a8fff, 0 0 16px 5px rgba(58,143,255,0.8); } }
+    #goal-branch-border-wrap { position:relative; border-radius:24px; padding:2px; overflow:hidden; max-width:300px; width:calc(100% - 40px); }
+    #goal-branch-border-wrap::before { content:''; position:absolute; width:200%; height:200%; top:-50%; left:-50%; background:conic-gradient(from 0deg, transparent 0deg, #c9a84c 25deg, #8b6914 50deg, transparent 80deg); animation:goal-border-spin 2.5s linear infinite; }
+    #goal-branch-box { position:relative; z-index:1; width:100%; max-width:none !important; }
+    @keyframes goal-border-spin { to { transform:rotate(360deg); } }
     #ptr-indicator.spinning { animation: ptr-spin 0.5s linear infinite; }
 
     /* MANAGER EDIT */
@@ -1065,12 +1069,14 @@
   <!-- MONTHLY GOAL MODAL (Manager) -->
   <!-- GOAL BRANCH PICKER -->
   <div class="modal-overlay" id="goal-branch-modal" onclick="if(event.target===this)closeGoalBranchModal()">
-    <div class="modal-box" id="goal-branch-box" style="gap:14px;align-items:stretch;max-width:300px;padding:24px 20px">
+    <div id="goal-branch-border-wrap">
+    <div class="modal-box" id="goal-branch-box" style="gap:14px;align-items:stretch;padding:24px 20px">
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">🎯 יעד חודשי</div>
       <div style="text-align:center;font-size:13px;color:var(--text-dim)">בחרי סניף לעריכה</div>
       <button class="goal-branch-btn" onclick="selectGoalBranch('hadera')">🏢 <span style="color:var(--text-dim);font-size:13px;font-weight:400">סניף</span> <span style="color:#fff;font-weight:800;font-size:18px">חדרה</span></button>
       <button class="goal-branch-btn" onclick="selectGoalBranch('raanana')">🏢 <span style="color:var(--text-dim);font-size:13px;font-weight:400">סניף</span> <span style="color:#fff;font-weight:800;font-size:18px">רעננה</span></button>
       <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeGoalBranchModal()">סגור</button>
+    </div>
     </div>
   </div>
 
