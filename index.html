@@ -1271,6 +1271,14 @@
     function setContent(c) { localStorage.setItem('bbwor_content', JSON.stringify(c)); }
 
     function show(name) {
+      if (name === 'employee' || name === 'manager') {
+        if (!sessionStorage.getItem('bbwor_scroll_reset')) {
+          sessionStorage.setItem('bbwor_scroll_reset', '1');
+          sessionStorage.setItem('bbwor_screen', name);
+          location.reload(); return;
+        }
+        sessionStorage.removeItem('bbwor_scroll_reset');
+      }
       _closeAllOverlays();
       var target = document.getElementById('screen-' + name);
       if (!target) return;
@@ -1580,11 +1588,6 @@
     }
 
     function _openManagerDashboard() {
-      if (!sessionStorage.getItem('bbwor_scroll_reset')) {
-        sessionStorage.setItem('bbwor_scroll_reset', '1');
-        location.reload(); return;
-      }
-      sessionStorage.removeItem('bbwor_scroll_reset');
       _updateMgrNameDisplay();
       var p = _getMgrProfile();
       var greetEl = document.querySelector('#screen-manager .emp-name-txt');
@@ -1735,11 +1738,6 @@
     }
 
     function openEmployeeHome(emp) {
-      if (!sessionStorage.getItem('bbwor_scroll_reset')) {
-        sessionStorage.setItem('bbwor_scroll_reset', '1');
-        location.reload(); return;
-      }
-      sessionStorage.removeItem('bbwor_scroll_reset');
       currentEmployee = emp;
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
