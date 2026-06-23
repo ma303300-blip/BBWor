@@ -826,7 +826,7 @@
         <div id="cl-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addChecklistItem()">+ הוסף</button>
-          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה...">
+          <input class="cl-add-input" id="cl-new-item-input" placeholder="שם המטלה..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
         </div>
       </div>
       <div style="border-top:1px solid rgba(0,0,0,0.15);padding-top:10px;margin-top:4px">
@@ -834,7 +834,7 @@
         <div id="sec-mgr-items" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
         <div class="cl-add-row">
           <button class="cl-add-btn" onclick="addSecProc()">+ הוסף</button>
-          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל...">
+          <input class="cl-add-input" id="sec-new-item-input" placeholder="שם הנוהל..." onfocus="_startClFloat(this)" onblur="_schedEndClFloat()">
         </div>
       </div>
       <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeClMgr()">סגור</button>
@@ -3897,7 +3897,71 @@
       _renderSecMgrItems();
     }
 
+    /* ─── Floating add-row animation (checklist + security procedures) ─── */
+    var _clFloatData  = null;
+    var _clFloatTimer = null;
+
+    function _startClFloat(inp) {
+      if (_clFloatTimer) { clearTimeout(_clFloatTimer); _clFloatTimer = null; }
+      var row = inp.parentNode;
+      if (_clFloatData && _clFloatData.row === row) return;
+      if (_clFloatData) _doEndClFloat(true);
+
+      var rect      = row.getBoundingClientRect();
+      var origStyle = row.getAttribute('style') || '';
+
+      var ph = document.createElement('div');
+      ph.style.cssText = 'height:' + Math.round(rect.height) + 'px;flex-shrink:0';
+      row.parentNode.insertBefore(ph, row);
+
+      row.style.cssText = 'position:fixed;top:' + Math.round(rect.top) + 'px;left:' + Math.round(rect.left) + 'px;width:' + Math.round(rect.width) + 'px;z-index:9999;margin:0;transition:none;box-shadow:0 8px 32px rgba(0,0,0,0.55);border-radius:14px';
+      document.body.appendChild(row);
+
+      _clFloatData = { inp: inp, row: row, ph: ph, origTop: Math.round(rect.top), origStyle: origStyle };
+
+      var targetTop = Math.round(window.innerHeight * 0.38);
+      requestAnimationFrame(function() {
+        row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
+        row.style.top        = targetTop + 'px';
+        row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
+      });
+    }
+
+    function _schedEndClFloat() {
+      if (_clFloatTimer) clearTimeout(_clFloatTimer);
+      _clFloatTimer = setTimeout(function() {
+        _clFloatTimer = null;
+        var active = document.activeElement;
+        if (active && active.classList && active.classList.contains('cl-add-input')) return;
+        _doEndClFloat(false);
+      }, 200);
+    }
+
+    function _doEndClFloat(immediate) {
+      if (!_clFloatData) return;
+      var d = _clFloatData;
+      _clFloatData = null;
+      if (_clFloatTimer) { clearTimeout(_clFloatTimer); _clFloatTimer = null; }
+
+      function restore() {
+        d.row.setAttribute('style', d.origStyle);
+        if (d.ph.parentNode) {
+          d.ph.parentNode.insertBefore(d.row, d.ph);
+          d.ph.parentNode.removeChild(d.ph);
+        }
+      }
+
+      if (immediate) { restore(); return; }
+
+      d.row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
+      d.row.style.top        = d.origTop + 'px';
+      d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+      setTimeout(restore, 1200);
+    }
+    /* ─────────────────────────────────────────────────────────────────── */
+
     function closeClMgr() {
+      _doEndClFloat(true);
       document.getElementById('cl-mgr-modal').classList.remove('open');
       if (_clMgrItemsUnsub) { _clMgrItemsUnsub(); _clMgrItemsUnsub = null; }
     }
