@@ -515,7 +515,7 @@
         <span class="manager-icon">✦</span>
         <span class="manager-title">BBW<span class="manager-title-accent">oa</span></span>
         <span class="manager-sub">MANAGER ACCESS</span>
-        <span class="manager-name">אוריה עמר</span>
+        <span class="manager-name">✦</span>
       </button>
       <div class="divider"></div>
       <div class="choose-label">בחרו סניף להמשיך</div>
@@ -1657,7 +1657,7 @@
           });
       }
       show('manager');
-      showGreeting('אוריה');
+      var _mgrP = _getMgrProfile(); showGreeting(_mgrP ? _mgrP.name.split(' ')[0] : '');
       _startCompBadge();
       _startAutoRefresh();
     }
