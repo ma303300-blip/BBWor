@@ -1448,17 +1448,28 @@
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
 
-      _clKbdData = { row: row, origParent: origParent, origNext: origNext, origTop: rect.top };
+      /* Black bg + white text on input while floating */
+      inp.style.background = 'rgba(0,0,0,0.8)';
+      inp.style.color      = '#fff';
 
-      /* Animate to vertical center of visible area above keyboard */
+      _clKbdData = { row: row, inp: inp, origParent: origParent, origNext: origNext, origTop: rect.top };
+
+      /* Bounce up: overshoot 76px (≈2cm) above center, then settle to center */
       setTimeout(function() {
         var vvH = window.visualViewport
           ? window.visualViewport.height
           : Math.floor(window.innerHeight * 0.58);
         var targetTop = Math.floor((vvH - rect.height) / 2);
-        row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-        row.style.top        = targetTop + 'px';
+        _clKbdData.targetTop = targetTop;
+        /* Step 1: fly to 2cm above target (0.9s) */
+        row.style.transition = 'top 0.9s cubic-bezier(0.4,0,0.2,1), box-shadow 0.9s ease';
+        row.style.top        = (targetTop - 76) + 'px';
         row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
+        /* Step 2: settle to center (0.3s) */
+        setTimeout(function() {
+          row.style.transition = 'top 0.3s ease-in-out';
+          row.style.top        = targetTop + 'px';
+        }, 900);
       }, 50);
 
       if (!window.visualViewport) {
@@ -1493,6 +1504,8 @@
         d.row.style.transition = '';
         d.row.style.boxShadow  = '';
         d.row.style.borderRadius = '';
+        d.inp.style.background = '';
+        d.inp.style.color      = '';
         if (d.origNext && d.origNext.parentNode === d.origParent) {
           d.origParent.insertBefore(d.row, d.origNext);
         } else {
@@ -1500,10 +1513,17 @@
         }
       }
       if (immediate) { restore(); return; }
-      d.row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-      d.row.style.top       = d.origTop + 'px';
-      d.row.style.boxShadow = '0 8px 32px rgba(0,0,0,0.55)';
-      setTimeout(restore, 1200);
+      var curTop = parseFloat(d.row.style.top) || d.origTop;
+      /* Step 1: rise 76px above current position (0.3s) */
+      d.row.style.transition = 'top 0.3s ease-in-out';
+      d.row.style.top        = (curTop - 76) + 'px';
+      /* Step 2: descend to original position (0.9s) */
+      setTimeout(function() {
+        d.row.style.transition = 'top 0.9s cubic-bezier(0.4,0,0.2,1), box-shadow 0.9s ease';
+        d.row.style.top        = d.origTop + 'px';
+        d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+        setTimeout(restore, 900);
+      }, 300);
     }
 
     function goHome() {
