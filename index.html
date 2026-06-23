@@ -3996,15 +3996,20 @@
         if (_clInboxCachedItems.length) {
           _clInboxCachedItems.forEach(function(item) {
             var comp = compMap[item.id];
-            var statusHtml = '';
             if (comp && comp.photoBase64) {
-              statusHtml = '<img src="' + comp.photoBase64 + '" style="width:100%;border-radius:8px;margin-top:6px;display:block;cursor:pointer" onclick="viewClPhoto(this.src)">';
-            } else if (comp) {
-              statusHtml = ' <span style="color:#2ecc71;font-size:15px">✅</span>';
+              itemsHtml += '<li style="display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+                '<div style="flex:1;text-align:right">' +
+                  '<div style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:600">' + item.text + '</div>' +
+                  '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + (comp.empName || '') + '</div>' +
+                '</div>' +
+                '<img class="cl-thumb" src="' + comp.photoBase64 + '" onclick="viewClPhoto(this.src)">' +
+              '</li>';
             } else {
-              statusHtml = ' <span style="color:rgba(255,255,255,0.3);font-size:13px">—</span>';
+              var statusHtml = comp
+                ? ' <span style="color:#2ecc71;font-size:15px">✅</span>'
+                : ' <span style="color:rgba(255,255,255,0.3);font-size:13px">—</span>';
+              itemsHtml += '<li style="display:flex;flex-direction:column;gap:2px"><div>• ' + item.text + statusHtml + '</div></li>';
             }
-            itemsHtml += '<li style="display:flex;flex-direction:column;gap:2px"><div>• ' + item.text + statusHtml + '</div></li>';
           });
         } else {
           itemsHtml += '<li style="color:var(--text-dim)">טוען פריטים...</li>';
