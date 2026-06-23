@@ -3921,9 +3921,11 @@
 
       var targetTop = Math.round(window.innerHeight * 0.38);
       requestAnimationFrame(function() {
-        row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
-        row.style.top        = targetTop + 'px';
-        row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
+        requestAnimationFrame(function() {
+          row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
+          row.style.top        = targetTop + 'px';
+          row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
+        });
       });
     }
 
@@ -3934,7 +3936,7 @@
         var active = document.activeElement;
         if (active && active.classList && active.classList.contains('cl-add-input')) return;
         _doEndClFloat(false);
-      }, 200);
+      }, 300);
     }
 
     function _doEndClFloat(immediate) {
