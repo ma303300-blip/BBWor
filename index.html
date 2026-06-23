@@ -1430,19 +1430,14 @@
       var origScrollTop       = box.scrollTop;
       var origOverlayPadding  = overlay.style.padding;
 
-      /* 1. Expand modal to full screen instantly */
-      overlay.style.padding  = '0';
-      box.style.transition   = '';
-      box.style.height       = '100%';
-      box.style.maxWidth     = '100%';
-      box.style.borderRadius = '0';
+      var EASE = '1.2s cubic-bezier(0.4,0,0.2,1)';
 
-      /* 2. Placeholder keeps content height — no scrollTop jump */
+      /* 1. Placeholder keeps content height — no scrollTop jump */
       var placeholder = document.createElement('div');
       placeholder.style.cssText = 'height:' + rect.height + 'px;flex-shrink:0';
       origParent.insertBefore(placeholder, row);
 
-      /* 3. Lift row to body as position:fixed at current viewport position */
+      /* 2. Row to body as position:fixed at current position, no transition yet */
       row.style.position     = 'fixed';
       row.style.top          = rect.top + 'px';
       row.style.left         = rect.left + 'px';
@@ -1453,6 +1448,8 @@
       row.style.boxShadow    = '0 8px 32px rgba(0,0,0,0.55)';
       row.style.borderRadius = '14px';
       document.body.appendChild(row);
+      overlay.style.padding  = '0';
+      box.style.transition   = 'none';
 
       inp.style.background = 'rgba(0,0,0,0.8)';
       inp.style.color      = '#fff';
@@ -1464,10 +1461,16 @@
                      origScrollTop: origScrollTop, origOverlayPadding: origOverlayPadding };
       _prevKbdH = 0;
 
-      /* 4. Animate row up — modal is full screen so innerHeight * 0.35 is always correct */
+      /* 3. Both animations start simultaneously at 1.2s */
       var targetTop = Math.round(window.innerHeight * 0.35);
       requestAnimationFrame(function() {
-        row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
+        /* Modal expand */
+        box.style.transition   = 'height ' + EASE + ', max-width ' + EASE + ', border-radius ' + EASE;
+        box.style.height       = '100%';
+        box.style.maxWidth     = '100%';
+        box.style.borderRadius = '0';
+        /* Row rise */
+        row.style.transition = 'top ' + EASE + ', box-shadow 1.2s ease';
         row.style.top        = targetTop + 'px';
         row.style.boxShadow  = '0 16px 48px rgba(0,0,0,0.7)';
       });
@@ -1542,16 +1545,8 @@
         } else {
           d.origParent.appendChild(d.row);
         }
-        /* Collapse modal back */
-        d.box.style.transition   = 'height 0.4s ease, max-width 0.4s ease, border-radius 0.4s ease';
-        d.box.style.height       = d.origBoxHeight;
-        d.box.style.maxWidth     = d.origBoxMaxWidth;
-        d.box.style.borderRadius = d.origBoxBorderRadius;
-        d.overlay.style.padding  = d.origOverlayPadding;
-        setTimeout(function() {
-          d.box.style.transition = '';
-          d.box.scrollTop        = d.origScrollTop;
-        }, 400);
+        d.box.style.transition = '';
+        d.box.scrollTop        = d.origScrollTop;
       }
 
       if (immediate) {
@@ -1569,10 +1564,16 @@
         return;
       }
 
-      /* Row descends back, then modal collapses */
-      d.row.style.transition = 'top 1.2s cubic-bezier(0.4,0,0.2,1), box-shadow 1.2s ease';
+      /* Row descends + modal collapses simultaneously at 1.2s */
+      var EASE = '1.2s cubic-bezier(0.4,0,0.2,1)';
+      d.row.style.transition = 'top ' + EASE + ', box-shadow 1.2s ease';
       d.row.style.top        = d.origTop + 'px';
       d.row.style.boxShadow  = '0 8px 32px rgba(0,0,0,0.55)';
+      d.box.style.transition   = 'height ' + EASE + ', max-width ' + EASE + ', border-radius ' + EASE;
+      d.box.style.height       = d.origBoxHeight;
+      d.box.style.maxWidth     = d.origBoxMaxWidth;
+      d.box.style.borderRadius = d.origBoxBorderRadius;
+      d.overlay.style.padding  = d.origOverlayPadding;
       setTimeout(restore, 1200);
     }
 
