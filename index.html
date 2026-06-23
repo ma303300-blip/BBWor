@@ -4131,12 +4131,36 @@
         return;
       }
       _secProcsData.forEach(function(p) {
+        var safeText = p.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         var row = document.createElement('div');
+        row.id = 'sec-mgr-row-' + p.id;
         row.className = 'cl-mgr-item-row';
         row.innerHTML = '<div class="cl-mgr-item-text">' + p.text + '</div>' +
+          '<button class="cl-edit-btn" onclick="editSecProc(\'' + p.id + '\',\'' + safeText + '\')">✏️</button>' +
           '<button class="cl-del-btn" onclick="deleteSecProc(\'' + p.id + '\')">🗑️</button>';
         el.appendChild(row);
       });
+    }
+
+    function editSecProc(id, currentText) {
+      var row = document.getElementById('sec-mgr-row-' + id);
+      if (!row) return;
+      row.innerHTML =
+        '<input class="cl-add-input" id="sec-edit-' + id + '" value="' + currentText + '" style="flex:1;padding:8px 10px;font-size:14px">' +
+        '<button class="cl-add-btn" style="padding:8px 14px;flex-shrink:0" onclick="saveSecProc(\'' + id + '\')">✓</button>' +
+        '<button class="cl-del-btn" onclick="_renderSecMgrItems()">✕</button>';
+      var inp = document.getElementById('sec-edit-' + id);
+      if (inp) { inp.focus({ preventScroll: true }); inp.select(); }
+    }
+
+    function saveSecProc(id) {
+      var inp = document.getElementById('sec-edit-' + id);
+      if (!inp) return;
+      var text = inp.value.trim();
+      if (!text) return;
+      db.collection('security_procedures').doc(id).update({ text: text })
+        .then(function() { showModal('✅', 'נשמר!', 'הנוהל עודכן בהצלחה.', null); })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לעדכן.', null); });
     }
 
     function addSecProc() {
