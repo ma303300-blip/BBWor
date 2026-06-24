@@ -4265,7 +4265,7 @@
             '<button class="cl-edit-btn" onclick="editChecklistItem(\'' + item.id + '\',\'' + safeText + '\')">✏️</button>' +
             '<button class="cl-del-btn" onclick="deleteChecklistItem(\'' + item.id + '\')">🗑️</button>';
 
-          var days = (item.days && item.days.length) ? item.days : [0,1,2,3,4,5,6];
+          var days = Array.isArray(item.days) ? item.days : [0,1,2,3,4,5,6];
           var allOn = days.length === 7;
           var dayRow = document.createElement('div');
           dayRow.className = 'cl-day-row';
@@ -4285,7 +4285,7 @@
       var item = null;
       _clMgrItemsData.forEach(function(i) { if (i.id === id) item = i; });
       if (!item) return;
-      var days = (item.days && item.days.length) ? item.days.slice() : [0,1,2,3,4,5,6];
+      var days = Array.isArray(item.days) ? item.days.slice() : [0,1,2,3,4,5,6];
       var idx = days.indexOf(dayNum);
       if (idx === -1) { days.push(dayNum); days.sort(function(a,b){return a-b;}); }
       else { days.splice(idx, 1); }
@@ -4299,9 +4299,9 @@
       var item = null;
       _clMgrItemsData.forEach(function(i) { if (i.id === id) item = i; });
       if (!item) return;
-      item.days = [0,1,2,3,4,5,6];
+      item.days = (Array.isArray(item.days) && item.days.length === 7) ? [] : [0,1,2,3,4,5,6];
       _renderClMgrTabDOM();
-      db.collection('checklist_items').doc(id).update({ days: [0,1,2,3,4,5,6] })
+      db.collection('checklist_items').doc(id).update({ days: item.days })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
     }
 
