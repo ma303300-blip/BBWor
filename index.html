@@ -4158,8 +4158,9 @@
       if (!inp) return;
       var text = inp.value.trim();
       if (!text) return;
+      _secProcsData.forEach(function(p) { if (p.id === id) p.text = text; });
+      _renderSecMgrItems();
       db.collection('security_procedures').doc(id).update({ text: text })
-        .then(function() { showModal('✅', 'נשמר!', 'הנוהל עודכן בהצלחה.', null); })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לעדכן.', null); });
     }
 
@@ -4285,8 +4286,9 @@
       if (!inp) return;
       var text = inp.value.trim();
       if (!text) return;
+      _clMgrItemsData.forEach(function(item) { if (item.id === id) item.text = text; });
+      _renderClMgrTabDOM();
       db.collection('checklist_items').doc(id).update({ text: text })
-        .then(function() { showModal('✅', 'נשמר!', 'הפריט עודכן בהצלחה.', null); })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
     }
 
