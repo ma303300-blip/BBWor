@@ -5468,25 +5468,28 @@
 
 <script>
 function openEditProfile() {
-    if (typeof currentUser !== 'undefined') {
-        document.getElementById('edit-first-name').value = currentUser.firstName || '';
-        document.getElementById('edit-last-name').value = currentUser.lastName || '';
+    if (typeof currentEmployee !== 'undefined') {
+        document.getElementById('edit-first-name').value = currentEmployee.firstName || '';
+        document.getElementById('edit-last-name').value = currentEmployee.lastName || '';
         document.getElementById('modal-edit-profile').classList.add('open');
+    } else {
+        alert("שגיאה: לא נמצא עובד מחובר.");
     }
 }
 
 async function saveProfileChanges() {
-    if (typeof currentUser === 'undefined' || typeof db === 'undefined') return;
+    if (typeof currentEmployee === 'undefined' || typeof db === 'undefined') return;
     const newFirst = document.getElementById('edit-first-name').value;
     const newLast = document.getElementById('edit-last-name').value;
     try {
-        await db.collection('employees').doc(currentUser.uid).update({
+        await db.collection('employees').doc(currentEmployee.id).update({
             firstName: newFirst,
             lastName: newLast
         });
         document.getElementById('modal-edit-profile').classList.remove('open');
+        alert("הפרטים עודכנו בהצלחה!");
     } catch (e) {
-        alert("שגיאה בעדכון הפרטים");
+        alert("שגיאה בעדכון הפרטים: " + e.message);
     }
 }
 </script>
