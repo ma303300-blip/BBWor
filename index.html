@@ -2818,7 +2818,8 @@
         var todayDay = new Date().getDay();
         var visibleItems = items.filter(function(item) {
           var d = item.days;
-          if (!d || d.length === 0 || d.length === 7) return true;
+          if (!d || d.length === 7) return true;
+          if (d.length === 0) return false;
           return d.indexOf(todayDay) !== -1;
         });
         if (!visibleItems.length) { body.innerHTML = '<div class="drawer-empty">אין פריטים להיום</div>'; return; }
