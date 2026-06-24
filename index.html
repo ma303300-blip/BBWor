@@ -420,6 +420,10 @@
     .cl-photo-preview { width: 100%; border-radius: 10px; margin-top: 6px; object-fit: cover; max-height: 180px; display: none; }
     .cl-mgr-item-row { display: flex; align-items: center; gap: 6px; background: rgba(245,235,210,0.5); border: 1px solid rgba(245,235,210,0.25); border-radius: 11px; padding: 10px 12px; }
     .cl-mgr-item-text { flex: 1; font-size: 14px; color: #fff; text-align: right; line-height: 1.4; }
+    .cl-day-row { display: flex; gap: 4px; flex-wrap: wrap; padding: 0 4px 4px; }
+    .cl-day-btn { font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 20px; border: 1.5px solid rgba(0,0,0,0.18); background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.4); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .cl-day-btn.on { background: #16a34a; border-color: #16a34a; color: #fff; }
+    .cl-day-btn.all-days-btn { border-color: rgba(0,0,0,0.25); }
     .cl-section-title { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin: 10px 0 6px; text-align: right; }
     .goal-bar-track { background: rgba(255,255,255,0.08); border-radius: 6px; height: 7px; overflow: hidden; margin-top: 2px; }
     .goal-bar-fill { height: 100%; background: var(--gold); border-radius: 6px; width: 0%; transition: width 0.9s ease; }
@@ -2809,8 +2813,14 @@
 
       function render() {
         body.innerHTML = '';
-        if (!items.length) { body.innerHTML = '<div class="drawer-empty">אין פריטים עדיין</div>'; return; }
-        items.forEach(function(item) {
+        var todayDay = new Date().getDay();
+        var visibleItems = items.filter(function(item) {
+          var d = item.days;
+          if (!d || d.length === 0 || d.length === 7) return true;
+          return d.indexOf(todayDay) !== -1;
+        });
+        if (!visibleItems.length) { body.innerHTML = '<div class="drawer-empty">אין פריטים להיום</div>'; return; }
+        visibleItems.forEach(function(item) {
           var comp = completions[item.id];
           var row = document.createElement('div');
           row.className = 'cl-item' + (comp ? ' done' : '');
@@ -2827,7 +2837,7 @@
           row.innerHTML = right + left;
           body.appendChild(row);
         });
-        var allDone = items.length > 0 && items.every(function(item) { return completions[item.id]; });
+        var allDone = visibleItems.length > 0 && visibleItems.every(function(item) { return completions[item.id]; });
         var btn = document.createElement('button');
         btn.className = 'cl-submit-btn ' + (_submitted ? 'sent' : allDone ? 'ready' : 'inactive');
         btn.textContent = _submitted ? '✅ נשלח למנהל/ת' : '📤 שלח למנהל/ת';
@@ -4232,6 +4242,8 @@
 
     function renderClMgrTab() { _renderClMgrTabDOM(); }
 
+    var _CL_DAYS = ['א','ב','ג','ד','ה','ו','ש'];
+
     function _renderClMgrTabDOM() {
       var itemsEl = document.getElementById('cl-mgr-items');
       if (!itemsEl) return;
@@ -4241,15 +4253,54 @@
       } else {
         _clMgrItemsData.forEach(function(item) {
           var safeText = item.text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          var wrap = document.createElement('div');
+          wrap.style.cssText = 'display:flex;flex-direction:column;gap:0';
+
           var row = document.createElement('div');
           row.id = 'cl-mgr-row-' + item.id;
           row.className = 'cl-mgr-item-row';
           row.innerHTML = '<div class="cl-mgr-item-text">' + item.text + '</div>' +
             '<button class="cl-edit-btn" onclick="editChecklistItem(\'' + item.id + '\',\'' + safeText + '\')">✏️</button>' +
             '<button class="cl-del-btn" onclick="deleteChecklistItem(\'' + item.id + '\')">🗑️</button>';
-          itemsEl.appendChild(row);
+
+          var days = (item.days && item.days.length) ? item.days : [0,1,2,3,4,5,6];
+          var allOn = days.length === 7;
+          var dayRow = document.createElement('div');
+          dayRow.className = 'cl-day-row';
+          dayRow.innerHTML = _CL_DAYS.map(function(lbl, i) {
+            var on = days.indexOf(i) !== -1;
+            return '<button class="cl-day-btn' + (on ? ' on' : '') + '" onclick="toggleClDay(\'' + item.id + '\',' + i + ')">' + lbl + '</button>';
+          }).join('') + '<button class="cl-day-btn all-days-btn' + (allOn ? ' on' : '') + '" onclick="setAllClDays(\'' + item.id + '\')">כל הימים</button>';
+
+          wrap.appendChild(row);
+          wrap.appendChild(dayRow);
+          itemsEl.appendChild(wrap);
         });
       }
+    }
+
+    function toggleClDay(id, dayNum) {
+      var item = null;
+      _clMgrItemsData.forEach(function(i) { if (i.id === id) item = i; });
+      if (!item) return;
+      var days = (item.days && item.days.length) ? item.days.slice() : [0,1,2,3,4,5,6];
+      var idx = days.indexOf(dayNum);
+      if (idx === -1) { days.push(dayNum); days.sort(function(a,b){return a-b;}); }
+      else { days.splice(idx, 1); }
+      item.days = days;
+      _renderClMgrTabDOM();
+      db.collection('checklist_items').doc(id).update({ days: days })
+        .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
+    }
+
+    function setAllClDays(id) {
+      var item = null;
+      _clMgrItemsData.forEach(function(i) { if (i.id === id) item = i; });
+      if (!item) return;
+      item.days = [0,1,2,3,4,5,6];
+      _renderClMgrTabDOM();
+      db.collection('checklist_items').doc(id).update({ days: [0,1,2,3,4,5,6] })
+        .catch(function() { showModal('⚠️','שגיאה','לא ניתן לעדכן.',null); });
     }
 
     function addChecklistItem() {
@@ -4259,7 +4310,7 @@
       db.collection('checklist_items').where('shift','==',_clMgrTab).get()
         .then(function(snap) {
           var maxOrder = snap.size;
-          return db.collection('checklist_items').add({ text: text, shift: _clMgrTab, order: maxOrder, createdAt: new Date().toISOString() });
+          return db.collection('checklist_items').add({ text: text, shift: _clMgrTab, order: maxOrder, days: [0,1,2,3,4,5,6], createdAt: new Date().toISOString() });
         })
         .then(function() { inp.value = ''; })
         .catch(function() { showModal('⚠️','שגיאה','לא ניתן להוסיף פריט.',null); });
