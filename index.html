@@ -2795,7 +2795,9 @@
       var title  = document.getElementById('cl-drawer-title');
       document.getElementById('cl-overlay').classList.add('open');
       drawer.classList.add('open');
-      title.textContent = shift === 'morning' ? '☀️ משמרת בוקר' : '🌙 משמרת ערב';
+      var _dayNames = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+      var _todayName = _dayNames[new Date().getDay()];
+      title.textContent = (shift === 'morning' ? '☀️ משמרת בוקר' : '🌙 משמרת ערב') + ' | יום ' + _todayName;
       body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       var sessionId = getShiftSessionId(shift);
       cleanOldCompletions(shift, sessionId);
