@@ -278,6 +278,15 @@
     .dg-send-btn.show { display: block; }
     .dg-cancel-btn { background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 12px; font-size: 14px; font-family: inherit; color: rgba(255,255,255,0.6); cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
 
+    /* DAILY GOAL HISTORY (employee) */
+    .dg-history-section { display: none; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
+    .dg-history-title { font-size: 12px; color: var(--text-dim); text-align: right; margin-bottom: 8px; }
+    .dg-history-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; flex-direction: row-reverse; }
+    .dg-history-thumb { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .dg-history-thumb img { width: 68px; height: 68px; object-fit: cover; border-radius: 8px; border: 1.5px solid rgba(201,168,76,0.3); }
+    .dg-hist-time { font-size: 10px; color: var(--text-dim); }
+    .dg-hist-status { font-size: 13px; }
+
     /* DAILY GOAL INBOX (manager) */
     .dg-card { background: rgba(14,13,12,0.9); border: 1.5px solid rgba(201,168,76,0.25); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
     .dg-card.approved { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.04); }
@@ -665,6 +674,10 @@
       <div class="dg-box">
         <div class="dg-title">📸 מעקב יעד יומי</div>
         <div class="dg-subtitle" id="dg-emp-subtitle">צלם את המסמך ושלח</div>
+        <div class="dg-history-section" id="dg-history-section">
+          <div class="dg-history-title">שלחת היום:</div>
+          <div class="dg-history-list" id="dg-history-list"></div>
+        </div>
         <img class="dg-img-preview" id="dg-preview" src="" alt=""/>
         <label class="dg-file-label" for="dg-file-input">📷 בחר / צלם תמונה</label>
         <input type="file" id="dg-file-input" accept="image/*" capture="environment" style="display:none" onchange="onDailyGoalFileChosen(this)"/>
@@ -1362,6 +1375,8 @@
     var _dgSelectedImageData = null;
     var _dgMgrUnsub = null;
     var _dgMgrDocs  = [];
+    var _dgEmpUnsub = null;
+    var _dgEmpDocs  = [];
     var _constraintMgrUnsub1 = null;
     var _constraintMgrUnsub2 = null;
     var _constraintMgrPendingSnap = null;
@@ -1517,6 +1532,7 @@
       if (_constraintBadgeUnsub) { _constraintBadgeUnsub(); _constraintBadgeUnsub = null; }
       if (_secProcsUnsub) { _secProcsUnsub(); _secProcsUnsub = null; }
       _stopDgMgrListener();
+      _stopDgEmpListener();
       _stopAutoRefresh();
       show('home');
     }
@@ -1920,6 +1936,7 @@
       loadGoalBanner();
       showGreeting(emp.firstName);
       checkEmpConstraintStatus(emp.id);
+      _startDgEmpListener(emp.id);
       _startCompListener();
       _startCompBadge();
       _startClStatusListener();
@@ -3142,6 +3159,53 @@
       reader.readAsDataURL(file);
     }
 
+    function _startDgEmpListener(empId) {
+      if (_dgEmpUnsub) return;
+      _dgEmpUnsub = db.collection('daily_goal_submissions')
+        .where('empId', '==', empId)
+        .onSnapshot(function(snap) {
+          var today = _dgTodayKey();
+          _dgEmpDocs = [];
+          snap.forEach(function(doc) {
+            var d = doc.data();
+            if (d.date === today) _dgEmpDocs.push(Object.assign({ id: doc.id }, d));
+          });
+          _dgEmpDocs.sort(function(a, b) {
+            var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : 0;
+            var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : 0;
+            return ta - tb;
+          });
+          _renderDgEmpHistory();
+        }, function() {});
+    }
+
+    function _stopDgEmpListener() {
+      if (_dgEmpUnsub) { _dgEmpUnsub(); _dgEmpUnsub = null; }
+      _dgEmpDocs = [];
+    }
+
+    function _renderDgEmpHistory() {
+      var section = document.getElementById('dg-history-section');
+      var list    = document.getElementById('dg-history-list');
+      if (!section || !list) return;
+      if (!_dgEmpDocs.length) { section.style.display = 'none'; return; }
+      section.style.display = '';
+      list.innerHTML = '';
+      _dgEmpDocs.forEach(function(doc) {
+        var timeStr = '';
+        if (doc.createdAt && doc.createdAt.toDate) {
+          var d = doc.createdAt.toDate();
+          timeStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+        var item = document.createElement('div');
+        item.className = 'dg-history-thumb';
+        item.innerHTML = '<img src="' + (doc.imageData || '') + '" />' +
+          '<div class="dg-hist-time">' + timeStr + '</div>' +
+          '<div class="dg-hist-status">' + (doc.status === 'approved' ? '✅' : '⏳') + '</div>';
+        list.appendChild(item);
+      });
+    }
+
     function openDailyGoalModal() {
       _dgSelectedImageData = null;
       var preview = document.getElementById('dg-preview');
@@ -3152,6 +3216,7 @@
       document.getElementById('dg-send-btn').textContent = 'שלח ✦';
       document.getElementById('dg-emp-subtitle').textContent = 'צלם את המסמך ושלח';
       document.getElementById('dg-file-input').value = '';
+      _renderDgEmpHistory();
       document.getElementById('dg-emp-modal').classList.add('open');
     }
 
@@ -3188,12 +3253,16 @@
         status:    'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(function() {
-        closeDailyGoalModal();
-        showModal('✅', 'נשלח!', 'התמונה נשלחה בהצלחה.', null);
+        _dgSelectedImageData = null;
+        var subtitle = document.getElementById('dg-emp-subtitle');
+        if (subtitle) subtitle.textContent = '✅ התמונה נשלחה בהצלחה!';
+        sendBtn.textContent = 'שלח ✦';
+        setTimeout(function() { closeDailyGoalModal(); }, 1500);
       }).catch(function() {
         sendBtn.textContent = 'שלח ✦';
         sendBtn.disabled = false;
-        showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. נסה שוב.', null);
+        var subtitle = document.getElementById('dg-emp-subtitle');
+        if (subtitle) subtitle.textContent = '⚠️ שגיאה — נסה שוב';
       });
     }
 
@@ -3214,7 +3283,7 @@
           if (badge) { badge.textContent = pending; badge.classList.toggle('show', pending > 0); }
           var drawer = document.getElementById('dg-inbox-drawer');
           if (drawer && drawer.classList.contains('open')) { _renderDgInbox(); }
-        }, function() {});
+        }, function(err) { console.error('DG listener error:', err); });
     }
 
     function _stopDgMgrListener() {
