@@ -1283,6 +1283,9 @@
     ═══════════════════════════════════ */
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(r => r.update()).catch(() => {});
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        window.location.reload();
+      });
     }
 
     /* ═══════════════════════════════════
