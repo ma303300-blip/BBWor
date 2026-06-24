@@ -641,6 +641,7 @@
       <div class="emp-greeting">
         <div class="emp-name-txt" id="emp-name-display">שלום!</div>
         <div class="emp-branch-txt" id="emp-branch-display"></div>
+    <button onclick="openEditProfile()" style="background:transparent; border:1px solid var(--gold); color:var(--gold); border-radius:8px; padding:4px 12px; font-size:12px; margin-top:10px; cursor:pointer;">עריכת פרופיל</button>
       </div>
       <div class="action-grid" id="emp-action-grid"></div>
       <div class="logo-gap"></div>
@@ -5447,5 +5448,48 @@
       <button class="modal-ok-btn" style="margin-top:14px" onclick="closePrivacy()">סגור</button>
     </div>
   </div>
+
+<!-- מודל עריכת פרופיל -->
+<div id="modal-edit-profile" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-heading" style="margin-bottom:15px;">עריכת פרטים אישיים</div>
+    <div class="form-group" style="width:100%; text-align:right; margin-bottom:10px;">
+        <label>שם פרטי</label>
+        <input type="text" id="edit-first-name" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid #444; color:#fff;">
+    </div>
+    <div class="form-group" style="width:100%; text-align:right; margin-bottom:15px;">
+        <label>שם משפחה</label>
+        <input type="text" id="edit-last-name" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid #444; color:#fff;">
+    </div>
+    <button class="modal-ok-btn" onclick="saveProfileChanges()">שמירה וסנכרון</button>
+    <button onclick="document.getElementById('modal-edit-profile').classList.remove('open')" style="background:transparent; border:none; color:var(--text-dim); margin-top:15px; cursor:pointer;">ביטול</button>
+  </div>
+</div>
+
+<script>
+function openEditProfile() {
+    if (typeof currentUser !== 'undefined') {
+        document.getElementById('edit-first-name').value = currentUser.firstName || '';
+        document.getElementById('edit-last-name').value = currentUser.lastName || '';
+        document.getElementById('modal-edit-profile').classList.add('open');
+    }
+}
+
+async function saveProfileChanges() {
+    if (typeof currentUser === 'undefined' || typeof db === 'undefined') return;
+    const newFirst = document.getElementById('edit-first-name').value;
+    const newLast = document.getElementById('edit-last-name').value;
+    try {
+        await db.collection('employees').doc(currentUser.uid).update({
+            firstName: newFirst,
+            lastName: newLast
+        });
+        document.getElementById('modal-edit-profile').classList.remove('open');
+    } catch (e) {
+        alert("שגיאה בעדכון הפרטים");
+    }
+}
+</script>
+
 </body>
 </html>
