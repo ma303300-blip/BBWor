@@ -651,7 +651,7 @@
   <!-- EMPLOYEE -->
   <div id="screen-employee" class="screen">
     <div class="emp-header">
-      <span class="bsd-text">בס"ד <span style="font-size:11px;color:#c9a84c;font-weight:700">v153</span></span>
+      <span class="bsd-text">בס"ד <span style="font-size:11px;color:#c9a84c;font-weight:700">v157</span></span>
       <button class="exit-btn" onclick="logout()">יציאה ✕</button>
     </div>
     <div class="emp-body">
@@ -1299,10 +1299,15 @@
        SERVICE WORKER
     ═══════════════════════════════════ */
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').then(r => r.update()).catch(() => {});
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
-        window.location.reload();
-      });
+      navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        reg.update();
+        reg.addEventListener('updatefound', function() {
+          var sw = reg.installing;
+          sw.addEventListener('statechange', function() {
+            if (sw.state === 'activated') window.location.reload();
+          });
+        });
+      }).catch(function() {});
     }
 
     /* ═══════════════════════════════════
