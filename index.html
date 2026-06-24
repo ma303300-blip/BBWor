@@ -254,6 +254,45 @@
     .fab-security { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 20px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
     .fab-security.visible { display: flex; }
     .fab-security:active { transform: scale(0.92); }
+
+    /* FAB DAILY GOAL (employee) */
+    .fab-daily-goal { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 90px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid rgba(201,168,76,0.7); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
+    .fab-daily-goal.visible { display: flex; }
+    .fab-daily-goal:active { transform: scale(0.92); }
+
+    /* FAB DAILY INBOX (manager) */
+    .fab-daily-inbox { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 90px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid rgba(201,168,76,0.7); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
+    .fab-daily-inbox.visible { display: flex; }
+    .fab-daily-inbox:active { transform: scale(0.92); }
+
+    /* DAILY GOAL MODAL (employee) */
+    .dg-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; }
+    .dg-modal.open { display: flex; }
+    .dg-box { background: #1a1916; border: 1.5px solid rgba(201,168,76,0.35); border-radius: 22px; padding: 24px 20px; width: calc(100% - 40px); max-width: 360px; display: flex; flex-direction: column; gap: 16px; }
+    .dg-title { font-size: 17px; font-weight: 700; color: var(--gold); text-align: center; }
+    .dg-subtitle { font-size: 13px; color: var(--text-dim); text-align: center; }
+    .dg-img-preview { width: 100%; max-height: 220px; object-fit: contain; border-radius: 12px; display: none; }
+    .dg-img-preview.show { display: block; }
+    .dg-file-label { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(201,168,76,0.12); border: 1.5px dashed rgba(201,168,76,0.45); border-radius: 14px; padding: 18px; font-size: 15px; color: var(--gold); cursor: pointer; font-family: inherit; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+    .dg-send-btn { background: var(--gold); border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; display: none; }
+    .dg-send-btn.show { display: block; }
+    .dg-cancel-btn { background: transparent; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 12px; font-size: 14px; font-family: inherit; color: rgba(255,255,255,0.6); cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
+
+    /* DAILY GOAL INBOX (manager) */
+    .dg-card { background: rgba(14,13,12,0.9); border: 1.5px solid rgba(201,168,76,0.25); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .dg-card.approved { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.04); }
+    .dg-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .dg-card-name { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.88); }
+    .dg-card-time { font-size: 12px; color: var(--text-dim); }
+    .dg-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; cursor: pointer; }
+    .dg-approve-btn { background: var(--gold); border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
+    .dg-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; }
+
+    /* DAILY GOAL FULLSCREEN */
+    .dg-fullscreen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+    .dg-fullscreen.open { display: flex; }
+    .dg-fullscreen-img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+    .dg-fullscreen-close { background: rgba(255,255,255,0.12); border: none; border-radius: 12px; padding: 12px 28px; font-size: 16px; font-family: inherit; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .sec-proc-item { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 14px; color: rgba(255,255,255,0.88); text-align: right; line-height: 1.5; }
     .sec-proc-item:last-child { border-bottom: none; }
 
@@ -619,6 +658,20 @@
       </div>
       <div class="drawer-body" id="sec-drawer-body"></div>
     </div>
+    <!-- FAB DAILY GOAL (employee) -->
+    <div class="fab-daily-goal" id="fab-daily-goal" onclick="openDailyGoalModal()">📸</div>
+    <!-- Daily Goal Modal (employee) -->
+    <div class="dg-modal" id="dg-emp-modal">
+      <div class="dg-box">
+        <div class="dg-title">📸 מעקב יעד יומי</div>
+        <div class="dg-subtitle" id="dg-emp-subtitle">צלם את המסמך ושלח</div>
+        <img class="dg-img-preview" id="dg-preview" src="" alt=""/>
+        <label class="dg-file-label" for="dg-file-input">📷 בחר / צלם תמונה</label>
+        <input type="file" id="dg-file-input" accept="image/*" capture="environment" style="display:none" onchange="onDailyGoalFileChosen(this)"/>
+        <button class="dg-send-btn" id="dg-send-btn" onclick="submitDailyGoal()">שלח ✦</button>
+        <button class="dg-cancel-btn" onclick="closeDailyGoalModal()">ביטול</button>
+      </div>
+    </div>
   </div>
 
   <!-- MANAGER -->
@@ -642,6 +695,22 @@
     <div class="fab-mail" id="fab-mail" onclick="openPendingDrawer()">📬<span class="fab-badge" id="fab-badge"></span></div>
     <!-- FAB CHECKLIST INBOX -->
     <div class="fab-cl-inbox" id="fab-cl-inbox" onclick="openClInbox()">📥<span class="fab-badge" id="fab-cl-badge"></span></div>
+    <!-- FAB DAILY INBOX (manager) -->
+    <div class="fab-daily-inbox" id="fab-daily-inbox" onclick="openDailyGoalInbox()">📋<span class="fab-badge" id="fab-dg-badge"></span></div>
+    <!-- Daily Goal Inbox overlay + drawer (manager) -->
+    <div class="pending-overlay" id="dg-inbox-overlay" onclick="closeDailyGoalInbox()"></div>
+    <div class="pending-drawer" id="dg-inbox-drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">📋 מעקב יעד יומי</span>
+        <button class="drawer-close-btn" onclick="closeDailyGoalInbox()">✕</button>
+      </div>
+      <div class="drawer-body" id="dg-inbox-body"></div>
+    </div>
+    <!-- Fullscreen image viewer -->
+    <div class="dg-fullscreen" id="dg-fullscreen">
+      <img class="dg-fullscreen-img" id="dg-fullscreen-img" src="" alt=""/>
+      <button class="dg-fullscreen-close" onclick="closeDgFullscreen()">סגור ✕</button>
+    </div>
     <!-- FAB PEOPLE -->
     <div class="fab-people" id="fab-people" onclick="openEmployeeListDrawer()">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 20" width="28" height="22">
@@ -1290,6 +1359,9 @@
     var currentConstraintDocId = null;
     var currentConstraintPendingDocId = null;
     var _constraintSel = { 1: { day: null, shift: null, startTime: null }, 2: { day: null, shift: null, startTime: null }, daysOff: [] };
+    var _dgSelectedImageData = null;
+    var _dgMgrUnsub = null;
+    var _dgMgrDocs  = [];
     var _constraintMgrUnsub1 = null;
     var _constraintMgrUnsub2 = null;
     var _constraintMgrPendingSnap = null;
@@ -1369,21 +1441,28 @@
       document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
       target.classList.add('active');
       var fabSec = document.getElementById('fab-security');
+      var fabDgEmp = document.getElementById('fab-daily-goal');
+      var fabDgMgr = document.getElementById('fab-daily-inbox');
       if (name === 'employee') {
         if (fabSec) fabSec.classList.add('visible');
+        if (fabDgEmp) fabDgEmp.classList.add('visible');
+        if (fabDgMgr) fabDgMgr.classList.remove('visible');
       } else {
         if (fabSec) fabSec.classList.remove('visible');
+        if (fabDgEmp) fabDgEmp.classList.remove('visible');
       }
       if (name !== 'manager') {
         var fabMail = document.getElementById('fab-mail');
         var fabPeople = document.getElementById('fab-people');
         if (fabMail) fabMail.classList.remove('visible');
         if (fabPeople) fabPeople.classList.remove('visible');
+        if (fabDgMgr) fabDgMgr.classList.remove('visible');
       } else {
         var fabMail = document.getElementById('fab-mail');
         var fabPeople = document.getElementById('fab-people');
         if (fabMail) fabMail.classList.add('visible');
         if (fabPeople) fabPeople.classList.add('visible');
+        if (fabDgMgr) fabDgMgr.classList.add('visible');
       }
       document.querySelector('.bsd-corner').style.display = (name === 'employee' || name === 'manager') ? 'none' : '';
       window.scrollTo(0, 0);
@@ -1437,6 +1516,7 @@
       if (_badgeUnsub) { _badgeUnsub(); _badgeUnsub = null; }
       if (_constraintBadgeUnsub) { _constraintBadgeUnsub(); _constraintBadgeUnsub = null; }
       if (_secProcsUnsub) { _secProcsUnsub(); _secProcsUnsub = null; }
+      _stopDgMgrListener();
       _stopAutoRefresh();
       show('home');
     }
@@ -1689,6 +1769,7 @@
       document.getElementById('fab-mail').classList.add('visible');
       document.getElementById('fab-people').classList.add('visible');
       _startClMgrInboxListeners();
+      _startDgMgrListener();
       if (!_badgeUnsub) {
         _badgeUnsub = db.collection('employees').where('status', '==', 'pending')
           .onSnapshot(function(snap) {
@@ -3034,6 +3115,192 @@
       }
     }
 
+    /* ═══════════════════════════════════
+       DAILY GOAL TRACKING
+    ═══════════════════════════════════ */
+    function _dgTodayKey() {
+      var now = new Date();
+      var pad = function(n) { return String(n).padStart(2,'0'); };
+      return now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+    }
+
+    function _compressDgImage(file, cb) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var MAX = 1024;
+          var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+          var canvas = document.createElement('canvas');
+          canvas.width  = Math.round(img.width  * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          cb(canvas.toDataURL('image/jpeg', 0.65));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openDailyGoalModal() {
+      _dgSelectedImageData = null;
+      var preview = document.getElementById('dg-preview');
+      preview.src = '';
+      preview.classList.remove('show');
+      document.getElementById('dg-send-btn').classList.remove('show');
+      document.getElementById('dg-send-btn').disabled = false;
+      document.getElementById('dg-send-btn').textContent = 'שלח ✦';
+      document.getElementById('dg-emp-subtitle').textContent = 'צלם את המסמך ושלח';
+      document.getElementById('dg-file-input').value = '';
+      document.getElementById('dg-emp-modal').classList.add('open');
+    }
+
+    function closeDailyGoalModal() {
+      document.getElementById('dg-emp-modal').classList.remove('open');
+      _dgSelectedImageData = null;
+    }
+
+    function onDailyGoalFileChosen(input) {
+      if (!input.files || !input.files[0]) return;
+      document.getElementById('dg-emp-subtitle').textContent = 'דוחס תמונה...';
+      _compressDgImage(input.files[0], function(dataUrl) {
+        _dgSelectedImageData = dataUrl;
+        var preview = document.getElementById('dg-preview');
+        preview.src = dataUrl;
+        preview.classList.add('show');
+        document.getElementById('dg-send-btn').classList.add('show');
+        document.getElementById('dg-emp-subtitle').textContent = 'תמונה מוכנה לשליחה';
+      });
+    }
+
+    function submitDailyGoal() {
+      if (!_dgSelectedImageData || !currentEmployee) return;
+      var sendBtn = document.getElementById('dg-send-btn');
+      sendBtn.textContent = 'שולח...';
+      sendBtn.disabled = true;
+      var empName = (currentEmployee.firstName || '') + (currentEmployee.lastName ? ' ' + currentEmployee.lastName : '');
+      db.collection('daily_goal_submissions').add({
+        empId:     currentEmployee.id,
+        empName:   empName.trim(),
+        branch:    currentEmployee.branch,
+        imageData: _dgSelectedImageData,
+        date:      _dgTodayKey(),
+        status:    'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function() {
+        closeDailyGoalModal();
+        showModal('✅', 'נשלח!', 'התמונה נשלחה בהצלחה.', null);
+      }).catch(function() {
+        sendBtn.textContent = 'שלח ✦';
+        sendBtn.disabled = false;
+        showModal('⚠️', 'שגיאה', 'לא ניתן לשלוח. נסה שוב.', null);
+      });
+    }
+
+    function _startDgMgrListener() {
+      if (_dgMgrUnsub) return;
+      _dgMgrUnsub = db.collection('daily_goal_submissions')
+        .where('date', '==', _dgTodayKey())
+        .onSnapshot(function(snap) {
+          _dgMgrDocs = [];
+          snap.forEach(function(doc) { _dgMgrDocs.push(Object.assign({ id: doc.id }, doc.data())); });
+          _dgMgrDocs.sort(function(a, b) {
+            var ta = (a.createdAt && a.createdAt.toMillis) ? a.createdAt.toMillis() : 0;
+            var tb = (b.createdAt && b.createdAt.toMillis) ? b.createdAt.toMillis() : 0;
+            return tb - ta;
+          });
+          var pending = _dgMgrDocs.filter(function(d) { return d.status === 'pending'; }).length;
+          var badge = document.getElementById('fab-dg-badge');
+          if (badge) { badge.textContent = pending; badge.classList.toggle('show', pending > 0); }
+          var drawer = document.getElementById('dg-inbox-drawer');
+          if (drawer && drawer.classList.contains('open')) { _renderDgInbox(); }
+        }, function() {});
+    }
+
+    function _stopDgMgrListener() {
+      if (_dgMgrUnsub) { _dgMgrUnsub(); _dgMgrUnsub = null; }
+      _dgMgrDocs = [];
+    }
+
+    function openDailyGoalInbox() {
+      _renderDgInbox();
+      document.getElementById('dg-inbox-overlay').classList.add('open');
+      document.getElementById('dg-inbox-drawer').classList.add('open');
+    }
+
+    function closeDailyGoalInbox() {
+      document.getElementById('dg-inbox-overlay').classList.remove('open');
+      document.getElementById('dg-inbox-drawer').classList.remove('open');
+    }
+
+    function _renderDgInbox() {
+      var body = document.getElementById('dg-inbox-body');
+      if (!body) return;
+      if (!_dgMgrDocs.length) {
+        body.innerHTML = '<div class="drawer-empty">אין שליחות להיום</div>';
+        return;
+      }
+      body.innerHTML = '';
+      _dgMgrDocs.forEach(function(doc) {
+        var card = document.createElement('div');
+        card.className = 'dg-card' + (doc.status === 'approved' ? ' approved' : '');
+        var timeStr = '';
+        if (doc.createdAt && doc.createdAt.toDate) {
+          var d = doc.createdAt.toDate();
+          timeStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+        }
+        var safeId = doc.id.replace(/'/g, "\\'");
+        card.innerHTML =
+          '<div class="dg-card-header">' +
+            '<div class="dg-card-name">' + (doc.empName || '') + '</div>' +
+            '<div class="dg-card-time">' + timeStr + '</div>' +
+          '</div>' +
+          '<img class="dg-thumb" src="' + (doc.imageData || '') + '" onclick="openDgFullscreen(\'' + safeId + '\')" />' +
+          (doc.status === 'approved'
+            ? '<div class="dg-approved-tag">✅ נראה</div>'
+            : '<button class="dg-approve-btn" onclick="approveDailyGoal(\'' + safeId + '\')">אישור ✓</button>');
+        body.appendChild(card);
+        var sp = document.createElement('div');
+        sp.style.height = '10px';
+        body.appendChild(sp);
+      });
+    }
+
+    function approveDailyGoal(docId) {
+      db.collection('daily_goal_submissions').doc(docId).update({ status: 'approved' })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר.', null); });
+    }
+
+    function openDgFullscreen(docId) {
+      var doc = null;
+      _dgMgrDocs.forEach(function(d) { if (d.id === docId) doc = d; });
+      if (!doc) return;
+      document.getElementById('dg-fullscreen-img').src = doc.imageData || '';
+      document.getElementById('dg-fullscreen').classList.add('open');
+    }
+
+    function closeDgFullscreen() {
+      document.getElementById('dg-fullscreen').classList.remove('open');
+      document.getElementById('dg-fullscreen-img').src = '';
+    }
+
+    function _checkAndCleanDailyGoals() {
+      var now = new Date();
+      if (now.getHours() < 23) return;
+      var pad = function(n) { return String(n).padStart(2,'0'); };
+      var todayKey = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
+      var storKey = 'bbwor_dg_clean_' + todayKey;
+      if (localStorage.getItem(storKey)) return;
+      localStorage.setItem(storKey, '1');
+      db.collection('daily_goal_submissions').where('date', '==', todayKey).get()
+        .then(function(snap) {
+          if (snap.empty) return;
+          var batch = db.batch();
+          snap.forEach(function(d) { batch.delete(d.ref); });
+          return batch.commit();
+        }).catch(function() { localStorage.removeItem(storKey); });
+    }
+
     function _checkAndCleanConstraints() {
       var now = new Date();
       if (now.getDay() !== 6 || now.getHours() < 23) return;
@@ -3054,6 +3321,7 @@
       _lastKnownShift = getCurrentShift();
       _checkAndCleanExpiredSessions();
       _checkAndCleanConstraints();
+      _checkAndCleanDailyGoals();
       _goalRefreshTimer = setInterval(function() {
         var shift = getCurrentShift();
         if (shift !== _lastKnownShift) {
@@ -3065,6 +3333,7 @@
         }
         _checkAndCleanExpiredSessions();
         _checkAndCleanConstraints();
+        _checkAndCleanDailyGoals();
       }, 4000);
     }
 
