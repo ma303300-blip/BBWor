@@ -297,6 +297,14 @@
     .dg-approve-btn { background: var(--gold); border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; font-family: inherit; color: #111; cursor: pointer; width: 100%; -webkit-tap-highlight-color: transparent; }
     .dg-approved-tag { font-size: 14px; font-weight: 700; color: #2ecc71; text-align: center; padding: 4px 0; }
 
+    /* DAILY GOAL CAMERA (getUserMedia) */
+    .dg-camera-wrap { display: none; position: fixed; inset: 0; background: #000; z-index: 250; flex-direction: column; }
+    .dg-camera-wrap.open { display: flex; }
+    .dg-camera-video { flex: 1; width: 100%; object-fit: cover; }
+    .dg-camera-bar { display: flex; align-items: center; justify-content: space-around; padding: 16px 24px; padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); background: #111; }
+    .dg-camera-snap { width: 68px; height: 68px; border-radius: 50%; background: #fff; border: 4px solid rgba(255,255,255,0.4); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .dg-camera-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 12px 20px; font-size: 14px; font-family: inherit; color: #fff; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
     /* DAILY GOAL FULLSCREEN */
     .dg-fullscreen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
     .dg-fullscreen.open { display: flex; }
@@ -679,9 +687,18 @@
           <div class="dg-history-list" id="dg-history-list"></div>
         </div>
         <img class="dg-img-preview" id="dg-preview" src="" alt=""/>
-        <label for="dg-file-input" class="dg-file-label">📷 בחר / צלם תמונה</label>
+        <button class="dg-file-label" onclick="openDgCamera()">📷 צלם תמונה</button>
         <button class="dg-send-btn" id="dg-send-btn" onclick="submitDailyGoal()">שלח ✦</button>
         <button class="dg-cancel-btn" onclick="closeDailyGoalModal()">ביטול</button>
+      </div>
+    </div>
+    <!-- In-app camera (getUserMedia) -->
+    <div class="dg-camera-wrap" id="dg-camera-wrap">
+      <video class="dg-camera-video" id="dg-camera-video" autoplay playsinline muted></video>
+      <div class="dg-camera-bar">
+        <button class="dg-camera-cancel" onclick="closeDgCamera()">ביטול</button>
+        <button class="dg-camera-snap" onclick="takeDgSnapshot()"></button>
+        <div style="width:80px"></div>
       </div>
     </div>
   </div>
@@ -3160,6 +3177,60 @@
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+    }
+
+    function _compressDgCanvas(srcCanvas, cb) {
+      var MAX = 1024;
+      var ratio = Math.min(MAX / srcCanvas.width, MAX / srcCanvas.height, 1);
+      var out = document.createElement('canvas');
+      out.width  = Math.round(srcCanvas.width  * ratio);
+      out.height = Math.round(srcCanvas.height * ratio);
+      out.getContext('2d').drawImage(srcCanvas, 0, 0, out.width, out.height);
+      cb(out.toDataURL('image/jpeg', 0.65));
+    }
+
+    function openDgCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById('dg-file-input').click();
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+        .then(function(stream) {
+          var video = document.getElementById('dg-camera-video');
+          video._dgStream = stream;
+          video.srcObject = stream;
+          document.getElementById('dg-camera-wrap').classList.add('open');
+        })
+        .catch(function() {
+          document.getElementById('dg-file-input').click();
+        });
+    }
+
+    function closeDgCamera() {
+      var video = document.getElementById('dg-camera-video');
+      if (video._dgStream) {
+        video._dgStream.getTracks().forEach(function(t) { t.stop(); });
+        video._dgStream = null;
+      }
+      video.srcObject = null;
+      document.getElementById('dg-camera-wrap').classList.remove('open');
+    }
+
+    function takeDgSnapshot() {
+      var video = document.getElementById('dg-camera-video');
+      var canvas = document.createElement('canvas');
+      canvas.width  = video.videoWidth  || 1280;
+      canvas.height = video.videoHeight || 720;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      closeDgCamera();
+      _compressDgCanvas(canvas, function(dataUrl) {
+        _dgSelectedImageData = dataUrl;
+        var preview = document.getElementById('dg-preview');
+        preview.src = dataUrl;
+        preview.classList.add('show');
+        document.getElementById('dg-send-btn').classList.add('show');
+        document.getElementById('dg-emp-subtitle').textContent = 'תמונה מוכנה לשליחה';
+      });
     }
 
     function _startDgEmpListener(empId) {
