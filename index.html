@@ -4556,8 +4556,8 @@
         var manualKey = key + '_' + empId;
         if (manualKey in _schStartTimes) lateTime = _schStartTimes[manualKey] || null;
         if (manualKey in _schEndTimes)   earlyEnd  = _schEndTimes[manualKey]  || null;
-        var timeLabel = lateTime && earlyEnd ? lateTime + '–' + earlyEnd
-                      : lateTime            ? lateTime
+        var timeLabel = lateTime && earlyEnd ? 'מ ' + lateTime + ' עד ' + earlyEnd
+                      : lateTime            ? 'מ ' + lateTime
                       : earlyEnd            ? 'עד ' + earlyEnd
                       : null;
         cell.innerHTML =
