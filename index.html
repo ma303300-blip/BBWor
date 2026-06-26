@@ -3485,7 +3485,8 @@
       }
 
       function submitShift() {
-        if (!currentEmployee) return;
+        if (!currentEmployee || _submitted) return;
+        _submitted = true; render(); // lock immediately, prevent double-tap
         db.collection('shift_submissions').add({
           empId: currentEmployee.id,
           empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
@@ -3493,8 +3494,10 @@
           shift: shift,
           sessionId: sessionId,
           submittedAt: new Date().toISOString()
-        }).then(function() { _submitted = true; render(); })
-          .catch(function() { showModal('⚠️','שגיאה','לא ניתן לשלוח.',null); });
+        }).catch(function() {
+          _submitted = false; render(); // revert on error so user can retry
+          showModal('⚠️','שגיאה','לא ניתן לשלוח.',null);
+        });
       }
 
       checkSubmission();
