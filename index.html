@@ -1238,9 +1238,12 @@
     <div class="modal-box" id="sch-time-box" style="gap:14px;align-items:stretch;max-width:290px">
       <div class="modal-big-icon">⏰</div>
       <div class="modal-heading" id="sch-time-heading" style="font-size:16px;text-align:center"></div>
+      <div style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:2px">שעת כניסה</div>
       <input type="time" id="sch-time-input" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:22px;font-weight:700;color:#fff;text-align:center;width:100%;font-family:inherit;direction:ltr;box-sizing:border-box;-webkit-appearance:none">
+      <div style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:2px;margin-top:4px">שעת סיום</div>
+      <input type="time" id="sch-end-time-input" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:22px;font-weight:700;color:#fff;text-align:center;width:100%;font-family:inherit;direction:ltr;box-sizing:border-box;-webkit-appearance:none">
       <button class="modal-ok-btn" onclick="saveSchTimeEditor()" style="margin-top:0">אישור</button>
-      <button id="sch-time-clear-btn" class="constraint-back-btn" style="width:100%" onclick="clearSchTimeEditor()">נקה שעה</button>
+      <button id="sch-time-clear-btn" class="constraint-back-btn" style="width:100%" onclick="clearSchTimeEditor()">נקה שעות</button>
       <button class="constraint-back-btn" style="width:100%" onclick="closeSchTimeEditor()">ביטול</button>
     </div>
   </div>
@@ -4315,6 +4318,7 @@
     var _schEmpMap        = {};
     var _schConstraintMap  = {};
     var _schStartTimes     = {};
+    var _schEndTimes       = {};
     var _schTimeEditorKey  = null;
     var _schUnsub          = null;
     var _schPickerDay  = null;
@@ -4467,6 +4471,7 @@
             .onSnapshot(function(doc) {
               _schCells = doc.exists ? (doc.data().cells || {}) : {};
               _schStartTimes = doc.exists ? (doc.data().startTimes || {}) : {};
+              _schEndTimes   = doc.exists ? (doc.data().endTimes   || {}) : {};
               if (doc.exists && !_schEmpMap['__mgr__']) {
                 var _mc = doc.data().managerCard;
                 if (_mc) { _schEmpMap['__mgr__'] = { id: '__mgr__', firstName: _mc.firstName, lastName: _mc.lastName || '', photo: _mc.photo || null, phone: '' }; }
@@ -4550,6 +4555,7 @@
         }
         var manualKey = key + '_' + empId;
         if (manualKey in _schStartTimes) lateTime = _schStartTimes[manualKey] || null;
+        if (manualKey in _schEndTimes)   earlyEnd  = _schEndTimes[manualKey]  || null;
         var timeLabel = lateTime && earlyEnd ? lateTime + '–' + earlyEnd
                       : lateTime            ? lateTime
                       : earlyEnd            ? 'עד ' + earlyEnd
@@ -4598,20 +4604,25 @@
 
     function openSchTimeEditor(di, shift, empId, firstName) {
       _schTimeEditorKey = di + '_' + shift + '_' + empId;
-      var existing = (_schTimeEditorKey in _schStartTimes) ? _schStartTimes[_schTimeEditorKey] : null;
-      if (existing === null) {
+      var existingStart = (_schTimeEditorKey in _schStartTimes) ? _schStartTimes[_schTimeEditorKey] : null;
+      var existingEnd   = (_schTimeEditorKey in _schEndTimes)   ? _schEndTimes[_schTimeEditorKey]   : null;
+      if (existingStart === null) {
         var con = _schConstraintMap[empId];
         if (con) {
           [con.constraint1, con.constraint2].forEach(function(cp) {
-            if (!cp || !cp.day || !cp.startTime) return;
+            if (!cp || !cp.day) return;
             var shiftMatch = (shift === 'morning') ? cp.shift === 'בוקר' : cp.shift === 'ערב';
-            if (_constraintDayToIdx(cp.day) === di && shiftMatch) existing = cp.startTime;
+            if (_constraintDayToIdx(cp.day) === di && shiftMatch) {
+              if (cp.startTime && existingStart === null) existingStart = cp.startTime;
+              if (cp.endTime   && existingEnd   === null) existingEnd   = cp.endTime;
+            }
           });
         }
       }
-      document.getElementById('sch-time-heading').textContent = 'שעת כניסה — ' + firstName;
-      document.getElementById('sch-time-input').value = existing;
-      document.getElementById('sch-time-clear-btn').style.display = existing ? '' : 'none';
+      document.getElementById('sch-time-heading').textContent = 'זמני משמרת — ' + firstName;
+      document.getElementById('sch-time-input').value     = existingStart || '';
+      document.getElementById('sch-end-time-input').value = existingEnd   || '';
+      document.getElementById('sch-time-clear-btn').style.display = (existingStart || existingEnd) ? '' : 'none';
       var box = document.getElementById('sch-time-box');
       box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
       document.getElementById('sch-time-modal').classList.add('open');
@@ -4624,9 +4635,10 @@
 
     function saveSchTimeEditor() {
       if (!_schTimeEditorKey) return;
-      var val = document.getElementById('sch-time-input').value;
-      if (!val) { closeSchTimeEditor(); return; }
-      _schStartTimes[_schTimeEditorKey] = val;
+      var startVal = document.getElementById('sch-time-input').value;
+      var endVal   = document.getElementById('sch-end-time-input').value;
+      _schStartTimes[_schTimeEditorKey] = startVal || '';
+      _schEndTimes[_schTimeEditorKey]   = endVal   || '';
       _schSaveImmediate();
       _schRenderTable();
       closeSchTimeEditor();
@@ -4635,6 +4647,7 @@
     function clearSchTimeEditor() {
       if (!_schTimeEditorKey) return;
       _schStartTimes[_schTimeEditorKey] = '';
+      _schEndTimes[_schTimeEditorKey]   = '';
       _schSaveImmediate();
       _schRenderTable();
       closeSchTimeEditor();
@@ -4772,7 +4785,7 @@
       var _mp = _getMgrProfile();
       var _mc = _mp ? (function() { var n = _mp.name.split(' '); return { firstName: n[0] || _mp.name, lastName: n.slice(1).join(' '), photo: _mp.photo || null }; })() : null;
       db.collection('schedules').doc(_schDocId()).set(
-        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, managerCard: _mc, updatedAt: new Date().toISOString() },
+        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, endTimes: _schEndTimes, managerCard: _mc, updatedAt: new Date().toISOString() },
         { merge: true }
       ).catch(function() {});
     }
