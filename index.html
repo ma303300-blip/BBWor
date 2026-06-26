@@ -4721,20 +4721,33 @@
       (function(id, node) {
         node.onclick = function(e) {
           e.stopPropagation();
-          /* add employee to this shift (max 4) */
-          var key = _schPickerDay + '_' + _schPickerShift;
-          var arr = (_schCells[key] || []).slice();
-          if (arr.indexOf(id) === -1 && arr.length < 4) arr.push(id);
-          _schCells[key] = arr;
-          _schSaveImmediate();
-          /* collapse cards then close picker and re-render table */
-          _schCollapseCards(function() {
-            document.getElementById('sch-picker-overlay').classList.remove('open');
-            var wrap = document.getElementById('sch-float-wrap');
-            wrap.style.display = 'none';
-            wrap.innerHTML = '';
-            _schRenderTable();
-          });
+          function doAdd() {
+            var key = _schPickerDay + '_' + _schPickerShift;
+            var arr = (_schCells[key] || []).slice();
+            if (arr.indexOf(id) === -1 && arr.length < 4) arr.push(id);
+            _schCells[key] = arr;
+            _schSaveImmediate();
+            _schCollapseCards(function() {
+              document.getElementById('sch-picker-overlay').classList.remove('open');
+              var wrap = document.getElementById('sch-float-wrap');
+              wrap.style.display = 'none';
+              wrap.innerHTML = '';
+              _schRenderTable();
+            });
+          }
+          var con = _schConstraintMap[id];
+          var dayOffHits = [];
+          if (con && con.daysOff && con.daysOff.length) {
+            con.daysOff.forEach(function(day) {
+              if (_constraintDayToIdx(day) === _schPickerDay) dayOffHits.push(day);
+            });
+          }
+          if (dayOffHits.length > 0) {
+            var empName = (con && con.empName) ? con.empName : (emp.firstName + ' ' + emp.lastName);
+            _showDayOffWarning(empName, dayOffHits, doAdd);
+          } else {
+            doAdd();
+          }
         };
       })(emp.id, el);
       return el;
