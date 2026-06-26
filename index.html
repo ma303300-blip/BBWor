@@ -1602,6 +1602,8 @@
       }
       var fw = document.getElementById('sch-float-wrap');
       if (fw) { fw.style.display = 'none'; }
+      var dayoffWarn = document.getElementById('dayoff-warn-overlay');
+      if (dayoffWarn && dayoffWarn.parentNode) dayoffWarn.parentNode.removeChild(dayoffWarn);
     }
 
     document.getElementById('screen-home').addEventListener('touchmove', function(e) {
@@ -2837,7 +2839,10 @@
     }
 
     function _showDayOffWarning(nameOrMsg, days, onProceed) {
+      var existing = document.getElementById('dayoff-warn-overlay');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
       var ov = document.createElement('div');
+      ov.id = 'dayoff-warn-overlay';
       ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box';
       document.body.appendChild(ov);
       function closeWarn() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
@@ -2975,7 +2980,7 @@
       if (_constraintMgrUnsub2) { _constraintMgrUnsub2(); _constraintMgrUnsub2 = null; }
       _constraintMgrPendingSnap = null;
       _constraintMgrApprovedSnap = null;
-      _constraintSchUnsubs.forEach(function(u) { u(); });
+      if (Array.isArray(_constraintSchUnsubs)) { _constraintSchUnsubs.forEach(function(u) { u(); }); }
       _constraintSchUnsubs = [];
       _constraintSchCells = {};
     }
@@ -5168,7 +5173,7 @@
       });
     }
     function _stopMgrGoalListeners() {
-      _mgrGoalUnsubs.forEach(function(u) { u(); });
+      if (Array.isArray(_mgrGoalUnsubs)) { _mgrGoalUnsubs.forEach(function(u) { u(); }); }
       _mgrGoalUnsubs = [];
     }
     function _renderMgrGoalBtn() {
