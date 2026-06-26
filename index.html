@@ -3117,14 +3117,7 @@
                 btnRefs.push(btn);
                 (function(con, b) {
                   b.onclick = function() {
-                    var dayHits = _checkDayOffConflict(con);
-                    if (dayHits.length > 0) {
-                      _showDayOffWarning(con.empName || 'העובד/ת', dayHits, function() {
-                        _doAssignConstraint(con, b, null);
-                      });
-                    } else {
-                      _doAssignConstraint(con, b, null);
-                    }
+                    _doAssignConstraint(con, b, null);
                   };
                 })(d, btn);
               }
@@ -3175,23 +3168,10 @@
                   showModal('⚠️', 'שגיאה', 'שגיאה בשיבוץ. נסי שוב.', null);
                 });
               }
-              function doDayOffCheck(cons, removedEmps) {
-                var dayOffCons = cons.filter(function(con) { return _checkDayOffConflict(con).length > 0; });
-                if (dayOffCons.length > 0) {
-                  var names = dayOffCons.map(function(con) {
-                    return (con.empName || 'עובד/ת') + ' — חופש: ' + _checkDayOffConflict(con).join(', ');
-                  });
-                  _showDayOffWarning(names.join('\n'), null, function() {
-                    doScheduleAll(cons, removedEmps);
-                  });
-                } else {
-                  doScheduleAll(cons, removedEmps);
-                }
-              }
               if (conflicts.length > 0) {
-                _showConflictFlow(allCons, conflicts, doDayOffCheck);
+                _showConflictFlow(allCons, conflicts, function(cons, removedEmps) { doScheduleAll(cons, removedEmps); });
               } else {
-                doDayOffCheck(allCons, []);
+                doScheduleAll(allCons, []);
               }
             };
             body.appendChild(allBtn);
