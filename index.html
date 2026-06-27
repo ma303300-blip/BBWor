@@ -1235,8 +1235,10 @@
         <button class="sch-branch-tab" id="sch-tab-raanana" onclick="switchSchBranch('raanana')">רעננה</button>
         <button class="sch-branch-tab" id="sch-tab-hadera" onclick="switchSchBranch('hadera')">חדרה</button>
       </div>
-      <button class="sch-capture-btn" onclick="captureSchedule()">📸</button>
-      <button class="sch-reset-btn" id="sch-reset-btn" style="display:none" onclick="resetSchedule()">🗑️</button>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button class="sch-reset-btn" id="sch-reset-btn" style="display:none" onclick="resetSchedule()">🗑️</button>
+        <button class="sch-capture-btn" onclick="captureSchedule()">📸</button>
+      </div>
     </div>
     <div class="sch-screen-title">📅 סידור עבודה</div>
     <div class="sch-table-wrap">
