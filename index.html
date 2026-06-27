@@ -1283,6 +1283,16 @@
     </div>
   </div>
 
+  <!-- CHECKLIST PHOTO PREVIEW -->
+  <div class="modal-overlay" id="cl-photo-preview-modal" onclick="if(event.target===this)cancelClPhoto()">
+    <div class="modal-box" id="cl-photo-preview-box" style="gap:12px;align-items:stretch;max-width:300px">
+      <div style="font-size:15px;font-weight:700;text-align:center;color:#fff">איך התמונה יצאה?</div>
+      <img id="cl-photo-preview-img" src="" style="width:100%;border-radius:12px;max-height:260px;object-fit:cover;display:block">
+      <button class="modal-ok-btn" onclick="confirmClPhoto()" style="margin-top:0">✅ שלח</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="cancelClPhoto()">🔄 צלם מחדש</button>
+    </div>
+  </div>
+
   <!-- SCHEDULE FLOATING CARDS (manager) -->
   <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490;background:transparent"></div>
   <div id="sch-float-wrap"></div>
@@ -3447,6 +3457,7 @@
     ═══════════════════════════════════ */
     var SHIFT_HOURS = { morning: { start: 9*60, end: 16*60 }, evening: { start: 16*60, end: 23*60 } };
     var _currentClItemId = null;
+    var _clPendingItemId = null, _clPendingB64 = null, _clPendingShift = null;
     var _clUnsub = null;
     var _clItemsUnsub = null;
     var _clStatusUnsub = null;
@@ -3559,6 +3570,8 @@
     function handleChecklistPhoto(input) {
       if (!input.files || !input.files[0] || !_currentClItemId) return;
       var file = input.files[0];
+      var capturedItemId = _currentClItemId;
+      _currentClItemId = null;
       var reader = new FileReader();
       reader.onload = function(e) {
         var img = new Image();
@@ -3572,39 +3585,57 @@
           var b64 = canvas.toDataURL('image/jpeg', 0.45);
           var shift = getCurrentShift();
           if (!shift || !currentEmployee) return;
-          var autoSession = getShiftSessionId(shift);
-          db.collection('checklist_completions').add({
-            itemId: _currentClItemId,
+          _clPendingItemId = capturedItemId;
+          _clPendingB64    = b64;
+          _clPendingShift  = shift;
+          document.getElementById('cl-photo-preview-img').src = b64;
+          var box = document.getElementById('cl-photo-preview-box');
+          box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+          document.getElementById('cl-photo-preview-modal').classList.add('open');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function confirmClPhoto() {
+      if (!_clPendingB64 || !_clPendingItemId || !currentEmployee) return;
+      document.getElementById('cl-photo-preview-modal').classList.remove('open');
+      var itemId = _clPendingItemId, b64 = _clPendingB64, shift = _clPendingShift;
+      _clPendingItemId = null; _clPendingB64 = null; _clPendingShift = null;
+      var autoSession = getShiftSessionId(shift);
+      db.collection('checklist_completions').add({
+        itemId: itemId,
+        empId: currentEmployee.id,
+        empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
+        branch: activeBranch,
+        shift: shift,
+        sessionId: autoSession,
+        photoBase64: b64,
+        completedAt: new Date().toISOString()
+      }).then(function() {
+        return db.collection('shift_submissions')
+          .where('sessionId', '==', autoSession)
+          .where('empId', '==', currentEmployee.id)
+          .limit(1)
+          .get();
+      }).then(function(snap) {
+        if (snap.empty) {
+          db.collection('shift_submissions').add({
             empId: currentEmployee.id,
             empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
             branch: activeBranch,
             shift: shift,
             sessionId: autoSession,
-            photoBase64: b64,
-            completedAt: new Date().toISOString()
-          }).then(function() {
-            return db.collection('shift_submissions')
-              .where('sessionId', '==', autoSession)
-              .where('empId', '==', currentEmployee.id)
-              .limit(1)
-              .get();
-          }).then(function(snap) {
-            if (snap.empty) {
-              db.collection('shift_submissions').add({
-                empId: currentEmployee.id,
-                empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
-                branch: activeBranch,
-                shift: shift,
-                sessionId: autoSession,
-                submittedAt: new Date().toISOString()
-              }).catch(function() {});
-            }
-          }).catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור את הצילום.', null); });
-          _currentClItemId = null;
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+            submittedAt: new Date().toISOString()
+          }).catch(function() {});
+        }
+      }).catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור את הצילום.', null); });
+    }
+
+    function cancelClPhoto() {
+      _clPendingItemId = null; _clPendingB64 = null; _clPendingShift = null;
+      document.getElementById('cl-photo-preview-modal').classList.remove('open');
     }
 
     function cleanOldCompletions(shift, currentSessionId) {
@@ -6130,7 +6161,8 @@
         { id: 'seg-clear-confirm',      fn: function() { document.getElementById('seg-clear-confirm').classList.remove('open'); } },
         { id: 'seg-tracker-overlay',   fn: closeSegmentTracker },
         { id: 'sch-time-modal',        fn: closeSchTimeEditor },
-        { id: 'temp-emp-modal',        fn: closeTempEmpForm }
+        { id: 'temp-emp-modal',        fn: closeTempEmpForm },
+        { id: 'cl-photo-preview-modal', fn: cancelClPhoto }
       ];
       for (var i = 0; i < layers.length; i++) {
         var el = document.getElementById(layers[i].id);
