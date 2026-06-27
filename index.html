@@ -3478,17 +3478,7 @@
       body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       var sessionId = getShiftSessionId(shift);
       cleanOldCompletions(shift, sessionId);
-      var items = [], completions = {}, _submitted = false;
-
-      function checkSubmission() {
-        db.collection('shift_submissions')
-          .where('sessionId', '==', sessionId)
-          .where('empId', '==', currentEmployee ? currentEmployee.id : '')
-          .get().then(function(snap) {
-            _submitted = !snap.empty;
-            render();
-          }).catch(function() {});
-      }
+      var items = [], completions = {};
 
       function render() {
         body.innerHTML = '';
@@ -3517,31 +3507,16 @@
           row.innerHTML = right + left;
           body.appendChild(row);
         });
-        var allDone = visibleItems.length > 0 && visibleItems.every(function(item) { return completions[item.id]; });
-        var btn = document.createElement('button');
-        btn.className = 'cl-submit-btn ' + (_submitted ? 'sent' : allDone ? 'ready' : 'inactive');
-        btn.textContent = _submitted ? '✅ נשלח למנהל/ת' : '📤 שלח למנהל/ת';
-        if (allDone && !_submitted) { btn.onclick = submitShift; }
-        body.appendChild(btn);
+        var doneCount = visibleItems.filter(function(item) { return completions[item.id]; }).length;
+        var allDone = doneCount === visibleItems.length && visibleItems.length > 0;
+        var progress = document.createElement('div');
+        progress.className = 'cl-submit-btn ' + (allDone ? 'sent' : 'inactive');
+        progress.style.pointerEvents = 'none';
+        progress.textContent = allDone
+          ? '✅ כל המטלות בוצעו ונשלחו למנהל/ת'
+          : doneCount + ' / ' + visibleItems.length + ' מטלות בוצעו';
+        body.appendChild(progress);
       }
-
-      function submitShift() {
-        if (!currentEmployee || _submitted) return;
-        _submitted = true; render(); // lock immediately, prevent double-tap
-        db.collection('shift_submissions').add({
-          empId: currentEmployee.id,
-          empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
-          branch: activeBranch,
-          shift: shift,
-          sessionId: sessionId,
-          submittedAt: new Date().toISOString()
-        }).catch(function() {
-          _submitted = false; render(); // revert on error so user can retry
-          showModal('⚠️','שגיאה','לא ניתן לשלוח.',null);
-        });
-      }
-
-      checkSubmission();
       if (_clItemsUnsub) { _clItemsUnsub(); _clItemsUnsub = null; }
       _clItemsUnsub = db.collection('checklist_items')
         .where('shift', '==', shift)
@@ -3597,15 +3572,33 @@
           var b64 = canvas.toDataURL('image/jpeg', 0.45);
           var shift = getCurrentShift();
           if (!shift || !currentEmployee) return;
+          var autoSession = getShiftSessionId(shift);
           db.collection('checklist_completions').add({
             itemId: _currentClItemId,
             empId: currentEmployee.id,
             empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
             branch: activeBranch,
             shift: shift,
-            sessionId: getShiftSessionId(shift),
+            sessionId: autoSession,
             photoBase64: b64,
             completedAt: new Date().toISOString()
+          }).then(function() {
+            return db.collection('shift_submissions')
+              .where('sessionId', '==', autoSession)
+              .where('empId', '==', currentEmployee.id)
+              .limit(1)
+              .get();
+          }).then(function(snap) {
+            if (snap.empty) {
+              db.collection('shift_submissions').add({
+                empId: currentEmployee.id,
+                empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
+                branch: activeBranch,
+                shift: shift,
+                sessionId: autoSession,
+                submittedAt: new Date().toISOString()
+              }).catch(function() {});
+            }
           }).catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור את הצילום.', null); });
           _currentClItemId = null;
         };
