@@ -5177,15 +5177,20 @@
       showConfirm('🗑️', 'איפוס יעד חודשי',
         'האם לאפס את כל נתוני היעד של סניף ' + branchLabel + ' לחודש הנוכחי?\nהיעד וכל המכירות היומיות יימחקו.',
         function() {
-          db.collection('monthly_goals').doc(branch + '_' + monthId).delete().catch(function() {});
-          db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
+          var resetBranch = branch;
+          db.collection('monthly_goals').doc(resetBranch + '_' + monthId).delete().catch(function() {});
+          db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + resetBranch)
             .get().then(function(snap) {
               var b = db.batch();
               snap.forEach(function(d) { b.delete(d.ref); });
               return b.commit();
             }).then(function() {
-              document.getElementById('goal-input').value = '';
-              document.getElementById('daily-input').value = '';
+              /* close and reopen so listeners restart cleanly on empty data */
+              _stopGoalMgrListeners();
+              document.getElementById('goal-modal').classList.remove('open');
+              _goalState = { goal: 0, total: 0, todayAmt: 0 };
+              _goalEditBranch = resetBranch;
+              setTimeout(function() { openGoalModal(); }, 120);
             }).catch(function() {});
         }
       );
