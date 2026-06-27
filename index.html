@@ -3494,9 +3494,10 @@
       body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       var sessionId = getShiftSessionId(shift);
       cleanOldCompletions(shift, sessionId);
-      var items = [], completions = {};
+      var items = [], completions = {}, _itemsReady = false, _compsReady = false;
 
       function render() {
+        if (!_itemsReady || !_compsReady) return; // wait for both sources before first paint
         body.innerHTML = '';
         var todayDay = new Date().getDay();
         var visibleItems = items.filter(function(item) {
@@ -3540,6 +3541,7 @@
           items = [];
           snap.forEach(function(doc) { items.push(Object.assign({ id: doc.id }, doc.data())); });
           items.sort(function(a,b){ return (a.order||0) - (b.order||0); });
+          _itemsReady = true;
           render();
         }, function(err) {
           body.innerHTML = '<div class="drawer-empty">שגיאה בטעינת הרשימה.<br><span style="font-size:11px;opacity:0.5">' + err.code + '</span></div>';
@@ -3553,8 +3555,9 @@
             var d = doc.data();
             if (d.branch === activeBranch) completions[d.itemId] = d;
           });
+          _compsReady = true;
           render();
-        }, function() { render(); });
+        }, function() { _compsReady = true; render(); });
     }
 
     function closeChecklist() {
