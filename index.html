@@ -299,6 +299,8 @@
     .seg-send-btn.sent { background:rgba(46,204,113,0.15);border-color:#2ecc71;color:#2ecc71; }
     @keyframes seg-btn-pulse { 0%,100%{box-shadow:0 0 0 3px rgba(220,38,38,1),0 0 12px rgba(220,38,38,0.7)} 50%{box-shadow:0 0 0 2px rgba(220,38,38,0.15),0 0 4px rgba(220,38,38,0.1)} }
     .seg-tracker-btn-pulse { animation: seg-btn-pulse 1.2s ease-in-out infinite !important; border-color: #dc2626 !important; color: #dc2626 !important; }
+    @keyframes seg-target-pulse { 0%,100%{border-color:rgba(59,130,246,0.5);box-shadow:0 0 6px rgba(59,130,246,0.3)} 50%{border-color:rgba(59,130,246,1);box-shadow:0 0 10px rgba(59,130,246,0.7)} }
+    .seg-target-active { animation:seg-target-pulse 1.4s ease-in-out infinite !important; border:1.5px solid rgba(59,130,246,0.8) !important; }
 
     /* FAB DAILY INBOX (manager) */
     .fab-daily-inbox { position: fixed; bottom: calc(44px + env(safe-area-inset-bottom, 0px)); right: 90px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid rgba(201,168,76,0.7); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
@@ -3839,7 +3841,7 @@
           inp.id = 'seg-' + col + '-' + i;
           if (col === 'sales-target') {
             inp.readOnly = true;
-            inp.style.cssText = 'background:rgba(201,168,76,0.13);color:rgba(255,255,255,0.75);cursor:default;text-align:center';
+            inp.style.cssText = 'background:rgba(201,168,76,0.13);color:#000;font-weight:700;cursor:default;text-align:center';
           } else {
             inp.addEventListener('input', function() {
               _segRecalc();
@@ -3878,11 +3880,19 @@
       var numSlots  = _SEG_TIMES.length;
       var cumActual = 0;
       for (var i = 0; i < numSlots; i++) {
-        var targetEl = document.getElementById('seg-sales-target-' + i);
+        var targetEl   = document.getElementById('seg-sales-target-' + i);
+        var prevActual = i > 0 ? document.getElementById('seg-sales-actual-' + (i - 1)) : null;
+        var prevFilled = i === 0 || (prevActual && prevActual.value.trim() !== '');
         if (targetEl) {
-          var remaining  = kpiSales - cumActual;
-          var slotsLeft  = numSlots - i;
-          targetEl.value = (kpiSales > 0) ? Math.round(remaining / slotsLeft) : '';
+          if (kpiSales > 0 && prevFilled) {
+            var remaining  = kpiSales - cumActual;
+            var slotsLeft  = numSlots - i;
+            targetEl.value = Math.round(remaining / slotsLeft);
+            targetEl.classList.add('seg-target-active');
+          } else {
+            targetEl.value = '';
+            targetEl.classList.remove('seg-target-active');
+          }
         }
         var actualEl = document.getElementById('seg-sales-actual-' + i);
         cumActual += (actualEl ? parseFloat(actualEl.value) || 0 : 0);
