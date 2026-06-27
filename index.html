@@ -6262,9 +6262,10 @@
         return;
       }
       var timeStr = _formatCountdown(new Date(comp.endsAt) - new Date());
-      if (empBadge) empBadge.style.display = 'flex';
+      var empMatches = comp.branch === activeBranch || comp.branch === 'all';
+      if (empBadge) empBadge.style.display = empMatches ? 'flex' : 'none';
       if (mgrBadge) mgrBadge.style.display = 'flex';
-      if (empTimer) empTimer.textContent = timeStr;
+      if (empMatches && empTimer) empTimer.textContent = timeStr;
       if (mgrTimer) mgrTimer.textContent = timeStr;
     }
 
