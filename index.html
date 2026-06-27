@@ -377,9 +377,10 @@
     #emp-cl-btn.cl-btn-pending .a-icon { color: #e03535; font-size: 36px; font-weight: 900; line-height: 1; }
     #emp-cl-btn.cl-btn-done { border-color: rgba(46,213,115,0.65) !important; animation: none !important; box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important; }
     #emp-cl-btn.cl-btn-done .a-icon { color: #2ed573; font-size: 36px; font-weight: 900; line-height: 1; }
-    #emp-cl-btn::before { content: ''; position: absolute; bottom: 0; left: -50%; width: 200%; height: calc(var(--cl-fill,0) * 100%); background: rgba(46,213,115,0.5); border-radius: 40% 60% 0 0 / 10px 10px 0 0; transition: height 0.8s cubic-bezier(0.25,0.46,0.45,0.94); animation: cl-wave-sway 2.5s ease-in-out infinite; pointer-events: none; z-index: 0; }
-    #emp-cl-btn > * { position: relative; z-index: 1; }
-    @keyframes cl-wave-sway { 0%,100% { transform: translateX(-20%); border-radius: 40% 60% 0 0 / 10px 10px 0 0; } 50% { transform: translateX(20%); border-radius: 60% 40% 0 0 / 10px 10px 0 0; } }
+    #emp-cl-btn::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: calc(var(--cl-fill,0) * 100%); background: rgba(46,213,115,0.5); transition: height 0.8s cubic-bezier(0.25,0.46,0.45,0.94); pointer-events: none; z-index: 0; }
+    #emp-cl-btn::after { content: ''; position: absolute; left: 0; right: 0; height: 20px; bottom: calc(var(--cl-fill,0) * 100% - 20px); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 20'%3E%3Cpath d='M0%2C10 C50%2C0%2C150%2C20%2C200%2C10 L200%2C20 L0%2C20 Z' fill='%232ed573' fill-opacity='0.5'/%3E%3C/svg%3E") 0 0 / 200px 20px repeat-x; animation: cl-wave-scroll 1.8s linear infinite; transition: bottom 0.8s cubic-bezier(0.25,0.46,0.45,0.94); pointer-events: none; z-index: 1; }
+    #emp-cl-btn > * { position: relative; z-index: 2; }
+    @keyframes cl-wave-scroll { from { background-position: 0 0; } to { background-position: -200px 0; } }
 
     /* MODAL ZOOM ANIMATION */
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
