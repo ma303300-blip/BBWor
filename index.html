@@ -377,10 +377,9 @@
     #emp-cl-btn.cl-btn-pending .a-icon { color: #e03535; font-size: 36px; font-weight: 900; line-height: 1; }
     #emp-cl-btn.cl-btn-done { border-color: rgba(46,213,115,0.65) !important; animation: none !important; box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important; }
     #emp-cl-btn.cl-btn-done .a-icon { color: #2ed573; font-size: 36px; font-weight: 900; line-height: 1; }
-    #emp-cl-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(46,213,115,0.5) 0%, rgba(46,213,115,0.5) 100%); transform-origin: bottom center; transform: scaleY(var(--cl-fill,0)); transition: transform 0.65s cubic-bezier(0.25,0.46,0.45,0.94); pointer-events: none; z-index: 0; }
+    #emp-cl-btn::before { content: ''; position: absolute; bottom: 0; left: -50%; width: 200%; height: calc(var(--cl-fill,0) * 100%); background: rgba(46,213,115,0.5); border-radius: 40% 60% 0 0 / 10px 10px 0 0; transition: height 0.8s cubic-bezier(0.25,0.46,0.45,0.94); animation: cl-wave-sway 2.5s ease-in-out infinite; pointer-events: none; z-index: 0; }
     #emp-cl-btn > * { position: relative; z-index: 1; }
-    @keyframes cl-fill-shimmer { 0%,100% { opacity:1; } 50% { opacity:0.68; } }
-    #emp-cl-btn.cl-btn-filling::before { animation: cl-fill-shimmer 2.2s ease-in-out infinite; }
+    @keyframes cl-wave-sway { 0%,100% { transform: translateX(-20%); border-radius: 40% 60% 0 0 / 10px 10px 0 0; } 50% { transform: translateX(20%); border-radius: 60% 40% 0 0 / 10px 10px 0 0; } }
 
     /* MODAL ZOOM ANIMATION */
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
@@ -3723,8 +3722,6 @@
       if (!btn) return;
       var pct = _clProgressTotal > 0 ? Math.min(_clProgressDone / _clProgressTotal, 1) : 0;
       btn.style.setProperty('--cl-fill', pct);
-      if (pct > 0 && pct < 1) { btn.classList.add('cl-btn-filling'); }
-      else                     { btn.classList.remove('cl-btn-filling'); }
     }
 
     function _startClProgressListener() {
