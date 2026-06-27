@@ -3727,7 +3727,7 @@
     }
 
     var _segBuilt = false;
-    var _SEG_TIMES = ['10:00–12:00','12:00–14:00','14:00–16:00','16:00–18:00','18:00–20:00','20:00–22:00','22:00–24:00'];
+    var _SEG_TIMES = ['10:00–12:00','12:00–14:00','14:00–16:00','16:00–18:00','18:00–20:00','20:00–22:00'];
     var _SEG_COLS  = ['manager','sales-target','sales-actual','deals-target','deals-actual','clubs','notes'];
     var _segUnsub = null;
     var _segSaveTimer = null;
@@ -3780,6 +3780,7 @@
       if (data.segments && Array.isArray(data.segments)) {
         data.segments.forEach(function(seg, i) {
           _SEG_COLS.forEach(function(col) {
+            if (col === 'sales-target') return; // auto-calculated
             var camel = col.replace(/-([a-z])/g, function(_, c) { return c.toUpperCase(); });
             var el = document.getElementById('seg-' + col + '-' + i);
             if (el && seg[camel] !== undefined) el.value = seg[camel];
@@ -3836,11 +3837,15 @@
           var inp = document.createElement('input');
           inp.type = (col === 'manager' || col === 'notes') ? 'text' : 'number';
           inp.id = 'seg-' + col + '-' + i;
-          inp.addEventListener('input', function() {
-            if (col === 'sales-target') _segAutoDeals(i);
-            _segRecalc();
-            _segSaveToFirestore();
-          });
+          if (col === 'sales-target') {
+            inp.readOnly = true;
+            inp.style.cssText = 'background:rgba(201,168,76,0.13);color:rgba(255,255,255,0.75);cursor:default;text-align:center';
+          } else {
+            inp.addEventListener('input', function() {
+              _segRecalc();
+              _segSaveToFirestore();
+            });
+          }
           td.appendChild(inp);
           tr.appendChild(td);
         });
@@ -3849,6 +3854,7 @@
       document.querySelectorAll('#seg-tracker-overlay .seg-kpi-box input, #seg-tracker-overlay .seg-kpi-small input').forEach(function(el) {
         el.addEventListener('input', function() {
           if (el.id === 'seg-kpi-basket') _segAutoDealsAll();
+          _segRecalc();
           _segSaveToFirestore();
         });
       });
@@ -3868,6 +3874,20 @@
     }
 
     function _segRecalc() {
+      var kpiSales  = parseFloat((document.getElementById('seg-kpi-sales')  || {}).value) || 0;
+      var numSlots  = _SEG_TIMES.length;
+      var cumActual = 0;
+      for (var i = 0; i < numSlots; i++) {
+        var targetEl = document.getElementById('seg-sales-target-' + i);
+        if (targetEl) {
+          var remaining  = kpiSales - cumActual;
+          var slotsLeft  = numSlots - i;
+          targetEl.value = (kpiSales > 0) ? Math.round(remaining / slotsLeft) : '';
+        }
+        var actualEl = document.getElementById('seg-sales-actual-' + i);
+        cumActual += (actualEl ? parseFloat(actualEl.value) || 0 : 0);
+        _segAutoDeals(i);
+      }
       var numCols = ['sales-target','sales-actual','deals-target','deals-actual','clubs'];
       var totals = {};
       numCols.forEach(function(c) { totals[c] = 0; });
