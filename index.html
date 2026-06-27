@@ -5137,6 +5137,8 @@
       document.getElementById('goal-modal').classList.remove('open');
       _stopGoalMgrListeners();
       _goalEditBranch = null;
+      var btn = document.getElementById('mgr-goal-btn');
+      if (btn) _fillGoalBtn(btn, false);
     }
 
     function saveMonthlyGoal() {
