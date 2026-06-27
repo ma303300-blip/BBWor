@@ -372,11 +372,15 @@
       0%,100% { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 0 rgba(224,53,53,0.55); border-color: rgba(224,53,53,0.8); }
       50%     { box-shadow: 0 6px 20px rgba(0,0,0,0.45), 0 0 0 10px rgba(224,53,53,0); border-color: rgba(224,53,53,0.3); }
     }
-    #emp-cl-btn { position: relative; }
+    #emp-cl-btn { position: relative; overflow: hidden; }
     #emp-cl-btn.cl-btn-pending { border-color: rgba(224,53,53,0.75) !important; animation: cl-btn-pulse 1.4s ease-in-out infinite; }
     #emp-cl-btn.cl-btn-pending .a-icon { color: #e03535; font-size: 36px; font-weight: 900; line-height: 1; }
     #emp-cl-btn.cl-btn-done { border-color: rgba(46,213,115,0.65) !important; animation: none !important; box-shadow: 0 6px 20px rgba(0,0,0,0.45) !important; }
     #emp-cl-btn.cl-btn-done .a-icon { color: #2ed573; font-size: 36px; font-weight: 900; line-height: 1; }
+    #emp-cl-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(46,213,115,0.5) 0%, rgba(46,213,115,0.5) 100%); transform-origin: bottom center; transform: scaleY(var(--cl-fill,0)); transition: transform 0.65s cubic-bezier(0.25,0.46,0.45,0.94); pointer-events: none; z-index: 0; }
+    #emp-cl-btn > * { position: relative; z-index: 1; }
+    @keyframes cl-fill-shimmer { 0%,100% { opacity:1; } 50% { opacity:0.68; } }
+    #emp-cl-btn.cl-btn-filling::before { animation: cl-fill-shimmer 2.2s ease-in-out infinite; }
 
     /* MODAL ZOOM ANIMATION */
     @keyframes modal-zoom-out { 0% { opacity: 0; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1.0); } }
@@ -1705,6 +1709,7 @@
       _stopCompBadge();
       _clearCompTimers();
       _stopClStatusListener();
+      _stopClProgressListener();
       if (_badgeUnsub) { _badgeUnsub(); _badgeUnsub = null; }
       if (_constraintBadgeUnsub) { _constraintBadgeUnsub(); _constraintBadgeUnsub = null; }
       if (_secProcsUnsub) { _secProcsUnsub(); _secProcsUnsub = null; }
@@ -2233,6 +2238,7 @@
       _startCompListener();
       _startCompBadge();
       _startClStatusListener();
+      _startClProgressListener();
       _startAutoRefresh();
       _subscribeSecProcs();
     }
@@ -3466,6 +3472,10 @@
     var _clUnsub = null;
     var _clItemsUnsub = null;
     var _clStatusUnsub = null;
+    var _clProgressItemsUnsub = null;
+    var _clProgressCompsUnsub = null;
+    var _clProgressTotal = 0;
+    var _clProgressDone  = 0;
     var _clMgrTab = 'morning';
 
     function getCurrentShift() {
@@ -3706,6 +3716,50 @@
 
     function _stopClStatusListener() {
       if (_clStatusUnsub) { _clStatusUnsub(); _clStatusUnsub = null; }
+    }
+
+    function _updateClFill() {
+      var btn = document.getElementById('emp-cl-btn');
+      if (!btn) return;
+      var pct = _clProgressTotal > 0 ? Math.min(_clProgressDone / _clProgressTotal, 1) : 0;
+      btn.style.setProperty('--cl-fill', pct);
+      if (pct > 0 && pct < 1) { btn.classList.add('cl-btn-filling'); }
+      else                     { btn.classList.remove('cl-btn-filling'); }
+    }
+
+    function _startClProgressListener() {
+      _stopClProgressListener();
+      if (!currentEmployee) return;
+      var shift     = getCurrentShift();
+      var sessionId = getShiftSessionId(shift);
+      var todayDay  = new Date().getDay();
+      _clProgressItemsUnsub = db.collection('checklist_items')
+        .where('shift', '==', shift)
+        .onSnapshot(function(snap) {
+          _clProgressTotal = 0;
+          snap.forEach(function(doc) {
+            var days = doc.data().days;
+            if (!days || days.length === 7) { _clProgressTotal++; return; }
+            if (days.length > 0 && days.indexOf(todayDay) !== -1) _clProgressTotal++;
+          });
+          _updateClFill();
+        }, function() {});
+      _clProgressCompsUnsub = db.collection('checklist_completions')
+        .where('sessionId', '==', sessionId)
+        .onSnapshot(function(snap) {
+          _clProgressDone = 0;
+          snap.forEach(function(doc) {
+            if (doc.data().branch === currentEmployee.branch) _clProgressDone++;
+          });
+          _updateClFill();
+        }, function() {});
+    }
+
+    function _stopClProgressListener() {
+      if (_clProgressItemsUnsub) { _clProgressItemsUnsub(); _clProgressItemsUnsub = null; }
+      if (_clProgressCompsUnsub) { _clProgressCompsUnsub(); _clProgressCompsUnsub = null; }
+      _clProgressTotal = 0;
+      _clProgressDone  = 0;
     }
 
     var _cleanedSessions = {};
@@ -4437,7 +4491,7 @@
         var shift = getCurrentShift();
         if (shift !== _lastKnownShift) {
           _lastKnownShift = shift;
-          if (currentEmployee) { _startClStatusListener(); }
+          if (currentEmployee) { _startClStatusListener(); _startClProgressListener(); }
           var mgrNow = document.getElementById('screen-manager') &&
                        document.getElementById('screen-manager').classList.contains('active');
           if (mgrNow) { _stopClMgrInboxListeners(); _startClMgrInboxListeners(); }
