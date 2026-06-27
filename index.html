@@ -3494,9 +3494,10 @@
       body.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:20px">טוען...</div>';
       var sessionId = getShiftSessionId(shift);
       cleanOldCompletions(shift, sessionId);
-      var items = [], completions = {};
+      var items = [], completions = {}, _itemsReady = false, _compsReady = false;
 
       function render() {
+        if (!_itemsReady || !_compsReady) return; // wait for both sources before first paint
         body.innerHTML = '';
         var todayDay = new Date().getDay();
         var visibleItems = items.filter(function(item) {
@@ -3540,6 +3541,7 @@
           items = [];
           snap.forEach(function(doc) { items.push(Object.assign({ id: doc.id }, doc.data())); });
           items.sort(function(a,b){ return (a.order||0) - (b.order||0); });
+          _itemsReady = true;
           render();
         }, function(err) {
           body.innerHTML = '<div class="drawer-empty">שגיאה בטעינת הרשימה.<br><span style="font-size:11px;opacity:0.5">' + err.code + '</span></div>';
@@ -3553,8 +3555,9 @@
             var d = doc.data();
             if (d.branch === activeBranch) completions[d.itemId] = d;
           });
+          _compsReady = true;
           render();
-        }, function() { render(); });
+        }, function() { _compsReady = true; render(); });
     }
 
     function closeChecklist() {
@@ -5531,6 +5534,8 @@
       _stopClMgrInboxListeners();
       var shift = getCurrentShift();
       var sessionId = getShiftSessionId(shift);
+      var _fab = document.getElementById('fab-cl-inbox');
+      if (_fab) _fab.classList.add('visible');
       _clInboxSubsUnsub = db.collection('shift_submissions')
         .where('sessionId', '==', sessionId)
         .onSnapshot(function(snap) {
@@ -5561,6 +5566,7 @@
         .onSnapshot(function(snap) {
           _clInboxCompsData = [];
           snap.forEach(function(doc) { _clInboxCompsData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _renderClInboxBadge();
           _renderClInboxDrawer();
         }, function() {});
       _clInboxItemApprovalsUnsub = db.collection('checklist_item_approvals')
@@ -5589,6 +5595,7 @@
       var badge = document.getElementById('fab-cl-badge');
       var fab   = document.getElementById('fab-cl-inbox');
       if (!badge || !fab) return;
+      fab.classList.add('visible'); // always visible for managers
       var approvedBranches = {};
       _clInboxApprovalsData.forEach(function(a) { approvedBranches[a.branch] = true; });
       var approvalCount = Object.keys(approvedBranches).length;
@@ -5597,6 +5604,7 @@
         if (!approvedBranches[s.branch]) pendingBranches[s.branch] = true;
       });
       var pendingCount = Object.keys(pendingBranches).length;
+      var compsCount = _clInboxCompsData.length;
       if (approvalCount > 0) {
         badge.textContent = approvalCount;
         badge.classList.add('show', 'approved');
@@ -5604,12 +5612,14 @@
         badge.textContent = pendingCount;
         badge.classList.remove('approved');
         badge.classList.add('show');
+      } else if (compsCount > 0) {
+        badge.textContent = compsCount;
+        badge.classList.remove('approved');
+        badge.classList.add('show');
       } else {
         badge.textContent = '';
         badge.classList.remove('show', 'approved');
       }
-      var hasSubs = _clInboxSubsData.length > 0 || _clInboxApprovalsData.length > 0;
-      fab.classList.toggle('visible', hasSubs);
     }
 
     function _renderClApprovalBanners() {
