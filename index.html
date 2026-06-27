@@ -458,6 +458,8 @@
     .sch-float-card-phone { font-size: 10px; color: rgba(255,255,255,0.38); direction: ltr; text-align: left; margin-top: 1px; }
     .sch-float-card-check { font-size: 16px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
     .sch-float-card.active .sch-float-card-check { opacity: 1; }
+    .sch-float-add-btn { border-style: dashed; border-color: rgba(201,168,76,0.45); justify-content: center; gap: 8px; }
+    .sch-float-add-btn:active { background: rgba(201,168,76,0.12); }
 
     /* CONSTRAINT DAY/SHIFT SELECTOR */
     .constraint-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(201,168,76,0.28); border-radius: 14px; padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -1263,6 +1265,22 @@
     <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;line-height:1.5">לחץ לחיצה ארוכה על התמונה<br>ובחר <span style="color:var(--gold)">"שמור תמונה"</span></div>
     <img id="sch-img-preview-img" src="" alt="סידור" style="max-width:100%;max-height:70vh;border-radius:10px;object-fit:contain;" onclick="event.stopPropagation()">
     <button onclick="closeScheduleImgPreview()" style="margin-top:18px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:12px 32px;font-family:inherit;cursor:pointer;">סגור</button>
+  </div>
+
+  <!-- TEMP EMPLOYEE FORM MODAL -->
+  <div class="modal-overlay" id="temp-emp-modal" onclick="if(event.target===this)closeTempEmpForm()">
+    <div class="modal-box" id="temp-emp-box" style="gap:12px;align-items:stretch;max-width:290px">
+      <div class="modal-big-icon">👤</div>
+      <div class="modal-heading" style="font-size:16px;text-align:center">עובד חד פעמי</div>
+      <div style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:2px">שם העובד *</div>
+      <input id="temp-emp-name" type="text" placeholder="הכנס שם..." style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:15px;font-weight:600;color:#fff;text-align:right;width:100%;font-family:inherit;box-sizing:border-box;outline:none" oninput="this.style.borderColor='rgba(201,168,76,0.4)'">
+      <div style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:2px;margin-top:4px">שעת כניסה (אופציונלי)</div>
+      <input type="time" id="temp-emp-start" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:20px;font-weight:700;color:#fff;text-align:center;width:100%;font-family:inherit;direction:ltr;box-sizing:border-box;-webkit-appearance:none">
+      <div style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:2px;margin-top:4px">שעת סיום (אופציונלי)</div>
+      <input type="time" id="temp-emp-end" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(201,168,76,0.4);border-radius:11px;padding:12px;font-size:20px;font-weight:700;color:#fff;text-align:center;width:100%;font-family:inherit;direction:ltr;box-sizing:border-box;-webkit-appearance:none">
+      <button class="modal-ok-btn" onclick="saveTempEmp()" style="margin-top:0">הוסף לסידור</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeTempEmpForm()">ביטול</button>
+    </div>
   </div>
 
   <!-- SCHEDULE FLOATING CARDS (manager) -->
@@ -4419,6 +4437,9 @@
     var _schEndTimes       = {};
     var _schTimeEditorKey  = null;
     var _schUnsub          = null;
+    var _schTempEmps    = {};
+    var _schTempEmpDay   = null;
+    var _schTempEmpShift = null;
     var _schPickerDay  = null;
     var _schPickerShift= null;
     var _schPickerSel  = [];
@@ -4631,9 +4652,10 @@
           /* live listener on the schedule document */
           _schUnsub = db.collection('schedules').doc(_schDocId())
             .onSnapshot(function(doc) {
-              _schCells = doc.exists ? (doc.data().cells || {}) : {};
+              _schCells      = doc.exists ? (doc.data().cells      || {}) : {};
               _schStartTimes = doc.exists ? (doc.data().startTimes || {}) : {};
               _schEndTimes   = doc.exists ? (doc.data().endTimes   || {}) : {};
+              _schTempEmps   = doc.exists ? (doc.data().tempEmps   || {}) : {};
               if (doc.exists && !_schEmpMap['__mgr__']) {
                 var _mc = doc.data().managerCard;
                 if (_mc) { _schEmpMap['__mgr__'] = { id: '__mgr__', firstName: _mc.firstName, lastName: _mc.lastName || '', photo: _mc.photo || null, phone: '' }; }
@@ -4697,6 +4719,10 @@
       var empIds = _schCells[key] || [];
       var empId  = slotIdx < empIds.length ? empIds[slotIdx] : null;
       var emp    = empId ? _schEmpMap[empId] : null;
+      if (!emp && empId && empId.indexOf('temp_') === 0) {
+        var _td = _schTempEmps[empId];
+        if (_td) emp = { id: empId, firstName: _td.firstName, lastName: '', photo: null, phone: '' };
+      }
       var cell   = document.createElement('div');
 
       if (empId && emp) {
@@ -4821,6 +4847,12 @@
       var idx = arr.indexOf(empId);
       if (idx !== -1) arr.splice(idx, 1);
       _schCells[key] = arr;
+      if (empId && empId.indexOf('temp_') === 0) {
+        delete _schTempEmps[empId];
+        var tKey = di + '_' + shift + '_' + empId;
+        delete _schStartTimes[tKey];
+        delete _schEndTimes[tKey];
+      }
       _schSaveImmediate();
       _schRenderTable();
     }
@@ -4871,6 +4903,21 @@
       available.forEach(function(emp, idx) {
         wrap.appendChild(_schMakeFloatCard(emp, idx));
       });
+      var addBtn = document.createElement('div');
+      addBtn.className = 'sch-float-card sch-float-add-btn';
+      addBtn.style.animation = 'schCardDrop 0.22s ease ' + (available.length * 62) + 'ms both';
+      addBtn.innerHTML = '<span style="font-size:18px;color:var(--gold);font-weight:800">+</span><span style="font-size:13px;font-weight:700;color:var(--gold)">עובד חד פעמי</span>';
+      addBtn.onclick = function(e) {
+        e.stopPropagation();
+        _schCollapseCards(function() {
+          document.getElementById('sch-picker-overlay').classList.remove('open');
+          var wrap = document.getElementById('sch-float-wrap');
+          wrap.style.display = 'none';
+          wrap.innerHTML = '';
+          openTempEmpForm();
+        });
+      };
+      wrap.appendChild(addBtn);
     }
 
     function _schMakeFloatCard(emp, idx) {
@@ -4943,11 +4990,50 @@
       });
     }
 
+    function openTempEmpForm() {
+      _schTempEmpDay   = _schPickerDay;
+      _schTempEmpShift = _schPickerShift;
+      document.getElementById('temp-emp-name').value  = '';
+      document.getElementById('temp-emp-start').value = '';
+      document.getElementById('temp-emp-end').value   = '';
+      document.getElementById('temp-emp-name').style.borderColor = 'rgba(201,168,76,0.4)';
+      var box = document.getElementById('temp-emp-box');
+      box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim');
+      document.getElementById('temp-emp-modal').classList.add('open');
+      setTimeout(function() { var n = document.getElementById('temp-emp-name'); if (n) n.focus(); }, 300);
+    }
+
+    function closeTempEmpForm() {
+      document.getElementById('temp-emp-modal').classList.remove('open');
+    }
+
+    function saveTempEmp() {
+      var name  = (document.getElementById('temp-emp-name').value  || '').trim();
+      var start = (document.getElementById('temp-emp-start').value || '').trim();
+      var end   = (document.getElementById('temp-emp-end').value   || '').trim();
+      if (!name) {
+        document.getElementById('temp-emp-name').style.borderColor = '#ef4444';
+        document.getElementById('temp-emp-name').focus();
+        return;
+      }
+      var id = 'temp_' + Date.now();
+      _schTempEmps[id] = { firstName: name, startTime: start, endTime: end };
+      var key = _schTempEmpDay + '_' + _schTempEmpShift;
+      var arr = (_schCells[key] || []).slice();
+      if (arr.length < 4) arr.push(id);
+      _schCells[key] = arr;
+      if (start) _schStartTimes[_schTempEmpDay + '_' + _schTempEmpShift + '_' + id] = start;
+      if (end)   _schEndTimes[_schTempEmpDay   + '_' + _schTempEmpShift + '_' + id] = end;
+      _schSaveImmediate();
+      _schRenderTable();
+      closeTempEmpForm();
+    }
+
     function _schSaveImmediate() {
       var _mp = _getMgrProfile();
       var _mc = _mp ? (function() { var n = _mp.name.split(' '); return { firstName: n[0] || _mp.name, lastName: n.slice(1).join(' '), photo: _mp.photo || null }; })() : null;
       db.collection('schedules').doc(_schDocId()).set(
-        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, endTimes: _schEndTimes, managerCard: _mc, updatedAt: new Date().toISOString() },
+        { weekId: _schWeekId(), branch: _schBranch, cells: _schCells, startTimes: _schStartTimes, endTimes: _schEndTimes, tempEmps: _schTempEmps, managerCard: _mc, updatedAt: new Date().toISOString() },
         { merge: true }
       ).catch(function() {});
     }
@@ -6021,7 +6107,8 @@
         { id: 'cl-inbox-drawer',       fn: closeClInbox },
         { id: 'seg-clear-confirm',      fn: function() { document.getElementById('seg-clear-confirm').classList.remove('open'); } },
         { id: 'seg-tracker-overlay',   fn: closeSegmentTracker },
-        { id: 'sch-time-modal',        fn: closeSchTimeEditor }
+        { id: 'sch-time-modal',        fn: closeSchTimeEditor },
+        { id: 'temp-emp-modal',        fn: closeTempEmpForm }
       ];
       for (var i = 0; i < layers.length; i++) {
         var el = document.getElementById(layers[i].id);
