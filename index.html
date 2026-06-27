@@ -250,6 +250,9 @@
     .cl-inbox-delete-btn { background: rgba(245,245,220,0.5); border: 1px solid rgba(220,38,38,0.35); border-radius: 10px; padding: 13px 16px; font-size: 16px; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
     .cl-inbox-delete-btn:active { background: rgba(220,38,38,0.12); }
     .cl-inbox-delete-btn .del-icon { display:inline-block; filter: sepia(1) saturate(20) hue-rotate(320deg); }
+    .cl-item-approve-btn { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.45); border-radius: 8px; padding: 5px 9px; font-size: 12px; font-weight: 700; color: #2ecc71; cursor: pointer; font-family: inherit; white-space: nowrap; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
+    .cl-item-approve-btn:active { background: rgba(46,204,113,0.22); }
+    .cl-item-approved-tag { font-size: 12px; font-weight: 700; color: #2ecc71; white-space: nowrap; flex-shrink: 0; }
 
     /* FAB SECURITY */
     .fab-security { position: fixed; bottom: calc(56px + env(safe-area-inset-bottom, 0px)); left: 14px; width: 58px; height: 58px; background: var(--card-bg); border: 1.5px solid var(--gold); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 28px rgba(0,0,0,0.65); z-index: 60; -webkit-tap-highlight-color: transparent; font-size: 26px; transition: transform 0.15s; }
@@ -1582,10 +1585,12 @@
     var _clInboxApprovalsUnsub = null;
     var _clInboxItemsUnsub = null;
     var _clInboxCompsUnsub = null;
+    var _clInboxItemApprovalsUnsub = null;
     var _clInboxSubsData = [];
     var _clInboxApprovalsData = [];
     var _clInboxCachedItems = [];
     var _clInboxCompsData = [];
+    var _clInboxItemApprovalsData = [];
     var _secProcsData = [];
     var _secProcsUnsub = null;
     var _empGoalState = { goal: 0, total: 0, todayAmt: 0 };
@@ -5558,17 +5563,26 @@
           snap.forEach(function(doc) { _clInboxCompsData.push(Object.assign({ id: doc.id }, doc.data())); });
           _renderClInboxDrawer();
         }, function() {});
+      _clInboxItemApprovalsUnsub = db.collection('checklist_item_approvals')
+        .where('sessionId', '==', sessionId)
+        .onSnapshot(function(snap) {
+          _clInboxItemApprovalsData = [];
+          snap.forEach(function(doc) { _clInboxItemApprovalsData.push(Object.assign({ id: doc.id }, doc.data())); });
+          _renderClInboxDrawer();
+        }, function() {});
     }
 
     function _stopClMgrInboxListeners() {
-      if (_clInboxSubsUnsub)      { _clInboxSubsUnsub();      _clInboxSubsUnsub = null; }
-      if (_clInboxApprovalsUnsub) { _clInboxApprovalsUnsub(); _clInboxApprovalsUnsub = null; }
-      if (_clInboxItemsUnsub)     { _clInboxItemsUnsub();     _clInboxItemsUnsub = null; }
-      if (_clInboxCompsUnsub)     { _clInboxCompsUnsub();     _clInboxCompsUnsub = null; }
+      if (_clInboxSubsUnsub)           { _clInboxSubsUnsub();           _clInboxSubsUnsub = null; }
+      if (_clInboxApprovalsUnsub)      { _clInboxApprovalsUnsub();      _clInboxApprovalsUnsub = null; }
+      if (_clInboxItemsUnsub)          { _clInboxItemsUnsub();          _clInboxItemsUnsub = null; }
+      if (_clInboxCompsUnsub)          { _clInboxCompsUnsub();          _clInboxCompsUnsub = null; }
+      if (_clInboxItemApprovalsUnsub)  { _clInboxItemApprovalsUnsub();  _clInboxItemApprovalsUnsub = null; }
       _clInboxSubsData = [];
       _clInboxApprovalsData = [];
       _clInboxCachedItems = [];
       _clInboxCompsData = [];
+      _clInboxItemApprovalsData = [];
     }
 
     function _renderClInboxBadge() {
@@ -5657,23 +5671,37 @@
         _clInboxCompsData.forEach(function(c) {
           if (c.branch === branch) compMap[c.itemId] = c;
         });
+        var approvedItemsMap = {};
+        _clInboxItemApprovalsData.forEach(function(a) {
+          if (a.branch === branch) approvedItemsMap[a.itemId] = true;
+        });
         var itemsHtml = '<ul class="cl-inbox-items">';
         if (_clInboxCachedItems.length) {
           _clInboxCachedItems.forEach(function(item) {
             var comp = compMap[item.id];
+            var itemApproved = !!approvedItemsMap[item.id];
+            var approveCtrl = comp
+              ? (itemApproved
+                  ? '<span class="cl-item-approved-tag">✅ אושר</span>'
+                  : '<button class="cl-item-approve-btn" onclick="event.stopPropagation();approveClItem(\'' + item.id + '\',\'' + branch + '\')">✓ אשר</button>')
+              : '';
             if (comp && comp.photoBase64) {
-              itemsHtml += '<li style="display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+              itemsHtml += '<li style="display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
                 '<div style="flex:1;text-align:right">' +
                   '<div style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:600">' + item.text + '</div>' +
                   '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + (comp.empName || '') + '</div>' +
                 '</div>' +
                 '<img class="cl-thumb" src="' + comp.photoBase64 + '" onclick="viewClPhoto(this.src)">' +
+                approveCtrl +
               '</li>';
             } else {
               var statusHtml = comp
                 ? ' <span style="color:#2ecc71;font-size:15px">✅</span>'
                 : ' <span style="color:rgba(255,255,255,0.3);font-size:13px">—</span>';
-              itemsHtml += '<li style="display:flex;flex-direction:column;gap:2px"><div>• ' + item.text + statusHtml + '</div></li>';
+              itemsHtml += '<li style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
+                '<div style="flex:1;text-align:right">• ' + item.text + statusHtml + '</div>' +
+                approveCtrl +
+              '</li>';
             }
           });
         } else {
@@ -5837,8 +5865,23 @@
         _clInboxCompsData.forEach(function(c) {
           if (c.branch === branch) batch.delete(db.collection('checklist_completions').doc(c.id));
         });
+        _clInboxItemApprovalsData.forEach(function(a) {
+          if (a.branch === branch) batch.delete(db.collection('checklist_item_approvals').doc(a.id));
+        });
         batch.commit().catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאפס.', null); });
       }, 'אפס 🗑️');
+    }
+
+    function approveClItem(itemId, branch) {
+      var shift     = getCurrentShift();
+      var sessionId = getShiftSessionId(shift);
+      db.collection('checklist_item_approvals').add({
+        itemId:      itemId,
+        branch:      branch,
+        shift:       shift,
+        sessionId:   sessionId,
+        approvedAt:  new Date().toISOString()
+      }).catch(function() { showModal('⚠️','שגיאה','לא ניתן לאשר פריט.',null); });
     }
 
     function approveClBranch(branch) {
