@@ -4570,13 +4570,20 @@
 
     function saveScheduleToGallery() {
       if (!_schCapturedBlob) return;
-      var url = URL.createObjectURL(_schCapturedBlob);
-      var img = document.getElementById('sch-img-preview-img');
-      var overlay = document.getElementById('sch-img-preview');
-      if (img && overlay) {
-        img.src = url;
-        overlay.style.display = 'flex';
-        closeScheduleShare();
+      var file = new File([_schCapturedBlob], 'sidur.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'סידור עבודה' })
+          .then(function() { closeScheduleShare(); })
+          .catch(function() {});
+      } else {
+        var url = URL.createObjectURL(_schCapturedBlob);
+        var img = document.getElementById('sch-img-preview-img');
+        var overlay = document.getElementById('sch-img-preview');
+        if (img && overlay) {
+          img.src = url;
+          overlay.style.display = 'flex';
+          closeScheduleShare();
+        }
       }
     }
 
