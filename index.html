@@ -24,6 +24,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&family=Playfair+Display:ital,wght@1,700;1,900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -390,6 +391,12 @@
     .sch-branch-tab.active { background: rgba(22,163,74,0.25); border-color: #16a34a; color: #4ade80; }
     .sch-reset-btn { background: rgba(180,20,20,0.18); border: 1.5px solid rgba(220,38,38,0.45); border-radius: 8px; padding: 7px 10px; color: #ff6b6b; font-size: 16px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
     .sch-reset-btn:active { background: rgba(220,38,38,0.32); }
+    .sch-capture-btn { background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.5); border-radius: 8px; padding: 7px 10px; color: var(--gold); font-size: 16px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+    .sch-capture-btn:active { background: rgba(201,168,76,0.3); }
+    #sch-share-modal .modal-box { gap: 14px; align-items: stretch; max-width: 300px; }
+    .sch-share-btn { display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:14px 16px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;text-align:right; }
+    .sch-share-btn:active { background:rgba(255,255,255,0.14); }
+    .sch-share-btn-icon { font-size:26px;flex-shrink:0; }
     .sch-screen-title { text-align: center; font-size: 13px; font-weight: 700; color: var(--gold); padding: 8px 0 4px; flex-shrink: 0; letter-spacing: 0.5px; }
     .sch-table-wrap { flex: 1; overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 4px 20px; background: rgba(245,235,210,0.9); }
     .sch-table { display: grid; grid-template-columns: 28px repeat(7, minmax(72px,1fr)); min-width: 532px; }
@@ -1228,11 +1235,27 @@
         <button class="sch-branch-tab" id="sch-tab-raanana" onclick="switchSchBranch('raanana')">רעננה</button>
         <button class="sch-branch-tab" id="sch-tab-hadera" onclick="switchSchBranch('hadera')">חדרה</button>
       </div>
+      <button class="sch-capture-btn" onclick="captureSchedule()">📸</button>
       <button class="sch-reset-btn" id="sch-reset-btn" style="display:none" onclick="resetSchedule()">🗑️</button>
     </div>
     <div class="sch-screen-title">📅 סידור עבודה</div>
     <div class="sch-table-wrap">
       <div class="sch-table" id="sch-table"></div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE SHARE MODAL -->
+  <div class="modal-overlay" id="sch-share-modal" onclick="if(event.target===this)closeScheduleShare()">
+    <div class="modal-box" id="sch-share-box" style="gap:14px;align-items:stretch;max-width:300px">
+      <div class="modal-big-icon">📸</div>
+      <div class="modal-heading" style="font-size:16px;text-align:center">שתף צילום סידור</div>
+      <button class="sch-share-btn" onclick="shareScheduleWhatsApp()">
+        <span class="sch-share-btn-icon">💬</span>שתף בוואטסאפ
+      </button>
+      <button class="sch-share-btn" onclick="saveScheduleToGallery()">
+        <span class="sch-share-btn-icon">🖼️</span>שמירה בגלריה
+      </button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeScheduleShare()">ביטול</button>
     </div>
   </div>
 
@@ -4496,6 +4519,56 @@
         document.getElementById('sch-tab-raanana').classList.toggle('active', _schBranch === 'raanana');
         document.getElementById('sch-tab-hadera').classList.toggle('active', _schBranch === 'hadera');
       }
+    }
+
+    var _schCapturedBlob = null;
+
+    function captureSchedule() {
+      var target = document.getElementById('sch-table');
+      if (!target || typeof html2canvas === 'undefined') {
+        showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null);
+        return;
+      }
+      html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
+        .then(function(canvas) {
+          canvas.toBlob(function(blob) {
+            _schCapturedBlob = blob;
+            var box = document.getElementById('sch-share-box');
+            if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
+            document.getElementById('sch-share-modal').classList.add('open');
+          }, 'image/png');
+        })
+        .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הסידור.', null); });
+    }
+
+    function closeScheduleShare() {
+      document.getElementById('sch-share-modal').classList.remove('open');
+    }
+
+    function shareScheduleWhatsApp() {
+      if (!_schCapturedBlob) return;
+      var file = new File([_schCapturedBlob], 'sidur.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'סידור עבודה' })
+          .then(function() { closeScheduleShare(); })
+          .catch(function() {});
+      } else {
+        var url = 'https://wa.me/';
+        window.open(url, '_blank');
+        closeScheduleShare();
+      }
+    }
+
+    function saveScheduleToGallery() {
+      if (!_schCapturedBlob) return;
+      var url = URL.createObjectURL(_schCapturedBlob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'sidur-' + new Date().toISOString().slice(0,10) + '.png';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+      closeScheduleShare();
     }
 
     function resetSchedule() {
