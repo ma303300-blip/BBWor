@@ -3857,7 +3857,7 @@
 
     function _segApplyData(data) {
       var idMap = {
-        kpiSales: 'seg-kpi-sales', kpiBasket: 'seg-kpi-basket', kpiDeals: 'seg-kpi-deals',
+        kpiSales: 'seg-kpi-sales', kpiBasket: 'seg-kpi-basket',
         focus: 'seg-kpi-focus', clubsKpi: 'seg-kpi-clubs-kpi', conv: 'seg-kpi-conv',
         visitors: 'seg-kpi-visitors', convY: 'seg-kpi-conv-y'
       };
@@ -3875,11 +3875,12 @@
           });
         });
       }
+      _segCalcKpiDeals();
       _segRecalc();
     }
 
     var _SEG_DEFAULTS = {
-      'seg-kpi-sales': '15000', 'seg-kpi-basket': '200', 'seg-kpi-deals': '75',
+      'seg-kpi-sales': '15000', 'seg-kpi-basket': '200',
       'seg-kpi-focus': '2+2',   'seg-kpi-clubs-kpi': '5', 'seg-kpi-conv': '26%'
     };
 
@@ -3893,6 +3894,7 @@
         var el = document.getElementById(id);
         if (el) el.value = '';
       });
+      _segCalcKpiDeals();
       _segRecalc();
     }
 
@@ -3941,11 +3943,19 @@
       });
       document.querySelectorAll('#seg-tracker-overlay .seg-kpi-box input, #seg-tracker-overlay .seg-kpi-small input').forEach(function(el) {
         el.addEventListener('input', function() {
+          if (el.id === 'seg-kpi-sales' || el.id === 'seg-kpi-basket') { _segCalcKpiDeals(); }
           if (el.id === 'seg-kpi-basket') _segAutoDealsAll();
           _segRecalc();
           _segSaveToFirestore();
         });
       });
+    }
+
+    function _segCalcKpiDeals() {
+      var sales  = parseFloat((document.getElementById('seg-kpi-sales')  || {}).value) || 0;
+      var basket = parseFloat((document.getElementById('seg-kpi-basket') || {}).value) || 0;
+      var el = document.getElementById('seg-kpi-deals');
+      if (el) el.value = (sales > 0 && basket > 0) ? Math.round(sales / basket) : '';
     }
 
     function _segAutoDeals(i) {
@@ -6903,7 +6913,7 @@
       <div class="seg-kpi-grid">
         <div class="seg-kpi-box"><label>יעד מכירות יומי מצטבר</label><input type="number" id="seg-kpi-sales" value="15000"></div>
         <div class="seg-kpi-box"><label>יעד סל קניה יומי</label><input type="number" id="seg-kpi-basket" value="200"></div>
-        <div class="seg-kpi-box"><label>יעד עסקאות יומי</label><input type="number" id="seg-kpi-deals" value="75"></div>
+        <div class="seg-kpi-box"><label>יעד עסקאות יומי</label><input type="number" id="seg-kpi-deals" readonly style="opacity:0.7;background:rgba(201,168,76,0.07)"></div>
       </div>
       <div class="seg-kpi-grid">
         <div class="seg-kpi-small"><label>פוקוס יומי</label><input type="text" id="seg-kpi-focus" value="2+2"></div>
