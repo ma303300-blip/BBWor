@@ -1351,7 +1351,8 @@
           <button class="cl-add-btn" onclick="saveDailySales()">עדכן</button>
         </div>
       </div>
-      <button class="constraint-back-btn" style="width:100%;margin-top:4px" onclick="closeGoalModal()">סגור</button>
+      <button class="constraint-back-btn" style="width:100%;margin-top:4px;color:#ef4444;border-color:rgba(239,68,68,0.35)" onclick="resetMonthlyGoal()">🗑️ איפוס יעד חודשי</button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeGoalModal()">סגור</button>
     </div>
   </div>
 
@@ -5165,6 +5166,27 @@
           document.getElementById('goal-bar').style.width = pct + '%';
         })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לשמור.', null); });
+    }
+
+    function resetMonthlyGoal() {
+      var branch = _goalEditBranch || 'raanana';
+      var branchLabel = branch === 'raanana' ? 'רעננה' : 'חדרה';
+      var monthId = getMonthId();
+      showConfirm('🗑️', 'איפוס יעד חודשי',
+        'האם לאפס את כל נתוני היעד של סניף ' + branchLabel + ' לחודש הנוכחי?\nהיעד וכל המכירות היומיות יימחקו.',
+        function() {
+          db.collection('monthly_goals').doc(branch + '_' + monthId).delete().catch(function() {});
+          db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + branch)
+            .get().then(function(snap) {
+              var b = db.batch();
+              snap.forEach(function(d) { b.delete(d.ref); });
+              return b.commit();
+            }).then(function() {
+              document.getElementById('goal-input').value = '';
+              document.getElementById('daily-input').value = '';
+            }).catch(function() {});
+        }
+      );
     }
 
     /* Employee goal modal */
