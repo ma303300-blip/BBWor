@@ -4570,23 +4570,12 @@
 
     function saveScheduleToGallery() {
       if (!_schCapturedBlob) return;
-      var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       var url = URL.createObjectURL(_schCapturedBlob);
-      if (isIOS) {
-        var img = document.getElementById('sch-img-preview-img');
-        var overlay = document.getElementById('sch-img-preview');
-        if (img && overlay) {
-          img.src = url;
-          overlay.style.display = 'flex';
-          closeScheduleShare();
-        }
-      } else {
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'sidur-' + new Date().toISOString().slice(0,10) + '.png';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+      var img = document.getElementById('sch-img-preview-img');
+      var overlay = document.getElementById('sch-img-preview');
+      if (img && overlay) {
+        img.src = url;
+        overlay.style.display = 'flex';
         closeScheduleShare();
       }
     }
