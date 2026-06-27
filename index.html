@@ -1261,6 +1261,13 @@
     </div>
   </div>
 
+  <!-- SCHEDULE IMAGE PREVIEW (iOS gallery save) -->
+  <div id="sch-img-preview" onclick="closeScheduleImgPreview()" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+    <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;line-height:1.5">לחץ לחיצה ארוכה על התמונה<br>ובחר <span style="color:var(--gold)">"שמור תמונה"</span></div>
+    <img id="sch-img-preview-img" src="" alt="סידור" style="max-width:100%;max-height:70vh;border-radius:10px;object-fit:contain;" onclick="event.stopPropagation()">
+    <button onclick="closeScheduleImgPreview()" style="margin-top:18px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:12px 32px;font-family:inherit;cursor:pointer;">סגור</button>
+  </div>
+
   <!-- SCHEDULE FLOATING CARDS (manager) -->
   <div class="pending-overlay" id="sch-picker-overlay" onclick="closeSchPicker()" style="z-index:490;background:transparent"></div>
   <div id="sch-float-wrap"></div>
@@ -4563,14 +4570,32 @@
 
     function saveScheduleToGallery() {
       if (!_schCapturedBlob) return;
+      var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       var url = URL.createObjectURL(_schCapturedBlob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'sidur-' + new Date().toISOString().slice(0,10) + '.png';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
-      closeScheduleShare();
+      if (isIOS) {
+        var img = document.getElementById('sch-img-preview-img');
+        var overlay = document.getElementById('sch-img-preview');
+        if (img && overlay) {
+          img.src = url;
+          overlay.style.display = 'flex';
+          closeScheduleShare();
+        }
+      } else {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'sidur-' + new Date().toISOString().slice(0,10) + '.png';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+        closeScheduleShare();
+      }
+    }
+
+    function closeScheduleImgPreview() {
+      var overlay = document.getElementById('sch-img-preview');
+      var img = document.getElementById('sch-img-preview-img');
+      if (overlay) overlay.style.display = 'none';
+      if (img) { URL.revokeObjectURL(img.src); img.src = ''; }
     }
 
     function resetSchedule() {
