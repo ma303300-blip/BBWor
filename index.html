@@ -4182,7 +4182,33 @@
       try { sessionStorage.removeItem('bbwor_seg_open'); } catch(e) {}
     }
 
+    function playShutterSound() {
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var bufferSize = Math.floor(ctx.sampleRate * 0.12);
+        var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        var data = buffer.getChannelData(0);
+        for (var i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+        }
+        var source = ctx.createBufferSource();
+        source.buffer = buffer;
+        var filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 900;
+        filter.Q.value = 0.4;
+        var gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.35, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        source.start(0);
+      } catch(e) {}
+    }
+
     function captureSegment() {
+      playShutterSound();
       var source = document.getElementById('seg-tracker-body');
       if (!source || typeof html2canvas === 'undefined') {
         showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return;
@@ -4780,6 +4806,7 @@
     var _schCapturedBlob = null;
 
     function captureSchedule() {
+      playShutterSound();
       var target = document.getElementById('sch-table');
       if (!target || typeof html2canvas === 'undefined') {
         showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return;
