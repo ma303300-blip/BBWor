@@ -24,7 +24,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&family=Playfair+Display:ital,wght@1,700;1,900&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="./html2canvas.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -4169,7 +4169,7 @@
       if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
       if (typeof html2canvas !== 'undefined') { _doSegCapture(); return; }
       var s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.src = './html2canvas.min.js';
       s.onload = function() { _doSegCapture(); };
       s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
       document.head.appendChild(s);
@@ -4722,7 +4722,7 @@
       if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
       if (typeof html2canvas !== 'undefined') { _doSchCapture(); return; }
       var s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.src = './html2canvas.min.js';
       s.onload = function() { _doSchCapture(); };
       s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
       document.head.appendChild(s);
