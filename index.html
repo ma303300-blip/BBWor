@@ -6391,6 +6391,18 @@
       return p;
     }
 
+    function _resetRecaptcha() {
+      if (_phoneRecaptchaVerifier) {
+        try { _phoneRecaptchaVerifier.clear(); } catch(e) {}
+        _phoneRecaptchaVerifier = null;
+      }
+      var c = document.getElementById('recaptcha-container');
+      if (c) c.innerHTML = '';
+      try {
+        _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+      } catch(e) {}
+    }
+
     function _showPhoneAuthModal() {
       var modal = document.getElementById('phone-auth-modal');
       if (modal) modal.classList.add('open');
@@ -6399,12 +6411,7 @@
       document.getElementById('phone-auth-error').textContent = '';
       var inp = document.getElementById('phone-auth-input');
       if (inp) setTimeout(function() { inp.focus(); }, 180);
-      if (!_phoneRecaptchaVerifier) {
-        try {
-          _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-          _phoneRecaptchaVerifier.render().catch(function(){});
-        } catch(e) {}
-      }
+      _resetRecaptcha();
     }
 
     function startPhoneAuth() {
@@ -6412,12 +6419,7 @@
       if (!ph) { _phoneAuthErr('יש להזין מספר טלפון'); return; }
       var normalized = _normalizePhone(ph);
       document.getElementById('phone-auth-error').textContent = '';
-      if (!_phoneRecaptchaVerifier) {
-        try {
-          _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-          _phoneRecaptchaVerifier.render().catch(function(){});
-        } catch(e) { _phoneAuthErr('שגיאה פנימית — רענן את הדף'); return; }
-      }
+      if (!_phoneRecaptchaVerifier) { _resetRecaptcha(); }
       auth.signInWithPhoneNumber(normalized, _phoneRecaptchaVerifier)
         .then(function(result) {
           _phoneConfirmation = result;
@@ -6428,12 +6430,7 @@
           if (otp) { otp.value = ''; setTimeout(function() { otp.focus(); }, 100); }
         })
         .catch(function(err) {
-          try { _phoneRecaptchaVerifier.clear(); } catch(e) {}
-          _phoneRecaptchaVerifier = null;
-          try {
-            _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-            _phoneRecaptchaVerifier.render().catch(function(){});
-          } catch(e2) {}
+          _resetRecaptcha();
           _phoneAuthErr(_phoneErrMsg(err));
         });
     }
@@ -6448,14 +6445,10 @@
 
     function _phoneAuthBack() {
       _phoneConfirmation = null;
-      if (_phoneRecaptchaVerifier) { try { _phoneRecaptchaVerifier.clear(); } catch(e) {} _phoneRecaptchaVerifier = null; }
       document.getElementById('phone-auth-step1').style.display = '';
       document.getElementById('phone-auth-step2').style.display = 'none';
       document.getElementById('phone-auth-error').textContent = '';
-      try {
-        _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
-        _phoneRecaptchaVerifier.render().catch(function(){});
-      } catch(e) {}
+      _resetRecaptcha();
     }
 
     function _phoneAuthErr(msg) {
