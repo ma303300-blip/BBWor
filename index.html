@@ -1893,6 +1893,12 @@
       var profile = { name: name, phone: phone };
       if (_mgrRegPendingPhoto) profile.photo = _mgrRegPendingPhoto;
       localStorage.setItem('bbwor_manager', JSON.stringify(profile));
+      if (auth.currentUser) {
+        db.collection('managers').doc(auth.currentUser.uid).set({
+          name: name, phone: auth.currentUser.phoneNumber || phone,
+          createdAt: new Date().toISOString()
+        }, { merge: true }).catch(function(){});
+      }
       closeMgrRegModal();
       _updateMgrNameDisplay();
       _openManagerDashboard();
@@ -2091,7 +2097,8 @@
       p.name = name; p.phone = phone;
       if (_mgrPendingPhoto !== null) p.photo = _mgrPendingPhoto;
       localStorage.setItem('bbwor_manager', JSON.stringify(p));
-      db.collection('managers').doc('main').set({ name: name, phone: phone, photo: p.photo || null, updatedAt: new Date().toISOString() }).catch(function(){});
+      var _mgrUid = auth.currentUser ? auth.currentUser.uid : 'main';
+      db.collection('managers').doc(_mgrUid).set({ name: name, phone: phone, photo: p.photo || null, updatedAt: new Date().toISOString() }).catch(function(){});
       closeMgrProfileModal();
       _updateMgrNameDisplay();
       var greetEl = document.querySelector('#screen-manager .emp-name-txt');
@@ -2103,13 +2110,15 @@
       closeMgrProfileModal();
       showConfirm('🗑️', 'מחיקת פרופיל', 'האם למחוק את פרופיל המנהל/ת לצמיתות?\nיהיה צורך ברישום מחדש בכניסה הבאה.', function() {
         localStorage.removeItem('bbwor_manager');
-        db.collection('managers').doc('main').delete().catch(function(){});
+        var _delUid = auth.currentUser ? auth.currentUser.uid : 'main';
+        db.collection('managers').doc(_delUid).delete().catch(function(){});
         goHome();
       }, 'מחק לצמיתות 🗑️');
     }
 
     function _openManagerDashboard() {
-      db.collection('managers').doc('main').get().then(function(doc) {
+      var _dashUid = auth.currentUser ? auth.currentUser.uid : 'main';
+      db.collection('managers').doc(_dashUid).get().then(function(doc) {
         if (doc.exists) {
           var remote = doc.data();
           var local = _getMgrProfile() || {};
@@ -2238,7 +2247,7 @@
             return;
           }
           var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-          var emp = { id: id, firstName: first, lastName: last, phone: phone, photo: pendingPhoto || null, branch: activeBranch, status: 'pending', createdAt: new Date().toISOString() };
+          var emp = { id: id, firstName: first, lastName: last, phone: phone, photo: pendingPhoto || null, branch: activeBranch, status: 'pending', createdAt: new Date().toISOString(), uid: (auth.currentUser ? auth.currentUser.uid : null), authPhone: (auth.currentUser ? auth.currentUser.phoneNumber : null) };
           db.collection('employees').doc(id).set(emp)
             .then(function() {
               setSession(activeBranch, { empId: id });
@@ -6371,59 +6380,187 @@
         .catch(function() {});
     }
 
-    /* ANONYMOUS AUTH → then seed + auto-login */
-    auth.onAuthStateChanged(function(user) {
-      if (user) {
-        seedChecklistItems();
-        _weeklyConstraintReset();
-        _weeklyScheduleCleanup();
-        _updateMgrNameDisplay();
-        /* AUTO-LOGIN */
-        (function() {
-          var branches = ['raanana', 'hadera'];
-          var i = 0;
-          var lastScreen     = sessionStorage.getItem('bbwor_screen');
-          var lastSchEditable = sessionStorage.getItem('bbwor_sch_editable') === '1';
-          function tryBranch() {
-            if (i >= branches.length) {
-              /* no employee session found — manager-only restore */
-              if (lastScreen === 'manager' || _getMgrProfile()) {
-                try { enterManager(); } catch(e) { show('home'); }
-              } else if (lastScreen === 'schedule' && lastSchEditable) {
-                try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
-              }
-              return;
+    /* ── PHONE AUTH ── */
+    var _phoneConfirmation = null;
+    var _phoneRecaptchaVerifier = null;
+
+    function _normalizePhone(p) {
+      p = p.replace(/[\s\-]/g, '');
+      if (p.startsWith('0')) return '+972' + p.slice(1);
+      if (!p.startsWith('+')) return '+972' + p;
+      return p;
+    }
+
+    function _showPhoneAuthModal() {
+      var modal = document.getElementById('phone-auth-modal');
+      if (modal) modal.classList.add('open');
+      document.getElementById('phone-auth-step1').style.display = '';
+      document.getElementById('phone-auth-step2').style.display = 'none';
+      document.getElementById('phone-auth-error').textContent = '';
+      var inp = document.getElementById('phone-auth-input');
+      if (inp) setTimeout(function() { inp.focus(); }, 180);
+      if (!_phoneRecaptchaVerifier) {
+        try {
+          _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+          _phoneRecaptchaVerifier.render().catch(function(){});
+        } catch(e) {}
+      }
+    }
+
+    function startPhoneAuth() {
+      var ph = (document.getElementById('phone-auth-input').value || '').trim();
+      if (!ph) { _phoneAuthErr('יש להזין מספר טלפון'); return; }
+      var normalized = _normalizePhone(ph);
+      document.getElementById('phone-auth-error').textContent = '';
+      if (!_phoneRecaptchaVerifier) {
+        try {
+          _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+          _phoneRecaptchaVerifier.render().catch(function(){});
+        } catch(e) { _phoneAuthErr('שגיאה פנימית — רענן את הדף'); return; }
+      }
+      auth.signInWithPhoneNumber(normalized, _phoneRecaptchaVerifier)
+        .then(function(result) {
+          _phoneConfirmation = result;
+          document.getElementById('phone-auth-step1').style.display = 'none';
+          document.getElementById('phone-auth-step2').style.display = '';
+          document.getElementById('phone-auth-hint').textContent = 'קוד נשלח ל-' + ph;
+          var otp = document.getElementById('phone-auth-otp');
+          if (otp) { otp.value = ''; setTimeout(function() { otp.focus(); }, 100); }
+        })
+        .catch(function(err) {
+          try { _phoneRecaptchaVerifier.clear(); } catch(e) {}
+          _phoneRecaptchaVerifier = null;
+          try {
+            _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+            _phoneRecaptchaVerifier.render().catch(function(){});
+          } catch(e2) {}
+          _phoneAuthErr(_phoneErrMsg(err));
+        });
+    }
+
+    function verifyPhoneCode() {
+      if (!_phoneConfirmation) return;
+      var code = (document.getElementById('phone-auth-otp').value || '').trim();
+      if (!code) { _phoneAuthErr('יש להזין את הקוד'); return; }
+      document.getElementById('phone-auth-error').textContent = '';
+      _phoneConfirmation.confirm(code).catch(function(err) { _phoneAuthErr(_phoneErrMsg(err)); });
+    }
+
+    function _phoneAuthBack() {
+      _phoneConfirmation = null;
+      if (_phoneRecaptchaVerifier) { try { _phoneRecaptchaVerifier.clear(); } catch(e) {} _phoneRecaptchaVerifier = null; }
+      document.getElementById('phone-auth-step1').style.display = '';
+      document.getElementById('phone-auth-step2').style.display = 'none';
+      document.getElementById('phone-auth-error').textContent = '';
+      try {
+        _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' });
+        _phoneRecaptchaVerifier.render().catch(function(){});
+      } catch(e) {}
+    }
+
+    function _phoneAuthErr(msg) {
+      document.getElementById('phone-auth-error').textContent = msg;
+    }
+
+    function _phoneErrMsg(err) {
+      var map = {
+        'auth/invalid-phone-number':      'מספר טלפון לא תקין',
+        'auth/too-many-requests':          'יותר מדי ניסיונות. נסה שוב מאוחר יותר',
+        'auth/invalid-verification-code':  'קוד שגוי. נסה שוב',
+        'auth/code-expired':               'הקוד פג תוקף. שלח שוב',
+        'auth/quota-exceeded':             'חריגה ממכסה. נסה מאוחר יותר'
+      };
+      return map[err.code] || ('שגיאה: ' + (err.message || err.code || 'לא ידוע'));
+    }
+
+    function _onPhoneAuthComplete(user) {
+      var modal = document.getElementById('phone-auth-modal');
+      if (modal) modal.classList.remove('open');
+      _phoneConfirmation = null;
+
+      /* stamp uid on existing employee session docs (migration + new logins) */
+      ['raanana', 'hadera'].forEach(function(branch) {
+        var session = getSession(branch);
+        if (session && session.empId) {
+          db.collection('employees').doc(session.empId).update({
+            uid: user.uid, authPhone: user.phoneNumber
+          }).catch(function(){});
+        }
+      });
+
+      /* if manager profile exists locally, ensure Firestore manager doc exists */
+      var mgrProfile = _getMgrProfile();
+      if (mgrProfile) {
+        db.collection('managers').doc(user.uid).set({
+          name: mgrProfile.name,
+          phone: user.phoneNumber || mgrProfile.phone,
+          updatedAt: new Date().toISOString()
+        }, { merge: true }).catch(function(){});
+      }
+
+      _onAuthReady(user);
+    }
+
+    function _onAuthReady(user) {
+      seedChecklistItems();
+      _weeklyConstraintReset();
+      _weeklyScheduleCleanup();
+      _updateMgrNameDisplay();
+      /* AUTO-LOGIN */
+      (function() {
+        var branches = ['raanana', 'hadera'];
+        var i = 0;
+        var lastScreen      = sessionStorage.getItem('bbwor_screen');
+        var lastSchEditable = sessionStorage.getItem('bbwor_sch_editable') === '1';
+        function tryBranch() {
+          if (i >= branches.length) {
+            /* no employee session found — manager-only restore */
+            if (lastScreen === 'manager' || _getMgrProfile()) {
+              try { enterManager(); } catch(e) { show('home'); }
+            } else if (lastScreen === 'schedule' && lastSchEditable) {
+              try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
             }
-            var b = branches[i++];
-            var session = getSession(b);
-            if (!session) { tryBranch(); return; }
-            db.collection('employees').doc(session.empId).get()
-              .then(function(doc) {
-                if (!document.getElementById('screen-home').classList.contains('active')) return;
-                if (!doc.exists) { clearSession(b); tryBranch(); return; }
-                /* include Firestore doc.id in the emp object */
-                var emp = Object.assign({ id: doc.id }, doc.data());
-                activeBranch = b;
-                if (emp.status === 'approved') {
-                  if (lastScreen === 'manager') {
-                    try { enterManager(); } catch(e) { show('home'); }
-                  } else if (lastScreen === 'schedule' && lastSchEditable) {
-                    /* manager with employee session refreshes from editable schedule */
-                    try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
-                  } else if (lastScreen === 'schedule') {
-                    currentEmployee = emp;
-                    try { openSchedule(false); } catch(e) { openEmployeeHome(emp); }
-                  } else {
-                    try { openEmployeeHome(emp); } catch(e) { clearSession(b); show('home'); }
-                  }
-                } else {
-                  showPendingModal(emp.firstName + ' ' + emp.lastName, emp.id);
-                }
-              })
-              .catch(function() { tryBranch(); });
+            return;
           }
-          tryBranch();
-        })();
+          var b = branches[i++];
+          var session = getSession(b);
+          if (!session) { tryBranch(); return; }
+          db.collection('employees').doc(session.empId).get()
+            .then(function(doc) {
+              if (!document.getElementById('screen-home').classList.contains('active')) return;
+              if (!doc.exists) { clearSession(b); tryBranch(); return; }
+              var emp = Object.assign({ id: doc.id }, doc.data());
+              activeBranch = b;
+              if (emp.status === 'approved') {
+                if (lastScreen === 'manager') {
+                  try { enterManager(); } catch(e) { show('home'); }
+                } else if (lastScreen === 'schedule' && lastSchEditable) {
+                  try { _openManagerDashboard(); openSchedule(true); } catch(e) { show('home'); }
+                } else if (lastScreen === 'schedule') {
+                  currentEmployee = emp;
+                  try { openSchedule(false); } catch(e) { openEmployeeHome(emp); }
+                } else {
+                  try { openEmployeeHome(emp); } catch(e) { clearSession(b); show('home'); }
+                }
+              } else {
+                showPendingModal(emp.firstName + ' ' + emp.lastName, emp.id);
+              }
+            })
+            .catch(function() { tryBranch(); });
+        }
+        tryBranch();
+      })();
+    }
+
+    /* PHONE AUTH → seed + auto-login */
+    auth.onAuthStateChanged(function(user) {
+      if (user && user.phoneNumber) {
+        _onPhoneAuthComplete(user);
+      } else if (user) {
+        /* legacy anonymous session — sign out and require phone auth */
+        auth.signOut().then(function() { _showPhoneAuthModal(); }).catch(function() { _showPhoneAuthModal(); });
+      } else {
+        _showPhoneAuthModal();
       }
     });
     /* ── Android back-button handling ── */
@@ -7051,7 +7188,6 @@
       }, { passive: true });
     }
 
-    auth.signInAnonymously().catch(function() {});
 
     function openPrivacy() {
       var box = document.getElementById('privacy-box');
@@ -7071,6 +7207,38 @@
   </div>
 
   <div id="privacy-link" onclick="openPrivacy()">מדיניות פרטיות</div>
+
+  <!-- PHONE AUTH MODAL -->
+  <div class="modal-overlay" id="phone-auth-modal" style="z-index:10000;background:rgba(0,0,0,0.96)">
+    <div class="modal-box" style="max-width:330px;gap:14px;padding:28px 22px 24px;align-items:stretch">
+      <div style="text-align:center;font-size:34px;margin-bottom:2px">🔐</div>
+      <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">אימות בטלפון</div>
+      <div style="text-align:center;font-size:12px;color:var(--text-dim);line-height:1.55;margin-bottom:2px">כדי להמשיך, נשלח אליך קוד SMS לאימות הזהות</div>
+      <div id="phone-auth-step1">
+        <input id="phone-auth-input" type="tel" inputmode="tel" placeholder="מספר טלפון (050...)"
+               style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;text-align:center;font-family:Heebo,sans-serif;direction:ltr;box-sizing:border-box;outline:none">
+        <div id="recaptcha-container" style="margin-top:10px;display:flex;justify-content:center"></div>
+        <button onclick="startPhoneAuth()"
+                style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">
+          שלח קוד ✉️
+        </button>
+      </div>
+      <div id="phone-auth-step2" style="display:none">
+        <div id="phone-auth-hint" style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:10px">קוד נשלח...</div>
+        <input id="phone-auth-otp" type="tel" inputmode="numeric" maxlength="6" placeholder="קוד אימות (6 ספרות)"
+               style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:#fff;font-size:22px;text-align:center;letter-spacing:6px;font-family:Heebo,sans-serif;direction:ltr;box-sizing:border-box;outline:none">
+        <button onclick="verifyPhoneCode()"
+                style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">
+          אמת קוד ✅
+        </button>
+        <button onclick="_phoneAuthBack()"
+                style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.13);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;font-family:Heebo,sans-serif">
+          שינוי מספר טלפון
+        </button>
+      </div>
+      <div id="phone-auth-error" style="color:rgba(255,80,80,0.9);font-size:12px;text-align:center;min-height:16px"></div>
+    </div>
+  </div>
 
   <!-- PRIVACY POLICY MODAL -->
   <div class="modal-overlay" id="privacy-modal" onclick="if(event.target===this)closePrivacy()">
