@@ -4145,10 +4145,15 @@
         return;
       }
       var origOverflow = target.style.overflow;
+      var origHeight = target.style.height;
+      var fullH = target.scrollHeight;
+      var fullW = target.offsetWidth;
       target.style.overflow = 'visible';
-      html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true, height: target.scrollHeight, windowHeight: target.scrollHeight })
+      target.style.height = fullH + 'px';
+      html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true, width: fullW, height: fullH, windowHeight: fullH })
         .then(function(canvas) {
           target.style.overflow = origOverflow;
+          target.style.height = origHeight;
           canvas.toBlob(function(blob) {
             _segCapturedBlob = blob;
             var box = document.getElementById('seg-share-box');
@@ -4158,6 +4163,7 @@
         })
         .catch(function() {
           target.style.overflow = origOverflow;
+          target.style.height = origHeight;
           showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הדוח.', null);
         });
     }
