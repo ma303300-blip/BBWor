@@ -1,8 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isPhoneAuth() {
+      return request.auth != null && request.auth.token.phone_number != null;
+    }
+
+    function isManager() {
+      return isPhoneAuth() &&
+        exists(/databases/$(database)/documents/managers/$(request.auth.uid));
+    }
+
+    match /managers/{uid} {
+      allow read, write: if isPhoneAuth() && request.auth.uid == uid;
+    }
+
+    match /employees/{empId} {
+      allow read:   if isPhoneAuth();
+      allow create: if isPhoneAuth();
+      allow update: if isManager() ||
+                       (isPhoneAuth() && resource.data.get('uid', '') == request.auth.uid);
+      allow delete: if isManager();
+    }
+
+    match /constraints/{docId}              { allow read, write: if isPhoneAuth(); }
+    match /schedules/{docId}                { allow read, write: if isPhoneAuth(); }
+    match /checklist_items/{docId}          { allow read, write: if isPhoneAuth(); }
+    match /checklist_completions/{docId}    { allow read, write: if isPhoneAuth(); }
+    match /shift_submissions/{docId}        { allow read, write: if isPhoneAuth(); }
+    match /shift_approvals/{docId}          { allow read, write: if isPhoneAuth(); }
+    match /checklist_item_approvals/{docId} { allow read, write: if isPhoneAuth(); }
+    match /daily_goal_submissions/{docId}   { allow read, write: if isPhoneAuth(); }
+    match /segment_tracker/{docId}          { allow read, write: if isPhoneAuth(); }
+    match /monthly_goals/{docId}            { allow read, write: if isPhoneAuth(); }
+    match /daily_sales/{docId}              { allow read, write: if isPhoneAuth(); }
+    match /security_procedures/{docId}      { allow read, write: if isPhoneAuth(); }
+    match /competitions/{docId}             { allow read, write: if isPhoneAuth(); }
+    match /competition_joins/{docId}        { allow read, write: if isPhoneAuth(); }
+    match /constraint_resets/{docId}        { allow read, write: if isPhoneAuth(); }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
