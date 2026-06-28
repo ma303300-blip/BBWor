@@ -2117,10 +2117,6 @@
     }
 
     function _openManagerDashboard() {
-      if (!auth.currentUser || !auth.currentUser.phoneNumber) {
-        _requirePhoneAuth(function() { _openManagerDashboard(); });
-        return;
-      }
       var _dashUid = auth.currentUser ? auth.currentUser.uid : 'main';
       db.collection('managers').doc(_dashUid).get().then(function(doc) {
         if (doc.exists) {
@@ -2289,10 +2285,6 @@
     }
 
     function openEmployeeHome(emp) {
-      if (!auth.currentUser || !auth.currentUser.phoneNumber) {
-        _requirePhoneAuth(function() { openEmployeeHome(emp); });
-        return;
-      }
       currentEmployee = emp;
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
