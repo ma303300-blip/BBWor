@@ -6412,6 +6412,13 @@
       } catch(e) {}
     }
 
+    function _closePhoneAuthModal() {
+      var modal = document.getElementById('phone-auth-modal');
+      if (modal) modal.classList.remove('open');
+      _pendingAuthAction = null;
+      _resetRecaptcha();
+    }
+
     function _showPhoneAuthModal() {
       var modal = document.getElementById('phone-auth-modal');
       if (modal) modal.classList.add('open');
@@ -7242,7 +7249,7 @@
   <div id="privacy-link" onclick="openPrivacy()">מדיניות פרטיות</div>
 
   <!-- PHONE AUTH MODAL -->
-  <div class="modal-overlay" id="phone-auth-modal" style="z-index:10000;background:rgba(0,0,0,0.96)">
+  <div class="modal-overlay" id="phone-auth-modal" style="z-index:10000;background:rgba(0,0,0,0.96)" onclick="if(event.target===this)_closePhoneAuthModal()">
     <div class="modal-box" style="max-width:330px;gap:14px;padding:28px 22px 24px;align-items:stretch">
       <div style="text-align:center;font-size:34px;margin-bottom:2px">🔐</div>
       <div style="text-align:center;font-size:17px;font-weight:700;color:var(--gold)">אימות בטלפון</div>
@@ -7254,6 +7261,10 @@
         <button onclick="startPhoneAuth()"
                 style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">
           שלח קוד ✉️
+        </button>
+        <button onclick="_closePhoneAuthModal()"
+                style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.13);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer;font-family:Heebo,sans-serif">
+          ביטול
         </button>
       </div>
       <div id="phone-auth-step2" style="display:none">
