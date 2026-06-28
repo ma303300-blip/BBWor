@@ -41,9 +41,10 @@
     body {
       min-height: 100vh; min-height: 100dvh;
       font-family: 'Heebo', sans-serif;
-      background: #252320 url('bg.png') center top / cover fixed;
+      background: #252320;
       color: var(--text);
     }
+    #app-bg { position: fixed; inset: 0; z-index: -1; background: url('bg.png') center top / cover; }
     .screen { display: none; min-height: 100vh; min-height: 100dvh; }
     .screen.active { display: flex; }
     html.has-session #screen-home { display: none !important; }
@@ -625,6 +626,7 @@
   <script>try{if(localStorage.getItem('bbwor_manager')||localStorage.getItem('bbwor_session_raanana')||localStorage.getItem('bbwor_session_hadera')){document.documentElement.classList.add('has-session');}}catch(e){}</script>
 </head>
 <body>
+  <div id="app-bg"></div>
 
   <div class="bsd-corner">בס"ד</div>
 
@@ -4595,6 +4597,7 @@
         if (_fp) _fp.classList.add('visible');
       }
       sessionStorage.setItem('bbwor_scroll_reset', '1');
+      if (!_schEditable) { renderEmployeeGrid(); }
       show(_schEditable ? 'manager' : 'employee');
     }
 
