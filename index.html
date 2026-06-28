@@ -6407,7 +6407,17 @@
       var c = document.getElementById('recaptcha-container');
       if (c) c.innerHTML = '';
       try {
-        _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal' });
+        _phoneRecaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+          size: 'normal',
+          callback: function() {
+            var btn = document.getElementById('phone-auth-send-btn');
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+          },
+          'expired-callback': function() {
+            var btn = document.getElementById('phone-auth-send-btn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.45'; }
+          }
+        });
         _phoneRecaptchaVerifier.render().catch(function() {});
       } catch(e) {}
     }
@@ -7258,8 +7268,8 @@
         <input id="phone-auth-input" type="tel" inputmode="tel" placeholder="מספר טלפון (050...)"
                style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:#fff;font-size:16px;text-align:center;font-family:Heebo,sans-serif;direction:ltr;box-sizing:border-box;outline:none">
         <div id="recaptcha-container" style="margin-top:10px;display:flex;justify-content:center"></div>
-        <button onclick="startPhoneAuth()"
-                style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif">
+        <button id="phone-auth-send-btn" onclick="startPhoneAuth()" disabled
+                style="width:100%;margin-top:12px;padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-size:15px;font-weight:700;cursor:pointer;font-family:Heebo,sans-serif;opacity:0.45">
           שלח קוד ✉️
         </button>
         <button onclick="_closePhoneAuthModal()"
