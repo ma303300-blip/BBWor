@@ -7277,7 +7277,7 @@
     <div class="modal-box" id="privacy-box" style="gap:0;align-items:stretch;max-width:390px;padding:22px 18px 18px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;text-align:right">
       <div style="text-align:center;font-size:28px;margin-bottom:6px">🔒</div>
       <div style="text-align:center;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:2px">מדיניות פרטיות ותנאי שימוש</div>
-      <div style="text-align:center;font-size:10px;color:var(--text-dim);margin-bottom:14px">BBWor &nbsp;|&nbsp; עדכון אחרון: יוני 2026</div>
+      <div style="text-align:center;font-size:10px;color:var(--text-dim);margin-bottom:14px">BBWor &nbsp;|&nbsp; עדכון אחרון: יוני 2026 (v2)</div>
 
       <div class="priv-section">
         <div class="priv-heading">1. בעלות וקניין רוחני</div>
@@ -7302,15 +7302,22 @@
         <div class="priv-heading">4. מידע הנאסף</div>
         <div class="priv-body">במסגרת הרשמה ושימוש באפליקציה, נאסף המידע הבא:
 • שם פרטי ושם משפחה
-• מספר טלפון
+• מספר טלפון — לצורך אימות זהות באמצעות קוד SMS חד-פעמי (OTP)
 • תמונת פרופיל (אופציונלי, בהסכמה)
 • נתוני משמרות ונוכחות
-• נתוני מכירות לצורך ניהול יעדים</div>
+• נתוני מכירות לצורך ניהול יעדים
+
+מספר הטלפון משמש לאימות הזהות בלבד ואינו מועבר לצדדים שלישיים מחוץ לשירותי Firebase של Google.</div>
       </div>
 
       <div class="priv-section">
         <div class="priv-heading">5. אחסון ואבטחת מידע</div>
-        <div class="priv-body">המידע נשמר בשירותי Google Firebase (Firestore ו-Authentication). הגישה למידע מוגנת באמצעות כללי אבטחה המגבילים גישה למשתמשים מאומתים בלבד.
+        <div class="priv-body">המידע נשמר בשירותי Google Firebase (Firestore ו-Authentication). הגישה למידע מוגנת באמצעות שכבות אבטחה מרובות:
+• אימות טלפון (SMS OTP) — רק משתמשים שאומתו בהצלחה יכולים לגשת לנתוני האפליקציה
+• חוקי Firestore — כללי גישה ברמת מסד הנתונים המגבילים כל פעולה למשתמשים מורשים בלבד
+• הצפנת העברת נתונים (HTTPS/TLS) בכל תקשורת בין המכשיר לשרת
+
+שירות אימות הטלפון מסופק על-ידי Google Firebase Phone Authentication. בעת שליחת קוד SMS, מספר הטלפון מועבר לשרתי Google לצורך האימות בלבד.
 
 המפתח אינו מוכר, מעביר, או חולק מידע אישי של עובדים עם גורמים חיצוניים לעסק.</div>
       </div>
