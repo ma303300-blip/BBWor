@@ -4185,25 +4185,48 @@
     function playShutterSound() {
       try {
         var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var bufferSize = Math.floor(ctx.sampleRate * 0.12);
-        var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        var data = buffer.getChannelData(0);
-        for (var i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+        var sr = ctx.sampleRate;
+        var now = ctx.currentTime;
+
+        // noise burst: filtered white noise for mechanical click character
+        function noiseBurst(t0, dur, lpFreq, vol, decayK) {
+          var n = Math.floor(sr * dur);
+          var buf = ctx.createBuffer(1, n, sr);
+          var d = buf.getChannelData(0);
+          for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-decayK * i / n);
+          var src = ctx.createBufferSource();
+          src.buffer = buf;
+          var lp = ctx.createBiquadFilter();
+          lp.type = 'lowpass'; lp.frequency.value = lpFreq; lp.Q.value = 1.2;
+          var g = ctx.createGain();
+          g.gain.setValueAtTime(vol, t0);
+          src.connect(lp); lp.connect(g); g.connect(ctx.destination);
+          src.start(t0);
         }
-        var source = ctx.createBufferSource();
-        source.buffer = buffer;
-        var filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 900;
-        filter.Q.value = 0.4;
-        var gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.35, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        source.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        source.start(0);
+
+        // low resonance tone: metal body vibration
+        function bodyTone(t0, freq, dur, vol) {
+          var osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t0);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t0 + dur);
+          var g = ctx.createGain();
+          g.gain.setValueAtTime(vol, t0);
+          g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(t0); osc.stop(t0 + dur);
+        }
+
+        // === First curtain: shutter opens ===
+        noiseBurst(now,        0.06, 550, 0.75, 10);  // sharp click
+        noiseBurst(now + 0.03, 0.20, 180, 0.40,  4);  // body thud
+        bodyTone  (now,        120,  0.22, 0.18);      // low metal resonance
+
+        // === Second curtain: shutter closes (~220ms later) ===
+        noiseBurst(now + 0.22, 0.05, 500, 0.60, 10);  // closing click
+        noiseBurst(now + 0.25, 0.16, 160, 0.30,  4);  // body thud
+        bodyTone  (now + 0.22, 100,  0.18, 0.14);     // low metal resonance
+
       } catch(e) {}
     }
 
