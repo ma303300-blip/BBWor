@@ -2117,6 +2117,10 @@
     }
 
     function _openManagerDashboard() {
+      if (!auth.currentUser || !auth.currentUser.phoneNumber) {
+        _requirePhoneAuth(function() { _openManagerDashboard(); });
+        return;
+      }
       var _dashUid = auth.currentUser ? auth.currentUser.uid : 'main';
       db.collection('managers').doc(_dashUid).get().then(function(doc) {
         if (doc.exists) {
@@ -2285,6 +2289,10 @@
     }
 
     function openEmployeeHome(emp) {
+      if (!auth.currentUser || !auth.currentUser.phoneNumber) {
+        _requirePhoneAuth(function() { openEmployeeHome(emp); });
+        return;
+      }
       currentEmployee = emp;
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
@@ -6502,7 +6510,14 @@
         }, { merge: true }).catch(function(){});
       }
 
-      _onAuthReady(user);
+      /* if a protected action was waiting for phone auth, run it now */
+      if (_pendingAuthAction) {
+        var action = _pendingAuthAction;
+        _pendingAuthAction = null;
+        action();
+      } else {
+        _onAuthReady(user);
+      }
     }
 
     function _onAuthReady(user) {
@@ -6556,15 +6571,28 @@
       })();
     }
 
-    /* PHONE AUTH → seed + auto-login */
+    /* PHONE AUTH — required only when entering protected areas */
+    var _pendingAuthAction = null;
+
+    function _requirePhoneAuth(callback) {
+      if (auth.currentUser && auth.currentUser.phoneNumber) {
+        callback();
+      } else {
+        _pendingAuthAction = callback;
+        _showPhoneAuthModal();
+      }
+    }
+
     auth.onAuthStateChanged(function(user) {
       if (user && user.phoneNumber) {
+        /* returning phone-auth user — update stamps then run pending action or auto-login */
         _onPhoneAuthComplete(user);
       } else if (user) {
-        /* legacy anonymous session — sign out and require phone auth */
-        auth.signOut().then(function() { _showPhoneAuthModal(); }).catch(function() { _showPhoneAuthModal(); });
+        /* anonymous or no-phone user — allow access to home/registration */
+        _onAuthReady(user);
       } else {
-        _showPhoneAuthModal();
+        /* not signed in — sign in anonymously so Firestore works for registration */
+        auth.signInAnonymously().catch(function() {});
       }
     });
     /* ── Android back-button handling ── */
