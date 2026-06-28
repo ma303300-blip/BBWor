@@ -4193,10 +4193,15 @@
       var srcInputs = source.querySelectorAll('input, textarea');
       var clnInputs = clone.querySelectorAll('input, textarea');
       srcInputs.forEach(function(inp, i) { if (clnInputs[i]) clnInputs[i].value = inp.value; });
-      var fullWidth = Math.max(source.offsetWidth, source.scrollWidth);
-      clone.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + fullWidth + 'px;height:auto;overflow:visible;background:#f5ead2;padding:14px 12px;';
+      // Use the actual table width (seg-table-wrap overflow hides it from parent scrollWidth)
+      var segTable = source.querySelector('.seg-table');
+      var tableWidth = segTable ? segTable.offsetWidth : 0;
+      var fullWidth = Math.max(source.offsetWidth, tableWidth + 28);
+      clone.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + fullWidth + 'px;height:auto;overflow:visible;background:#f5ead2;padding:14px 12px;box-sizing:border-box;';
       var cloneWrap = clone.querySelector('.seg-table-wrap');
-      if (cloneWrap) cloneWrap.style.cssText = cloneWrap.style.cssText + ';overflow:visible;width:100%';
+      if (cloneWrap) { cloneWrap.style.overflow = 'visible'; cloneWrap.style.width = tableWidth + 'px'; }
+      var cloneTable = clone.querySelector('.seg-table');
+      if (cloneTable) { cloneTable.style.width = tableWidth + 'px'; }
       document.body.appendChild(clone);
       html2canvas(clone, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
         .then(function(canvas) {
