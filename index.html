@@ -4138,18 +4138,18 @@
       try { sessionStorage.removeItem('bbwor_seg_open'); } catch(e) {}
     }
 
-    function _doSegCapture() {
-      var target = document.getElementById('seg-tracker-body');
-      var origOverflow = target.style.overflow;
-      var origHeight = target.style.height;
-      var fullH = target.scrollHeight;
-      var fullW = target.offsetWidth;
-      target.style.overflow = 'visible';
-      target.style.height = fullH + 'px';
-      html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true, width: fullW, height: fullH, windowHeight: fullH })
+    function captureSegment() {
+      var source = document.getElementById('seg-tracker-body');
+      if (!source || typeof html2canvas === 'undefined') {
+        showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return;
+      }
+      // Clone outside the transform parent so html2canvas renders correctly
+      var clone = source.cloneNode(true);
+      clone.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + source.offsetWidth + 'px;height:auto;overflow:visible;background:#f5ead2;padding:14px 12px;';
+      document.body.appendChild(clone);
+      html2canvas(clone, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
         .then(function(canvas) {
-          target.style.overflow = origOverflow;
-          target.style.height = origHeight;
+          document.body.removeChild(clone);
           canvas.toBlob(function(blob) {
             _segCapturedBlob = blob;
             var box = document.getElementById('seg-share-box');
@@ -4158,21 +4158,9 @@
           }, 'image/png');
         })
         .catch(function() {
-          target.style.overflow = origOverflow;
-          target.style.height = origHeight;
+          document.body.removeChild(clone);
           showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הדוח.', null);
         });
-    }
-
-    function captureSegment() {
-      var target = document.getElementById('seg-tracker-body');
-      if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
-      if (typeof html2canvas !== 'undefined') { _doSegCapture(); return; }
-      var s = document.createElement('script');
-      s.src = './html2canvas.min.js';
-      s.onload = function() { _doSegCapture(); };
-      s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
-      document.head.appendChild(s);
     }
 
     function closeSegmentShare() {
@@ -4703,8 +4691,11 @@
 
     var _schCapturedBlob = null;
 
-    function _doSchCapture() {
+    function captureSchedule() {
       var target = document.getElementById('sch-table');
+      if (!target || typeof html2canvas === 'undefined') {
+        showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return;
+      }
       html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
         .then(function(canvas) {
           canvas.toBlob(function(blob) {
@@ -4715,17 +4706,6 @@
           }, 'image/png');
         })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הסידור.', null); });
-    }
-
-    function captureSchedule() {
-      var target = document.getElementById('sch-table');
-      if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
-      if (typeof html2canvas !== 'undefined') { _doSchCapture(); return; }
-      var s = document.createElement('script');
-      s.src = './html2canvas.min.js';
-      s.onload = function() { _doSchCapture(); };
-      s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
-      document.head.appendChild(s);
     }
 
     function closeScheduleShare() {
