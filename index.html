@@ -6419,17 +6419,28 @@
       if (!ph) { _phoneAuthErr('יש להזין מספר טלפון'); return; }
       var normalized = _normalizePhone(ph);
       document.getElementById('phone-auth-error').textContent = '';
+      /* lock button during send */
+      var sendBtn = document.querySelector('#phone-auth-step1 button');
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'שולח...'; }
       if (!_phoneRecaptchaVerifier) { _resetRecaptcha(); }
       auth.signInWithPhoneNumber(normalized, _phoneRecaptchaVerifier)
         .then(function(result) {
           _phoneConfirmation = result;
-          document.getElementById('phone-auth-step1').style.display = 'none';
-          document.getElementById('phone-auth-step2').style.display = '';
-          document.getElementById('phone-auth-hint').textContent = 'קוד נשלח ל-' + ph;
-          var otp = document.getElementById('phone-auth-otp');
-          if (otp) { otp.value = ''; setTimeout(function() { otp.focus(); }, 100); }
+          /* show sent confirmation for 2 seconds before moving to OTP step */
+          document.getElementById('phone-auth-error').style.color = 'rgba(80,220,130,0.95)';
+          document.getElementById('phone-auth-error').textContent = '✅ הקוד נשלח! בדוק את ה-SMS';
+          setTimeout(function() {
+            document.getElementById('phone-auth-error').textContent = '';
+            document.getElementById('phone-auth-error').style.color = 'rgba(255,80,80,0.9)';
+            document.getElementById('phone-auth-step1').style.display = 'none';
+            document.getElementById('phone-auth-step2').style.display = '';
+            document.getElementById('phone-auth-hint').textContent = 'קוד נשלח ל-' + ph;
+            var otp = document.getElementById('phone-auth-otp');
+            if (otp) { otp.value = ''; setTimeout(function() { otp.focus(); }, 100); }
+          }, 2000);
         })
         .catch(function(err) {
+          if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'שלח קוד ✉️'; }
           _resetRecaptcha();
           _phoneAuthErr(_phoneErrMsg(err));
         });
