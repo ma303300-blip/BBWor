@@ -4138,12 +4138,8 @@
       try { sessionStorage.removeItem('bbwor_seg_open'); } catch(e) {}
     }
 
-    function captureSegment() {
+    function _doSegCapture() {
       var target = document.getElementById('seg-tracker-body');
-      if (!target || typeof html2canvas === 'undefined') {
-        showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null);
-        return;
-      }
       var origOverflow = target.style.overflow;
       var origHeight = target.style.height;
       var fullH = target.scrollHeight;
@@ -4166,6 +4162,17 @@
           target.style.height = origHeight;
           showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הדוח.', null);
         });
+    }
+
+    function captureSegment() {
+      var target = document.getElementById('seg-tracker-body');
+      if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
+      if (typeof html2canvas !== 'undefined') { _doSegCapture(); return; }
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = function() { _doSegCapture(); };
+      s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
+      document.head.appendChild(s);
     }
 
     function closeSegmentShare() {
@@ -4696,12 +4703,8 @@
 
     var _schCapturedBlob = null;
 
-    function captureSchedule() {
+    function _doSchCapture() {
       var target = document.getElementById('sch-table');
-      if (!target || typeof html2canvas === 'undefined') {
-        showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null);
-        return;
-      }
       html2canvas(target, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
         .then(function(canvas) {
           canvas.toBlob(function(blob) {
@@ -4712,6 +4715,17 @@
           }, 'image/png');
         })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם את הסידור.', null); });
+    }
+
+    function captureSchedule() {
+      var target = document.getElementById('sch-table');
+      if (!target) { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); return; }
+      if (typeof html2canvas !== 'undefined') { _doSchCapture(); return; }
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = function() { _doSchCapture(); };
+      s.onerror = function() { showModal('⚠️', 'שגיאה', 'לא ניתן לצלם כרגע.', null); };
+      document.head.appendChild(s);
     }
 
     function closeScheduleShare() {
