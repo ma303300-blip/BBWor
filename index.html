@@ -4193,7 +4193,10 @@
       var srcInputs = source.querySelectorAll('input, textarea');
       var clnInputs = clone.querySelectorAll('input, textarea');
       srcInputs.forEach(function(inp, i) { if (clnInputs[i]) clnInputs[i].value = inp.value; });
-      clone.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + source.offsetWidth + 'px;height:auto;overflow:visible;background:#f5ead2;padding:14px 12px;';
+      var fullWidth = Math.max(source.offsetWidth, source.scrollWidth);
+      clone.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + fullWidth + 'px;height:auto;overflow:visible;background:#f5ead2;padding:14px 12px;';
+      var cloneWrap = clone.querySelector('.seg-table-wrap');
+      if (cloneWrap) cloneWrap.style.cssText = cloneWrap.style.cssText + ';overflow:visible;width:100%';
       document.body.appendChild(clone);
       html2canvas(clone, { backgroundColor: '#f5ead2', scale: 2, useCORS: true, allowTaint: true })
         .then(function(canvas) {
