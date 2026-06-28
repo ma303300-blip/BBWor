@@ -1295,6 +1295,28 @@
     <button onclick="closeScheduleImgPreview()" style="margin-top:18px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:12px 32px;font-family:inherit;cursor:pointer;">סגור</button>
   </div>
 
+  <!-- SEGMENT SHARE MODAL -->
+  <div class="modal-overlay" id="seg-share-modal" onclick="if(event.target===this)closeSegmentShare()">
+    <div class="modal-box" id="seg-share-box" style="gap:14px;align-items:stretch;max-width:300px">
+      <div class="modal-big-icon">📸</div>
+      <div class="modal-heading" style="font-size:16px;text-align:center">שתף צילום דוח סגמנט</div>
+      <button class="sch-share-btn" onclick="shareSegmentWhatsApp()">
+        <span class="sch-share-btn-icon" style="background:#25d366;border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0"><span style="filter:brightness(0) invert(1)">💬</span></span>שתף בוואטסאפ
+      </button>
+      <button class="sch-share-btn" onclick="saveSegmentToGallery()">
+        <span class="sch-share-btn-icon" style="background:rgba(201,168,76,0.18);border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">🖼️</span>שמור לגלריה
+      </button>
+      <button class="constraint-back-btn" style="width:100%" onclick="closeSegmentShare()">ביטול</button>
+    </div>
+  </div>
+
+  <!-- SEGMENT IMAGE PREVIEW (iOS gallery save) -->
+  <div id="seg-img-preview" onclick="closeSegmentImgPreview()" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.92);flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;">
+    <div style="color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;line-height:1.5">לחץ לחיצה ארוכה על התמונה<br>ובחר <span style="color:var(--gold)">"שמור תמונה"</span></div>
+    <img id="seg-img-preview-img" src="" alt="דוח סגמנט" style="max-width:100%;max-height:70vh;border-radius:10px;object-fit:contain;" onclick="event.stopPropagation()">
+    <button onclick="closeSegmentImgPreview()" style="margin-top:18px;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;font-size:15px;font-weight:700;padding:12px 32px;font-family:inherit;cursor:pointer;">סגור</button>
+  </div>
+
   <!-- TEMP EMPLOYEE FORM MODAL -->
   <div class="modal-overlay" id="temp-emp-modal" onclick="if(event.target===this)closeTempEmpForm()">
     <div class="modal-box" id="temp-emp-box" style="gap:12px;align-items:stretch;max-width:290px">
@@ -4206,6 +4228,32 @@
       }
     }
 
+    function saveSegmentToGallery() {
+      if (!_segCapturedBlob) return;
+      var file = new File([_segCapturedBlob], 'segment.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'דוח סגמנט' })
+          .then(function() { closeSegmentShare(); })
+          .catch(function() {});
+      } else {
+        var url = URL.createObjectURL(_segCapturedBlob);
+        var img = document.getElementById('seg-img-preview-img');
+        var overlay = document.getElementById('seg-img-preview');
+        if (img && overlay) {
+          img.src = url;
+          overlay.style.display = 'flex';
+          closeSegmentShare();
+        }
+      }
+    }
+
+    function closeSegmentImgPreview() {
+      var overlay = document.getElementById('seg-img-preview');
+      var img = document.getElementById('seg-img-preview-img');
+      if (overlay) overlay.style.display = 'none';
+      if (img) { URL.revokeObjectURL(img.src); img.src = ''; }
+    }
+
     function segSendToManager() {
       db.collection('segment_tracker').doc(_segDocKey()).set({
         sent: true, seenByManager: false, sentAt: new Date()
@@ -6344,6 +6392,7 @@
         { id: 'constraint-drawer',     fn: closeConstraintDrawer },
         { id: 'emplist-drawer',        fn: closeEmployeeListDrawer },
         { id: 'cl-inbox-drawer',       fn: closeClInbox },
+        { id: 'seg-share-modal',        fn: closeSegmentShare },
         { id: 'seg-clear-confirm',      fn: function() { document.getElementById('seg-clear-confirm').classList.remove('open'); } },
         { id: 'seg-tracker-overlay',   fn: closeSegmentTracker },
         { id: 'sch-time-modal',        fn: closeSchTimeEditor },
@@ -7035,7 +7084,7 @@
         <button class="drawer-close-btn" style="font-size:13px;padding:6px 12px;border-radius:8px;width:auto" onclick="closeSegmentTracker()">◀ חזור</button>
       </div>
     </div>
-    <div class="seg-tracker-body">
+    <div class="seg-tracker-body" id="seg-tracker-body">
       <div class="seg-kpi-grid">
         <div class="seg-kpi-box"><label>יעד מכירות יומי מצטבר</label><input type="number" id="seg-kpi-sales" value="15000"></div>
         <div class="seg-kpi-box"><label>יעד סל קניה יומי</label><input type="number" id="seg-kpi-basket" value="200"></div>
@@ -7079,17 +7128,6 @@
       </div>
       <button class="seg-send-btn" id="seg-send-btn" onclick="segSendToManager()">📤 שלח למנהל</button>
       <button class="seg-clear-btn" onclick="segClearAll()">🗑 נקה הכל</button>
-    </div>
-    <!-- Segment share modal -->
-    <div class="modal-overlay" id="seg-share-modal" onclick="if(event.target===this)closeSegmentShare()" style="z-index:9999;position:fixed">
-      <div class="modal-box" id="seg-share-box" style="gap:14px;align-items:stretch;max-width:300px">
-        <div class="modal-big-icon">📸</div>
-        <div class="modal-heading" style="font-size:16px;text-align:center">שתף צילום דוח סגמנט</div>
-        <button class="sch-share-btn" onclick="shareSegmentWhatsApp()">
-          <span class="sch-share-btn-icon" style="background:#25d366;border-radius:50%;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0"><span style="filter:brightness(0) invert(1)">💬</span></span>שתף בוואטסאפ
-        </button>
-        <button class="constraint-back-btn" style="width:100%" onclick="closeSegmentShare()">ביטול</button>
-      </div>
     </div>
     <!-- Clear confirmation overlay -->
     <div id="seg-celebrate-overlay" onclick="closeSegCelebrate()">
