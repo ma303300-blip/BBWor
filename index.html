@@ -4188,44 +4188,44 @@
         var sr = ctx.sampleRate;
         var now = ctx.currentTime;
 
-        // noise burst: filtered white noise for mechanical click character
-        function noiseBurst(t0, dur, lpFreq, vol, decayK) {
-          var n = Math.floor(sr * dur);
-          var buf = ctx.createBuffer(1, n, sr);
-          var d = buf.getChannelData(0);
-          for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-decayK * i / n);
-          var src = ctx.createBufferSource();
-          src.buffer = buf;
-          var lp = ctx.createBiquadFilter();
-          lp.type = 'lowpass'; lp.frequency.value = lpFreq; lp.Q.value = 1.2;
-          var g = ctx.createGain();
-          g.gain.setValueAtTime(vol, t0);
-          src.connect(lp); lp.connect(g); g.connect(ctx.destination);
-          src.start(t0);
-        }
+        // === High-frequency click: the classic digital camera "tsik" ===
+        var n = Math.floor(sr * 0.055);
+        var buf = ctx.createBuffer(1, n, sr);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-18 * i / n);
+        var src = ctx.createBufferSource();
+        src.buffer = buf;
+        var bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 1.8;
+        var g1 = ctx.createGain();
+        g1.gain.setValueAtTime(1.1, now);
+        src.connect(bp); bp.connect(g1); g1.connect(ctx.destination);
+        src.start(now);
 
-        // low resonance tone: metal body vibration
-        function bodyTone(t0, freq, dur, vol) {
-          var osc = ctx.createOscillator();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, t0);
-          osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t0 + dur);
-          var g = ctx.createGain();
-          g.gain.setValueAtTime(vol, t0);
-          g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-          osc.connect(g); g.connect(ctx.destination);
-          osc.start(t0); osc.stop(t0 + dur);
-        }
+        // === Descending tone: electronic "chick" quality ===
+        var osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(2200, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.10);
+        var g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.18, now);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 0.10);
+        osc.connect(g2); g2.connect(ctx.destination);
+        osc.start(now); osc.stop(now + 0.10);
 
-        // === First curtain: shutter opens ===
-        noiseBurst(now,        0.06, 550, 0.75, 10);  // sharp click
-        noiseBurst(now + 0.03, 0.20, 180, 0.40,  4);  // body thud
-        bodyTone  (now,        120,  0.22, 0.18);      // low metal resonance
-
-        // === Second curtain: shutter closes (~220ms later) ===
-        noiseBurst(now + 0.22, 0.05, 500, 0.60, 10);  // closing click
-        noiseBurst(now + 0.25, 0.16, 160, 0.30,  4);  // body thud
-        bodyTone  (now + 0.22, 100,  0.18, 0.14);     // low metal resonance
+        // === Tiny second tick: mirror/shutter closing (30ms later) ===
+        var n2 = Math.floor(sr * 0.03);
+        var buf2 = ctx.createBuffer(1, n2, sr);
+        var d2 = buf2.getChannelData(0);
+        for (var j = 0; j < n2; j++) d2[j] = (Math.random() * 2 - 1) * Math.exp(-20 * j / n2);
+        var src2 = ctx.createBufferSource();
+        src2.buffer = buf2;
+        var bp2 = ctx.createBiquadFilter();
+        bp2.type = 'bandpass'; bp2.frequency.value = 2800; bp2.Q.value = 2;
+        var g3 = ctx.createGain();
+        g3.gain.setValueAtTime(0.5, now + 0.03);
+        src2.connect(bp2); bp2.connect(g3); g3.connect(ctx.destination);
+        src2.start(now + 0.03);
 
       } catch(e) {}
     }
