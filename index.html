@@ -2080,6 +2080,7 @@
     }
 
     function saveMgrProfile() {
+      playClickSound();
       var nameInp = document.getElementById('mgr-edit-name');
       var phoneInp = document.getElementById('mgr-edit-phone');
       var name = nameInp.value.trim();
@@ -2443,6 +2444,7 @@
         document.getElementById('edit-preview-icon').textContent = this.value || '✦';
       };
       document.getElementById('edit-modal-save').onclick = function() {
+        playClickSound();
         var newIcon  = document.getElementById('edit-field-icon').value.trim()  || '✦';
         var newLabel = document.getElementById('edit-field-label').value.trim() || '—';
         var c = getContent();
@@ -2505,6 +2507,7 @@
     }
 
     function approveEmp(id, branch) {
+      playClickSound();
       db.collection('employees').doc(id).update({ status: 'approved' })
         .then(function() {
           var card = document.getElementById('req-' + id);
@@ -2675,6 +2678,7 @@
 
     function confirmDeleteEmployee(empId, empName) {
       showConfirm('🗑️', 'מחיקת עובד', 'האם למחוק את ' + empName + ' לצמיתות?\nכל הנתונים שלו יימחקו לחלוטין.', function() {
+        playClickSound();
         deleteEmployeePermanently(empId);
       });
     }
@@ -3053,6 +3057,7 @@
     }
 
     function _cancelConstraintAssign(con) {
+      playClickSound();
       var ws = _nextSchWeekStart();
       var wid = ws.getFullYear() + '-' + String(ws.getMonth()+1).padStart(2,'0') + '-' + String(ws.getDate()).padStart(2,'0');
       var docId = con.branch + '_' + wid;
@@ -3207,6 +3212,7 @@
                 delBtn.onclick = function(e) {
                   e.stopPropagation();
                   showConfirm('🗑️', 'מחיקת אילוץ', 'למחוק את האילוץ של ' + (empName || 'עובד') + '?\nהפעולה תמחק גם מפרופיל העובד.', function() {
+                    playClickSound();
                     db.collection('constraints').doc(id).delete()
                       .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
                   });
@@ -3309,6 +3315,7 @@
             cancelAllBtn.textContent = '🗑️ בטל שיבוץ כולם';
             cancelAllBtn.onclick = function() {
               showConfirm('⚠️', 'ביטול שיבוץ', 'האם לבטל את שיבוץ כל האילוצים מסידור העבודה?', function() {
+                playClickSound();
                 cancelAllBtn.disabled = true; cancelAllBtn.textContent = '...';
                 var byBranch = {};
                 allCons.forEach(function(c) { if (!byBranch[c.branch]) byBranch[c.branch] = []; byBranch[c.branch].push(c); });
@@ -3508,6 +3515,7 @@
     }
 
     function approveConstraint(docId) {
+      playClickSound();
       db.collection('constraints').doc(docId).update({ status: 'approved', approvedAt: new Date().toISOString() })
         .then(function() { showModal('✅', 'אושר!', 'האילוץ אושר בהצלחה.', null); })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר. נסי שוב.', null); });
@@ -4588,6 +4596,7 @@
     }
 
     function approveDailyGoal(docId) {
+      playClickSound();
       db.collection('daily_goal_submissions').doc(docId).update({ status: 'approved' })
         .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לאשר.', null); });
     }
@@ -4876,6 +4885,7 @@
       showConfirm('🗑️', 'איפוס סידור עבודה',
         'האם לאפס את כל הסידור של סניף ' + branchLabel + ' לשבוע הנוכחי?\nהפעולה תמחק את כל השיבוצים בכל המכשירים.',
         function() {
+          playClickSound();
           db.collection('schedules').doc(_schDocId()).set(
             { weekId: _schWeekId(), branch: _schBranch, cells: {}, updatedAt: new Date().toISOString() },
             { merge: true }
@@ -5435,6 +5445,7 @@
       showConfirm('🗑️', 'איפוס יעד חודשי',
         'האם לאפס את כל נתוני היעד של סניף ' + branchLabel + ' לחודש הנוכחי?\nהיעד וכל המכירות היומיות יימחקו.',
         function() {
+          playClickSound();
           var resetBranch = branch;
           db.collection('monthly_goals').doc(resetBranch + '_' + monthId).delete().catch(function() {});
           db.collection('daily_sales').where('monthBranch', '==', monthId + '_' + resetBranch)
@@ -6092,6 +6103,7 @@
 
     function resetClBranch(branch) {
       showConfirm('🗑️', 'איפוס צ\'קליסט', 'זה ימחק את ההגשה ויאפס את הצ\'קליסט לעובד. הפעולה אינה הפיכה.', function() {
+        playClickSound();
         var batch = db.batch();
         _clInboxSubsData.forEach(function(s) {
           if (s.branch === branch) batch.delete(db.collection('shift_submissions').doc(s.id));
@@ -6110,6 +6122,7 @@
     }
 
     function approveClItem(itemId, branch) {
+      playClickSound();
       var shift     = getCurrentShift();
       var sessionId = getShiftSessionId(shift);
       db.collection('checklist_item_approvals').add({
@@ -6122,6 +6135,7 @@
     }
 
     function approveClBranch(branch) {
+      playClickSound();
       var shift     = getCurrentShift();
       var sessionId = getShiftSessionId(shift);
       db.collection('shift_approvals').add({
@@ -6657,6 +6671,7 @@
     function submitCompWinner() {
       var name = (document.getElementById('comp-winner-name').value || '').trim();
       if (!name) { showModal('⚠️', 'שגיאה', 'יש להזין שם זוכה.', null); return; }
+      playClickSound();
       if (!_compWinnerId) return;
       var note = (document.getElementById('comp-winner-note').value || '').trim();
       db.collection('competitions').doc(_compWinnerId).update({
@@ -6676,6 +6691,7 @@
       if (!_compWinnerId) return;
       var id = _compWinnerId;
       showConfirm('🗑', 'מחיקת תחרות', 'האם למחוק את התחרות? הפעולה תאפס את המצב לכל העובדים.', function() {
+        playClickSound();
         db.collection('competitions').doc(id).delete()
           .then(function() { closeCompWinner(); showModal('✅', 'בוצע', 'התחרות נמחקה. המצב אופס.', null); })
           .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
@@ -6935,6 +6951,7 @@
     }
 
     function submitCompetition() {
+      playClickSound();
       var desc  = (document.getElementById('comp-mgr-desc').value || '').trim();
       var prize = (document.getElementById('comp-mgr-prize').value || '').trim();
       var endsV = document.getElementById('comp-mgr-ends').value;
@@ -6969,6 +6986,7 @@
       if (!_compMgrCurrentId) return;
       var id = _compMgrCurrentId;
       showConfirm('⚠️', 'עצירת התחרות', 'האם לסגור את התחרות הנוכחית לצמיתות?', function() {
+        playClickSound();
         db.collection('competitions').doc(id).update({ status: 'closed', closedAt: new Date().toISOString() })
           .then(function() { closeCompMgr(); showModal('✅', 'בוצע', 'התחרות נסגרה.', null); })
           .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן לסגור. נסי שוב.', null); });
@@ -6979,6 +6997,7 @@
       if (!_compMgrCurrentId) return;
       var id = _compMgrCurrentId;
       showConfirm('🗑', 'מחיקת תחרות', 'האם למחוק את התחרות? הפעולה תאפס את המצב לכל העובדים.', function() {
+        playClickSound();
         db.collection('competitions').doc(id).delete()
           .then(function() { closeCompMgr(); showModal('✅', 'בוצע', 'התחרות נמחקה. המצב אופס.', null); })
           .catch(function() { showModal('⚠️', 'שגיאה', 'לא ניתן למחוק. נסי שוב.', null); });
