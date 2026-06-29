@@ -2911,14 +2911,20 @@
     function submitConstraints() {
       playClickSound();
       var s1 = _constraintSel[1], s2 = _constraintSel[2];
-      var s1Partial = (s1.day && !s1.shift) || (!s1.day && s1.shift);
-      var s2Partial = (s2.day && !s2.shift) || (!s2.day && s2.shift);
+      var s1HasExtra = !!(s1.startTime || s1.endTime);
+      var s2HasExtra = !!(s2.startTime || s2.endTime);
+      var s1Partial = (s1.day && !s1.shift) || (!s1.day && s1.shift) || (s1HasExtra && !s1.day);
+      var s2Partial = (s2.day && !s2.shift) || (!s2.day && s2.shift) || (s2HasExtra && !s2.day);
       if (s1Partial || s2Partial) {
         showModal('⚠️', 'בחירה חסרה', 'אם בחרת יום לאילוץ, יש לבחור גם משמרת.', null);
         return;
       }
       var s1Valid = !!(s1.day && s1.shift);
       var s2Valid = !!(s2.day && s2.shift);
+      if (s1Valid && s2Valid && s1.day === s2.day && s1.shift === s2.shift) {
+        showModal('⚠️', 'כפילות', 'שני האילוצים הם אותו יום ואותה משמרת.\nיש לבחור ימים או משמרות שונים.', null);
+        return;
+      }
       if (!s1Valid && !s2Valid && !_constraintSel.daysOff.length) {
         showModal('ℹ️', 'לא נבחר כלום', 'אם אין לך אילוצים השבוע אין צורך לשלוח.', null);
         return;
