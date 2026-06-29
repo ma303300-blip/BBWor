@@ -7060,7 +7060,7 @@
       if (box) { box.classList.remove('zoom-anim'); void box.offsetWidth; box.classList.add('zoom-anim'); }
       modal.classList.add('open');
       if (_compMgrUnsub) { _compMgrUnsub(); _compMgrUnsub = null; }
-      _compMgrUnsub = db.collection('competitions').where('status', 'in', ['active', 'ended'])
+      _compMgrUnsub = db.collection('competitions').where('branch', '==', _compMgrBranch).where('status', 'in', ['active', 'ended'])
         .onSnapshot(function(snap) {
           var active = null, ended = null;
           snap.forEach(function(doc) {
