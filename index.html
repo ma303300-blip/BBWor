@@ -5936,9 +5936,18 @@
         _clInboxItemApprovalsData.forEach(function(a) {
           if (a.branch === branch) approvedItemsMap[a.itemId] = true;
         });
+        var subDay = subs.length > 0 && subs[0].submittedAt
+          ? new Date(subs[0].submittedAt).getDay()
+          : new Date().getDay();
+        var dayFilteredItems = _clInboxCachedItems.filter(function(item) {
+          var d = item.days;
+          if (!d || d.length === 7) return true;
+          if (d.length === 0) return false;
+          return d.indexOf(subDay) !== -1;
+        });
         var itemsHtml = '<ul class="cl-inbox-items">';
-        if (_clInboxCachedItems.length) {
-          _clInboxCachedItems.forEach(function(item) {
+        if (dayFilteredItems.length) {
+          dayFilteredItems.forEach(function(item) {
             var comp = compMap[item.id];
             var itemApproved = !!approvedItemsMap[item.id];
             var approveCtrl = comp
@@ -5965,6 +5974,8 @@
               '</li>';
             }
           });
+        } else if (_clInboxCachedItems.length) {
+          itemsHtml += '<li style="color:var(--text-dim)">—</li>';
         } else {
           itemsHtml += '<li style="color:var(--text-dim)">טוען פריטים...</li>';
         }
