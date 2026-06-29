@@ -2287,6 +2287,8 @@
     }
 
     function openEmployeeHome(emp) {
+      _weeklyConstraintReset();
+      _weeklyScheduleCleanup();
       currentEmployee = emp;
       document.getElementById('emp-name-display').textContent   = 'שלום, ' + emp.firstName + '!';
       document.getElementById('emp-branch-display').textContent = '🏢 ' + BRANCH_NAME[emp.branch];
