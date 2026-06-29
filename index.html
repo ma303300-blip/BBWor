@@ -5970,18 +5970,21 @@
                   ? '<span class="cl-item-approved-tag">✅ אושר</span>'
                   : '<button class="cl-item-approve-btn" onclick="event.stopPropagation();approveClItem(\'' + item.id + '\',\'' + branch + '\')">✓ אשר</button>')
               : '';
+            var timeStr = (comp && comp.submittedAt)
+              ? new Date(comp.submittedAt).toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Jerusalem'})
+              : '';
             if (comp && comp.photoBase64) {
               itemsHtml += '<li style="display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
                 '<div style="flex:1;text-align:right">' +
                   '<div style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:600">' + item.text + '</div>' +
-                  '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + (comp.empName || '') + '</div>' +
+                  '<div style="font-size:11px;color:var(--text-dim);margin-top:2px">' + (comp.empName || '') + (timeStr ? ' · ' + timeStr : '') + '</div>' +
                 '</div>' +
                 '<img class="cl-thumb" src="' + comp.photoBase64 + '" onclick="viewClPhoto(this.src)">' +
                 approveCtrl +
               '</li>';
             } else {
               var statusHtml = comp
-                ? ' <span style="color:#2ecc71;font-size:15px">✅</span>'
+                ? ' <span style="color:#2ecc71;font-size:15px">✅</span>' + (timeStr ? '<span style="color:var(--text-dim);font-size:11px;margin-right:4px">' + timeStr + '</span>' : '')
                 : ' <span style="color:rgba(255,255,255,0.3);font-size:13px">—</span>';
               itemsHtml += '<li style="display:flex;align-items:center;gap:8px;padding:3px 0">' +
                 '<div style="flex:1;text-align:right">• ' + item.text + statusHtml + '</div>' +
