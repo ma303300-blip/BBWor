@@ -2152,7 +2152,7 @@
           });
       }
       if (!_constraintBadgeUnsub) {
-        _constraintBadgeUnsub = db.collection('constraints').where('status', '==', 'pending')
+        _constraintBadgeUnsub = db.collection('constraints').where('status', '==', 'pending').where('week', '==', getWeekId())
           .onSnapshot(function(snap) {
             var count = snap.size;
             var badge = document.getElementById('mgr-constraint-badge');
