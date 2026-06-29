@@ -876,7 +876,7 @@
     <div class="modal-box" id="constraint-info-box">
       <div class="modal-big-icon">📌</div>
       <div class="modal-heading" id="constraint-info-name"></div>
-      <div class="modal-body-text">ניתן כל שבוע להוסיף שני אילוצים לסידור העבודה.<br>ניתן להוסיף את האילוצים עד יום רביעי.</div>
+      <div class="modal-body-text">ניתן כל שבוע לשלוח אילוצים וימי חופש לסידור העבודה.<br>ניתן להוסיף עד יום רביעי.<br>אין חובה למלא אם אין אילוצים השבוע.</div>
       <div class="edit-row-btns" style="width:100%;margin-top:6px">
         <button class="edit-save-btn" onclick="openConstraintForm()">אישור ✦</button>
         <button class="edit-cancel-btn" onclick="closeConstraintInfo()">ביטול</button>
@@ -935,7 +935,7 @@
 
       <!-- Box 3 — ימי חופש -->
       <div class="constraint-box" style="background:rgba(180,30,30,0.15);border-color:rgba(220,60,60,0.3)">
-        <div class="constraint-box-title">ימי חופש <span style="font-weight:400;color:rgba(255,255,255,0.35);font-size:11px">(אופציונלי)</span></div>
+        <div class="constraint-box-title">ימי חופש</div>
         <div class="day-circles" id="days-off">
           <div class="day-circle" onclick="toggleDayOff(this)">א</div>
           <div class="day-circle" onclick="toggleDayOff(this)">ב</div>
@@ -2735,13 +2735,13 @@
       if (currentConstraintData) {
         var c1 = currentConstraintData.constraint1;
         var c2 = currentConstraintData.constraint2;
-        var line1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') + (c1.endTime ? ' עד-' + c1.endTime : '') : String(c1 || '');
-        var line2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') + (c2.endTime ? ' עד-' + c2.endTime : '') : String(c2 || '');
+        var line1 = (c1 && c1.day) ? 'אילוץ 1: יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') + (c1.endTime ? ' עד-' + c1.endTime : '') : '';
+        var line2 = (c2 && c2.day) ? 'אילוץ 2: יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') + (c2.endTime ? ' עד-' + c2.endTime : '') : '';
         var daysOff = currentConstraintData.daysOff;
         var line3 = (daysOff && daysOff.length) ? 'ימי חופש: ' + daysOff.join(', ') : '';
         document.getElementById('cstatus-icon').textContent = '✅';
         document.getElementById('cstatus-heading').textContent = 'האילוצים שאושרו לך';
-        document.getElementById('cstatus-text').textContent = line1 + '\n' + line2 + (line3 ? '\n' + line3 : '');
+        document.getElementById('cstatus-text').textContent = [line1, line2, line3].filter(Boolean).join('\n');
         var csb = document.getElementById('cstatus-box');
         csb.classList.remove('zoom-anim'); void csb.offsetWidth; csb.classList.add('zoom-anim');
         document.getElementById('constraint-status-modal').classList.add('open');
@@ -2911,8 +2911,16 @@
     function submitConstraints() {
       playClickSound();
       var s1 = _constraintSel[1], s2 = _constraintSel[2];
-      if (!s1.day || !s1.shift || !s2.day || !s2.shift) {
-        showModal('⚠️', 'בחירה חסרה', 'יש לבחור יום ומשמרת לכל אחד משני האילוצים.', null);
+      var s1Partial = (s1.day && !s1.shift) || (!s1.day && s1.shift);
+      var s2Partial = (s2.day && !s2.shift) || (!s2.day && s2.shift);
+      if (s1Partial || s2Partial) {
+        showModal('⚠️', 'בחירה חסרה', 'אם בחרת יום לאילוץ, יש לבחור גם משמרת.', null);
+        return;
+      }
+      var s1Valid = !!(s1.day && s1.shift);
+      var s2Valid = !!(s2.day && s2.shift);
+      if (!s1Valid && !s2Valid && !_constraintSel.daysOff.length) {
+        showModal('ℹ️', 'לא נבחר כלום', 'אם אין לך אילוצים השבוע אין צורך לשלוח.', null);
         return;
       }
       if (!currentEmployee) return;
@@ -2924,8 +2932,8 @@
         empName: currentEmployee.firstName + ' ' + currentEmployee.lastName,
         branch: currentEmployee.branch,
         week: getWeekId(),
-        constraint1: { day: s1.day, shift: s1.shift, startTime: s1.startTime || null, endTime: s1.endTime || null },
-        constraint2: { day: s2.day, shift: s2.shift, startTime: s2.startTime || null, endTime: s2.endTime || null },
+        constraint1: s1Valid ? { day: s1.day, shift: s1.shift, startTime: s1.startTime || null, endTime: s1.endTime || null } : null,
+        constraint2: s2Valid ? { day: s2.day, shift: s2.shift, startTime: s2.startTime || null, endTime: s2.endTime || null } : null,
         daysOff: _constraintSel.daysOff.slice(),
         submittedAt: new Date().toISOString(),
         expiresAt: firebase.firestore.Timestamp.fromDate(_nextSaturdayMidnight()),
@@ -3192,8 +3200,8 @@
           body.innerHTML = '';
           function buildItem(d, docId, showAssign) {
             var c1 = d.constraint1, c2 = d.constraint2;
-            var txt1 = (c1 && c1.day) ? 'יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') + (c1.endTime ? ' עד-' + c1.endTime : '') : '';
-            var txt2 = (c2 && c2.day) ? 'יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') + (c2.endTime ? ' עד-' + c2.endTime : '') : '';
+            var txt1 = (c1 && c1.day) ? 'אילוץ 1: יום ' + c1.day + ' — משמרת ' + c1.shift + (c1.startTime ? ' מ-' + c1.startTime : '') + (c1.endTime ? ' עד-' + c1.endTime : '') : '';
+            var txt2 = (c2 && c2.day) ? 'אילוץ 2: יום ' + c2.day + ' — משמרת ' + c2.shift + (c2.startTime ? ' מ-' + c2.startTime : '') + (c2.endTime ? ' עד-' + c2.endTime : '') : '';
             var daysOffRow = (d.daysOff && d.daysOff.length) ? '<div class="constraint-item-text" style="color:rgba(255,150,150,0.8)">ימי חופש: ' + d.daysOff.join(', ') + '</div>' : '';
             var photo = _constraintPhotoCache[d.empId] || null;
             var avatarHtml = photo
@@ -3216,8 +3224,10 @@
                 (showAssign ? actionBtn : '') +
                 '<button class="constraint-del-btn">🗑️</button>' +
               '</div>' +
-              (txt1 ? '<div class="constraint-item-texts"><div class="constraint-item-text">1. ' + txt1 + '</div>' +
-                (txt2 ? '<div class="constraint-item-text">2. ' + txt2 + '</div>' : '') + daysOffRow + '</div>' : '') +
+              ((txt1 || txt2 || daysOffRow) ? '<div class="constraint-item-texts">' +
+                (txt1 ? '<div class="constraint-item-text">' + txt1 + '</div>' : '') +
+                (txt2 ? '<div class="constraint-item-text">' + txt2 + '</div>' : '') +
+                daysOffRow + '</div>' : '') +
               (!showAssign ? actionBtn : '');
             if (docId) {
               var delBtn = item.querySelector('.constraint-del-btn');
