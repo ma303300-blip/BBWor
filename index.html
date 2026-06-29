@@ -2922,8 +2922,7 @@
       var s1Valid = !!(s1.day && s1.shift);
       var s2Valid = !!(s2.day && s2.shift);
       if (s1Valid && s2Valid && s1.day === s2.day && s1.shift === s2.shift) {
-        showModal('⚠️', 'כפילות', 'שני האילוצים הם אותו יום ואותה משמרת.\nיש לבחור ימים או משמרות שונים.', null);
-        return;
+        s2Valid = false;
       }
       if (!s1Valid && !s2Valid && !_constraintSel.daysOff.length) {
         showModal('ℹ️', 'לא נבחר כלום', 'אם אין לך אילוצים השבוע אין צורך לשלוח.', null);
