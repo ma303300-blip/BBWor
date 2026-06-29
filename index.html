@@ -2117,6 +2117,8 @@
     }
 
     function _openManagerDashboard() {
+      _weeklyConstraintReset();
+      _weeklyScheduleCleanup();
       var _dashUid = auth.currentUser ? auth.currentUser.uid : 'main';
       db.collection('managers').doc(_dashUid).get().then(function(doc) {
         if (doc.exists) {
